@@ -17,7 +17,7 @@ These are the "depth levers" in `CLAUDE.md`.
 | 2 | Shot features (xG, PSxG, placement) | ✅ Done | `cf1e931` | 13 |
 | 3 | Baseline engine (like-for-like ladder) | ✅ Done | `a4a025b` | 11 |
 | 4 | Empirical Bayes shrinkage | ✅ Done | `a713cd9` | 9 |
-| 5 | Insight detection and lineage | ✅ Done | `96b7d3a` | 8 |
+| 5 | Insight detection and lineage | ✅ Done | `ccdd59c` | 8 |
 | 6 | Chaos injector | ⏳ Next | | |
 | 7 | Convergence tests (property-based) | ⬜ To do | | |
 | 8 | Shrinkage accuracy vs hidden truth | ⬜ To do | | |
