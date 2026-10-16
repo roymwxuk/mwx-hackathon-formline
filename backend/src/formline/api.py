@@ -1,17 +1,17 @@
-"""FastAPI entrypoint: streams synthetic events and match state over SSE."""
+"""FastAPI entrypoint: replays a generated match feed to the viewer over SSE."""
 
-import asyncio
+import json
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
 from formline.config import settings
-from formline.pipeline.ingest import generate_match
-from formline.pipeline.interpret import Interpreter
+from formline.generator.output import read_feed
+from formline.replay import replay, to_stream_message
 
 app = FastAPI(title="Formline")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
+app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
                    allow_methods=["*"], allow_headers=["*"])
 
 
@@ -20,17 +20,26 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/matches")
+def matches() -> list[dict]:
+    path = settings.data_dir / "matches.json"
+    if not path.exists():
+        raise HTTPException(503, "No generated data. Run `uv run formline-gen generate`.")
+    return json.loads(path.read_text())
+
+
 @app.get("/matches/{match_id}/stream")
-async def stream(match_id: str) -> EventSourceResponse:
+async def stream(match_id: str, speed: float | None = Query(None, gt=0)) -> EventSourceResponse:
+    """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode)."""
+    path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
+    if not path.exists():
+        raise HTTPException(404, f"Unknown match {match_id}")
+    feed = read_feed(path)
+
     async def gen():
-        interp = Interpreter()
-        prev = 0
-        for ev in generate_match(match_id):
-            t = ev.minute * 60 + ev.second
-            await asyncio.sleep(max(0, t - prev) / settings.sim_speed)
-            prev = t
-            state = interp.update(ev)
-            yield {"event": "match_event", "data": ev.model_dump_json()}
-            yield {"event": "state", "data": state.model_dump_json()}
+        async for msg in replay(feed, speed or settings.sim_speed):
+            payload = to_stream_message(msg)
+            if payload:
+                yield {"data": json.dumps(payload, ensure_ascii=False)}
 
     return EventSourceResponse(gen())

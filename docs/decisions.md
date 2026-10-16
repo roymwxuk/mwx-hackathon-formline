@@ -108,3 +108,50 @@ template slots now belong to the backend's Pydantic models.
 5. **Tailwind removed.** The prototype uses one plain stylesheet with design
    tokens (`frontend/src/app/globals.css`). Fonts load through `next/font`.
 6. Kept from step 2: `?t=mm:ss` opens the mock replay at that moment.
+
+---
+
+## ADR-005: Synthetic data generator
+
+**Status:** Accepted (2026-10-17)
+
+**Context.** The engine needs a season of history (so every regular shooter has a
+baseline) and one live match with guaranteed demo moments. The data must be
+synthetic but look like a real provider feed.
+
+**Options.**
+- (a) Independent random events per type with tuned frequencies.
+- (b) A possession-chain simulator driven by hidden per-player profiles.
+- (c) Replay a hand-written match only.
+
+**Decision.** (b), plus scripted beats for the live match.
+
+**Why.** Chains give realistic sequences for free: possession numbers,
+`key_pass_event_id`, shots clustered after final-third receptions, restarts that
+follow from outcomes. Hidden profiles (GEN-ONLY) give each player a stable "true"
+style, so we can later measure how well shrinkage recovers it, which (a) and (c)
+cannot do.
+
+**Details.**
+1. **League.** 6 fictional clubs × 18 players (4-3-3 plus 7 subs). The UI's
+   named players keep their ids (`ply_0107` Reyner and the rest). 30 past matches
+   (double round robin) and 1 live match (HAR vs NOR).
+2. **Profile definition.** `shot_power_mean_kmh` is a strong-foot, unpressured
+   shot from 16 m. Real shots are closer, sometimes pressured or weak-foot, so raw
+   averages sit 6–9 km/h below it. This is intended: it is exactly why baselines
+   must compare like with like.
+3. **Live match is scripted where it matters.** Six beats (the UI storyline) are
+   pinned at fixed clock times, and the clock never skips past a beat. Unscripted
+   shots in the live match never score, so the score is fixed: 1–0 after VAR
+   cancels Reyner's 63:42 goal (`var_review_start`/`end`, then the shot re-sent
+   as version 2 with `outcome: off_target`). History matches are unscripted.
+4. **Derived, not asserted.** `under_pressure` on a shot is computed from the
+   freeze frame (a defender within 2.3 m), so the flag and the frame never disagree.
+5. **Clean feed.** Each event becomes a `create` envelope emitted 250–900 ms
+   after the action, so messages are already slightly out of event order. Duplicates
+   and late corrections come from the chaos injector later, not from the generator.
+6. **Generated data is not committed.** One seed (2026) reproduces it exactly
+   (about 28 MB). `backend/data/sample/` (league, matches, a live-feed excerpt
+   with the VAR sequence) is committed so readers can see the format.
+7. **Calibration.** Checked against public 2024/25 league aggregates in
+   `docs/realism-report.md`; a test fails if any metric leaves its range.

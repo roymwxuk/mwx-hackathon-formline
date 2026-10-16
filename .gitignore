@@ -17,3 +17,8 @@ out/
 
 # Agent instructions (kept local for now)
 CLAUDE.md
+decision-temp.md
+
+# Generated synthetic data (deterministic: regenerate with `uv run formline-gen generate`)
+backend/data/*
+!backend/data/sample/

@@ -12,6 +12,9 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[project.scripts]
+formline-gen = "formline.generator.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
