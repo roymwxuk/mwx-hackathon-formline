@@ -36,6 +36,8 @@ export interface MatchEvent {
   event_id: string;
   version: number;
   type: 'pass' | 'shot' | 'var_review_start' | 'var_review_end' | 'half_start' | 'half_end';
+  /** 1 or 2. The clock restarts at 45:00 in period 2, so order by (period, clock). */
+  period?: number;
   match_clock_ms: number;
   team_id: string | null;
   player_id: string | null;

@@ -11,9 +11,38 @@ export function applyEvents(events: MatchEvent[]): Map<string, MatchEvent> {
   return store;
 }
 
-/** Events in event-time order (not arrival order). */
+/**
+ * Events in event-time order (not arrival order). The match clock restarts at 45:00
+ * in the second half, so first-half stoppage time (e.g. 46:30) must sort before
+ * second-half 45:10: order by period first, then clock.
+ */
+export function compareEvents(a: MatchEvent, b: MatchEvent): number {
+  return (a.period ?? 1) - (b.period ?? 1)
+    || a.match_clock_ms - b.match_clock_ms
+    || a.event_id.localeCompare(b.event_id);
+}
+
 export function orderedEvents(store: Map<string, MatchEvent>): MatchEvent[] {
-  return [...store.values()].sort((a, b) => a.match_clock_ms - b.match_clock_ms);
+  return [...store.values()].sort(compareEvents);
+}
+
+// ---------- Match time on a live feed ----------
+
+export interface MatchTime {
+  period: number;
+  clockMs: number;
+}
+
+/**
+ * Advance the displayed match time with an incoming message. A new period resets the
+ * clock (second half starts at 45:00 even after 46:30 of stoppage time); a late
+ * message from an earlier period never moves it back.
+ */
+export function advanceTime(t: MatchTime, period: number | undefined, clockMs: number): MatchTime {
+  const p = period ?? t.period;
+  if (p > t.period) return { period: p, clockMs };
+  if (p < t.period) return t;
+  return { period: p, clockMs: Math.max(t.clockMs, clockMs) };
 }
 
 export function score(store: Map<string, MatchEvent>, clubIds: [string, string]): [number, number] {
