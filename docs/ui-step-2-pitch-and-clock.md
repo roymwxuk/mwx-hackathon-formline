@@ -1,6 +1,6 @@
 # UI step 2: pitch and match clock
 
-**Status:** Done (2026-10-16)
+**Status:** Done (2026-10-16). Superseded by ADR-004: the viewer was replaced by the claude.ai prototype.
 
 **Goal:** open the viewer and watch the mock match (`frontend/src/mock/demo-match.ts`)
 replay on a 2D pitch with a controllable clock. Overlay cards come in step 3.

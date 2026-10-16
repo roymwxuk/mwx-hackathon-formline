@@ -1,688 +1,405 @@
-/**
- * Hand-written mock replay for building the viewer UI before the backend emits
- * overlays. Covers about nearly four minutes of the first half (38:00–41:42):
- *
- * 1. Harbourside build-up; Reyner's shot is saved (below his usual power).
- * 2. Northgate counter; Nakamura scores a top-end strike by his standards.
- * 3. Harbourside reply; Reyner heads in, then VAR disallows it. The shot
- *    arrives again as a v2 update, and dependent overlays are retracted.
- * 4. Northgate free kick; Osei fouls Nakamura and is booked.
- *
- * Overlays are pre-generated per viewer, the way the backend will deliver
- * them: the casual Japanese viewer gets fewer, favorite-led cards; the English
- * analyst following Reyner gets denser cards and a persistent player strip.
- * All names are fictional.
- */
+// MOCK DATA ONLY. Stands in for the backend until the real pipeline streams over SSE.
+// Clubs and players are fictional. Overlay texts here are fixed templates; in the real
+// system they come from the narrator agent and are checked by the verifier.
 
 import type {
-  BallRecoveryEvent,
-  CardEvent,
+  AudienceMode,
   Club,
-  ClubId,
-  DuelEvent,
-  EventId,
-  FeedMessage,
-  FoulCommittedEvent,
-  FreezeFramePlayer,
-  HalfStartEvent,
-  Match,
+  Lang,
   MatchEvent,
+  Metric,
   Overlay,
-  PassEvent,
+  OverlaySlots,
   Player,
-  PlayerId,
-  PlayPattern,
-  PressureEvent,
-  ShotEvent,
-  VarReviewEndEvent,
-  VarReviewStartEvent,
-  ViewerProfile,
-} from "@/contract";
+  StreamMessage,
+  TemplateId,
+} from '@/lib/types';
 
-const HAR: ClubId = "clb_harbourside";
-const NOR: ClubId = "clb_northgate";
+export const MATCH_ID = 'mtc_s26_md14_har_nor';
 
-export const demoMatch: Match = {
-  match_id: "mtc_s26_md14_har_nor",
-  season: "2026-27",
-  matchday: 14,
-  kickoff_at: "2026-12-05T15:00:00.000Z",
-  home_club_id: HAR,
-  away_club_id: NOR,
-  venue: "Quayside Park",
-  is_live_demo: true,
-};
-
-export const demoClubs: Club[] = [
-  {
-    club_id: HAR,
-    name: "Harbourside Athletic",
-    short_name: "HAR",
-    colors: { primary: "#1d4ed8", secondary: "#f8fafc" },
-  },
-  {
-    club_id: NOR,
-    name: "Northgate Rovers",
-    short_name: "NOR",
-    colors: { primary: "#dc2626", secondary: "#111827" },
-  },
+export const CLUBS: Club[] = [
+  { club_id: 'clb_harbourside', name: 'Harbourside Athletic', short_name: 'HAR', color: '#0B3D91', text_color: '#FFFFFF' },
+  { club_id: 'clb_northgate', name: 'Northgate Rovers', short_name: 'NOR', color: '#E8E3D9', text_color: '#111111' },
 ];
 
-export const demoPlayers: Player[] = [
-  { player_id: "ply_0101", display_name: "Hale", club_id: HAR, shirt_number: 1, position: "GK", position_group: "GK", preferred_foot: "right" },
-  { player_id: "ply_0103", display_name: "Osei", club_id: HAR, shirt_number: 4, position: "CB", position_group: "DEF", preferred_foot: "right" },
-  { player_id: "ply_0105", display_name: "Lindgren", club_id: HAR, shirt_number: 8, position: "CM", position_group: "MID", preferred_foot: "left" },
-  { player_id: "ply_0106", display_name: "Petrov", club_id: HAR, shirt_number: 10, position: "CAM", position_group: "MID", preferred_foot: "right" },
-  { player_id: "ply_0107", display_name: "Reyner", club_id: HAR, shirt_number: 9, position: "ST", position_group: "FWD", preferred_foot: "right" },
-  { player_id: "ply_0109", display_name: "Achterberg", club_id: HAR, shirt_number: 11, position: "LW", position_group: "FWD", preferred_foot: "left" },
-  { player_id: "ply_0201", display_name: "Brandt", club_id: NOR, shirt_number: 1, position: "GK", position_group: "GK", preferred_foot: "right" },
-  { player_id: "ply_0203", display_name: "Ferraz", club_id: NOR, shirt_number: 3, position: "LB", position_group: "DEF", preferred_foot: "left" },
-  { player_id: "ply_0205", display_name: "Kim", club_id: NOR, shirt_number: 6, position: "DM", position_group: "MID", preferred_foot: "right" },
-  { player_id: "ply_0206", display_name: "Duarte", club_id: NOR, shirt_number: 8, position: "CM", position_group: "MID", preferred_foot: "right" },
-  { player_id: "ply_0207", display_name: "Nakamura", club_id: NOR, shirt_number: 7, position: "RW", position_group: "FWD", preferred_foot: "left" },
+export const PLAYERS: Player[] = [
+  { player_id: 'ply_0107', display_name: 'Tomas Reyner', display_name_ja: 'トマス・レイナー', club_id: 'clb_harbourside', shirt_number: 9, season_shot_speed_norm_kmh: 96 },
+  { player_id: 'ply_0111', display_name: 'Kenji Ito', display_name_ja: '伊藤健二', club_id: 'clb_harbourside', shirt_number: 11, season_shot_speed_norm_kmh: 91 },
+  { player_id: 'ply_0104', display_name: 'Marco Silvestri', display_name_ja: 'マルコ・シルヴェストリ', club_id: 'clb_harbourside', shirt_number: 7, season_shot_speed_norm_kmh: 88 },
+  { player_id: 'ply_0210', display_name: 'Daniel Okafor', display_name_ja: 'ダニエル・オカフォー', club_id: 'clb_northgate', shirt_number: 10, season_shot_speed_norm_kmh: 90 },
+  { player_id: 'ply_0208', display_name: 'Lukas Brandt', display_name_ja: 'ルーカス・ブラント', club_id: 'clb_northgate', shirt_number: 8, season_shot_speed_norm_kmh: 85 },
 ];
 
-const playerById = new Map(demoPlayers.map((p) => [p.player_id, p]));
+const HAR = 'clb_harbourside';
+const NOR = 'clb_northgate';
 
-type CommonFields = Omit<HalfStartEvent, "type">;
-type Step = [PlayerId, number, number];
+const m = (min: number, sec = 0) => (min * 60 + sec) * 1000;
 
-/** Builds the feed in event-time order with consistent ids, clocks and possessions. */
-class FeedBuilder {
-  readonly messages: FeedMessage[] = [];
-  clock: number;
-  private eventSeq = 860;
-  private sequence = 10200;
-  private possession = 55;
-  private possessionTeam: ClubId = HAR;
-  private playPattern: PlayPattern = "regular_play";
-  private readonly kickoffMs = Date.parse(demoMatch.kickoff_at);
+// ---------- Key events (shots, VAR, periods) ----------
 
-  constructor(startClockMs: number) {
-    this.clock = startClockMs;
-  }
+const keyEvents: MatchEvent[] = [
+  { event_id: 'evt_000001', version: 1, type: 'half_start', match_clock_ms: 0, team_id: null, player_id: null, x: null, y: null },
+  {
+    event_id: 'evt_000311', version: 1, type: 'shot', match_clock_ms: m(12, 5), team_id: HAR, player_id: 'ply_0107',
+    x: 82.5, y: 58.0, end_x: 100, end_y: 53.4, outcome: 'saved', tracking: { shot_speed_kmh: 101.2 },
+    freeze_frame: [
+      { x: 98.4, y: 50.5, teammate: false, goalkeeper: true },
+      { x: 88.0, y: 55.0, teammate: false, goalkeeper: false },
+      { x: 90.5, y: 61.0, teammate: false, goalkeeper: false },
+    ],
+  },
+  {
+    event_id: 'evt_000540', version: 1, type: 'shot', match_clock_ms: m(22, 30), team_id: HAR, player_id: 'ply_0111',
+    x: 88.0, y: 44.0, end_x: 100, end_y: 46.0, outcome: 'goal', tracking: { shot_speed_kmh: 94.0 },
+    freeze_frame: [
+      { x: 97.8, y: 52.0, teammate: false, goalkeeper: true },
+      { x: 91.0, y: 47.5, teammate: false, goalkeeper: false },
+    ],
+  },
+  {
+    event_id: 'evt_000655', version: 1, type: 'shot', match_clock_ms: m(27, 52), team_id: NOR, player_id: 'ply_0210',
+    x: 93.0, y: 52.0, end_x: 100, end_y: 50.2, outcome: 'saved', tracking: { shot_speed_kmh: 62.0 },
+    freeze_frame: [
+      { x: 98.9, y: 49.0, teammate: false, goalkeeper: true },
+      { x: 92.5, y: 48.0, teammate: false, goalkeeper: false },
+    ],
+  },
+  {
+    event_id: 'evt_000873', version: 1, type: 'shot', match_clock_ms: m(40, 12) + 300, team_id: HAR, player_id: 'ply_0107',
+    x: 84.2, y: 41.0, end_x: 100, end_y: 47.2, outcome: 'saved', tracking: { shot_speed_kmh: 84.1 },
+    related_event_ids: ['evt_000871'],
+    freeze_frame: [
+      { x: 98.1, y: 49.0, teammate: false, goalkeeper: true },
+      { x: 86.0, y: 43.5, teammate: false, goalkeeper: false },
+      { x: 90.2, y: 46.8, teammate: false, goalkeeper: false },
+      { x: 88.7, y: 55.1, teammate: true, goalkeeper: false },
+    ],
+  },
+  { event_id: 'evt_000990', version: 1, type: 'half_end', match_clock_ms: m(45), team_id: null, player_id: null, x: null, y: null },
+  { event_id: 'evt_000991', version: 1, type: 'half_start', match_clock_ms: m(45) + 1, team_id: null, player_id: null, x: null, y: null },
+  {
+    event_id: 'evt_001204', version: 1, type: 'shot', match_clock_ms: m(63, 42), team_id: HAR, player_id: 'ply_0107',
+    x: 87.0, y: 61.0, end_x: 100, end_y: 52.5, outcome: 'goal', tracking: { shot_speed_kmh: 118.3 },
+    freeze_frame: [
+      { x: 97.5, y: 47.0, teammate: false, goalkeeper: true },
+      { x: 90.0, y: 57.0, teammate: false, goalkeeper: false },
+    ],
+  },
+  { event_id: 'evt_001217', version: 1, type: 'var_review_start', match_clock_ms: m(64, 10), team_id: null, player_id: null, x: null, y: null, related_event_ids: ['evt_001204'] },
+  { event_id: 'evt_001219', version: 1, type: 'var_review_end', match_clock_ms: m(65, 27), team_id: null, player_id: null, x: null, y: null, outcome: 'no_goal', related_event_ids: ['evt_001204'] },
+  {
+    event_id: 'evt_001289', version: 1, type: 'shot', match_clock_ms: m(78, 20), team_id: NOR, player_id: 'ply_0208',
+    x: 76.0, y: 35.0, end_x: 100, end_y: 30.0, outcome: 'off_target', tracking: { shot_speed_kmh: 79.0 },
+    freeze_frame: [
+      { x: 98.0, y: 47.0, teammate: false, goalkeeper: true },
+      { x: 82.0, y: 38.0, teammate: false, goalkeeper: false },
+    ],
+  },
+  { event_id: 'evt_001500', version: 1, type: 'half_end', match_clock_ms: m(90), team_id: null, player_id: null, x: null, y: null },
+];
 
-  newPossession(team: ClubId, pattern: PlayPattern = "regular_play"): void {
-    this.possession += 1;
-    this.possessionTeam = team;
-    this.playPattern = pattern;
-  }
+// VAR outcome: the provider re-sends the shot as version 2 with a changed outcome.
+const varUpdate: MatchEvent = { ...keyEvents.find((e) => e.event_id === 'evt_001204')!, version: 2, outcome: 'off_target', match_clock_ms: m(63, 42) };
+const VAR_UPDATE_AT = m(65, 28);
 
-  advance(ms: number): void {
-    this.clock += ms;
-  }
+// ---------- Filler passes so the pitch moves (seeded, reproducible) ----------
 
-  common(
-    team: ClubId,
-    playerId: PlayerId | null,
-    x: number,
-    y: number,
-    opts: { underPressure?: boolean; durationMs?: number; related?: EventId[] } = {},
-  ): CommonFields {
-    this.eventSeq += 1;
-    return {
-      event_id: `evt_${String(this.eventSeq).padStart(6, "0")}`,
-      match_id: demoMatch.match_id,
-      period: 1,
-      match_clock_ms: this.clock,
-      event_time: this.iso(this.clock),
-      team_id: team,
-      player_id: playerId,
-      position: playerId ? (playerById.get(playerId)?.position ?? null) : null,
-      possession: this.possession,
-      possession_team_id: this.possessionTeam,
-      play_pattern: this.playPattern,
-      x,
-      y,
-      under_pressure: opts.underPressure ?? false,
-      duration_ms: opts.durationMs ?? null,
-      related_event_ids: opts.related ?? [],
-    };
-  }
-
-  emit<E extends MatchEvent>(event: E): E {
-    this.push("create", event, 1, this.clock + 700);
-    return event;
-  }
-
-  /** Re-send an event with a corrected full payload at the current clock. */
-  update<E extends MatchEvent>(event: E, version: number): E {
-    this.push("update", event, version, this.clock + 700);
-    return event;
-  }
-
-  /** Emit a chain of passes; each step's player receives the previous pass. */
-  passes(team: ClubId, steps: Step[], gapMs = 2200, last: Partial<PassEvent> = {}): PassEvent[] {
-    const out: PassEvent[] = [];
-    for (let i = 0; i < steps.length - 1; i++) {
-      const [from, x, y] = steps[i];
-      const [to, endX, endY] = steps[i + 1];
-      const lengthM = Math.hypot((endX - x) * 1.05, (endY - y) * 0.68);
-      const pass: PassEvent = {
-        ...this.common(team, from, x, y, { durationMs: Math.round(lengthM * 60) }),
-        type: "pass",
-        recipient_id: to,
-        end_x: endX,
-        end_y: endY,
-        length_m: Math.round(lengthM * 10) / 10,
-        height: "ground",
-        pass_type: "open_play",
-        cross: false,
-        through_ball: false,
-        outcome: "complete",
-        tracking: { ball_speed_kmh: Math.round(35 + lengthM * 1.1) },
-        ...(i === steps.length - 2 ? last : {}),
-      };
-      out.push(this.emit(pass));
-      this.advance(gapMs);
-    }
-    return out;
-  }
-
-  private push(op: "create" | "update", event: MatchEvent, version: number, emittedClock: number) {
-    this.sequence += 1;
-    this.messages.push({
-      message_id: `msg_${this.sequence}`,
-      op,
-      event_id: event.event_id,
-      version,
-      emitted_at: this.iso(emittedClock),
-      sequence: this.sequence,
-      event,
-    });
-  }
-
-  private iso(clockMs: number): string {
-    return new Date(this.kickoffMs + clockMs).toISOString();
-  }
+function seededRandom(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
 }
 
-const b = new FeedBuilder(38 * 60_000);
+function fillerPasses(): MatchEvent[] {
+  const rand = seededRandom(20261016);
+  const harIds = ['ply_0107', 'ply_0111', 'ply_0104'];
+  const norIds = ['ply_0210', 'ply_0208'];
+  const out: MatchEvent[] = [];
+  let clock = 4000;
+  let team = HAR;
+  let x = 50;
+  let y = 50;
+  let n = 2;
+  while (clock < m(90) - 4000) {
+    // Leave quiet windows around key moments so the shot stays on screen.
+    const isKey = keyEvents.some((e) => clock > e.match_clock_ms - 6000 && clock < e.match_clock_ms + 25000);
+    if (!isKey) {
+      const ids = team === HAR ? harIds : norIds;
+      const endX = Math.min(95, Math.max(5, x + (rand() * 30 - 8)));
+      const endY = Math.min(95, Math.max(5, y + (rand() * 40 - 20)));
+      out.push({
+        event_id: `evt_p${String(n).padStart(5, '0')}`,
+        version: 1,
+        type: 'pass',
+        match_clock_ms: clock,
+        team_id: team,
+        player_id: ids[Math.floor(rand() * ids.length)],
+        x,
+        y,
+        end_x: endX,
+        end_y: endY,
+        outcome: rand() < 0.83 ? 'complete' : 'incomplete',
+      });
+      n += 1;
+      x = endX;
+      y = endY;
+      if (rand() < 0.15) {
+        team = team === HAR ? NOR : HAR;
+        x = 100 - x;
+        y = 100 - y;
+      }
+    }
+    clock += 9000 + Math.floor(rand() * 9000);
+  }
+  return out;
+}
 
-// 1. Harbourside build-up ending in Reyner's saved shot.
-b.newPossession(HAR);
-const buildUp = b.passes(HAR, [
-  ["ply_0101", 8, 50],
-  ["ply_0103", 22, 30],
-  ["ply_0105", 40, 38],
-  ["ply_0106", 58, 52],
-  ["ply_0109", 72, 22],
-  ["ply_0107", 84.2, 41.0],
-]);
-const keyPass1 = buildUp[buildUp.length - 1];
-b.advance(-1400);
-const pressureOnReyner = b.emit<PressureEvent>({
-  ...b.common(NOR, "ply_0205", 100 - 86.0, 100 - 43.5, { durationMs: 900 }),
-  type: "pressure",
-  counterpress: false,
-});
-b.advance(1400);
-const reynerFreeze: FreezeFramePlayer[] = [
-  { x: 98.1, y: 49.0, teammate: false, goalkeeper: true },
-  { x: 86.0, y: 43.5, teammate: false, goalkeeper: false },
-  { x: 90.2, y: 46.8, teammate: false, goalkeeper: false },
-  { x: 88.7, y: 55.1, teammate: true, goalkeeper: false },
-];
-const shot1 = b.emit<ShotEvent>({
-  ...b.common(HAR, "ply_0107", 84.2, 41.0, {
-    underPressure: true,
-    durationMs: 420,
-    related: [keyPass1.event_id, pressureOnReyner.event_id],
-  }),
-  type: "shot",
-  body_part: "right_foot",
-  technique: "normal",
-  shot_type: "open_play",
-  first_time: false,
-  deflected: false,
-  end_x: 100,
-  end_y: 47.2,
-  end_z: 0.6,
-  outcome: "saved",
-  key_pass_event_id: keyPass1.event_id,
-  freeze_frame: reynerFreeze,
-  tracking: { shot_speed_kmh: 84.1 },
-});
-b.advance(1800);
+// ---------- Overlays (4 variants per insight: en/ja × casual/analyst) ----------
 
-// 2. Brandt claims it; Northgate counter, Nakamura scores.
-b.newPossession(NOR, "from_counter");
-b.emit<BallRecoveryEvent>({
-  ...b.common(NOR, "ply_0201", 2.5, 52.8),
-  type: "ball_recovery",
-  recovery_failure: false,
-});
-b.advance(3000);
-const counter = b.passes(
-  NOR,
-  [
-    ["ply_0201", 6, 50],
-    ["ply_0203", 20, 68],
-    ["ply_0205", 38, 55],
-    ["ply_0206", 55, 40],
-    ["ply_0207", 80, 46],
-  ],
-  2000,
-  { through_ball: true },
-);
-const keyPass2 = counter[counter.length - 1];
-b.advance(-800);
-const shot2 = b.emit<ShotEvent>({
-  ...b.common(NOR, "ply_0207", 80, 46, { durationMs: 310, related: [keyPass2.event_id] }),
-  type: "shot",
-  body_part: "left_foot",
-  technique: "normal",
-  shot_type: "open_play",
-  first_time: false,
-  deflected: false,
-  end_x: 100,
-  end_y: 45.5,
-  end_z: 1.9,
-  outcome: "goal",
-  key_pass_event_id: keyPass2.event_id,
-  freeze_frame: [
-    { x: 95.4, y: 51.2, teammate: false, goalkeeper: true },
-    { x: 86.5, y: 50.3, teammate: false, goalkeeper: false },
-    { x: 84.0, y: 38.2, teammate: true, goalkeeper: false },
-  ],
-  tracking: { shot_speed_kmh: 112.4 },
-});
-b.advance(55_000);
+type Variants = Record<Lang, Record<AudienceMode, OverlaySlots>>;
 
-// 3. Harbourside restart; Reyner heads in from Achterberg's cross, then VAR.
-b.newPossession(HAR, "from_kick_off");
-const restart = b.passes(
-  HAR,
-  [
-    ["ply_0107", 50, 50],
-    ["ply_0105", 42, 48],
-    ["ply_0106", 60, 60],
-    ["ply_0109", 78, 85],
-    ["ply_0107", 93, 52],
-  ],
-  2600,
-  { cross: true, height: "high" },
-);
-const cross = restart[restart.length - 1];
-b.advance(-1200);
-const aerial = b.emit<DuelEvent>({
-  ...b.common(HAR, "ply_0107", 93, 52, { related: [cross.event_id] }),
-  type: "duel",
-  duel_type: "aerial",
-  outcome: "won",
-});
-const shot3 = b.emit<ShotEvent>({
-  ...b.common(HAR, "ply_0107", 93, 52, {
-    underPressure: true,
-    durationMs: 250,
-    related: [cross.event_id, aerial.event_id],
-  }),
-  type: "shot",
-  body_part: "head",
-  technique: "normal",
-  shot_type: "open_play",
-  first_time: true,
-  deflected: false,
-  end_x: 100,
-  end_y: 53.0,
-  end_z: 1.1,
-  outcome: "goal",
-  key_pass_event_id: cross.event_id,
-  freeze_frame: [
-    { x: 98.6, y: 47.5, teammate: false, goalkeeper: true },
-    { x: 93.8, y: 50.9, teammate: false, goalkeeper: false },
-    { x: 91.0, y: 58.4, teammate: true, goalkeeper: false },
-  ],
-  tracking: { shot_speed_kmh: 61.0 },
-});
-b.advance(30_000);
-const varStart = b.emit<VarReviewStartEvent>({
-  ...b.common(HAR, null, 93, 52, { related: [shot3.event_id] }),
-  type: "var_review_start",
-  review_subject: "goal",
-});
-b.advance(65_000);
-const varEnd = b.emit<VarReviewEndEvent>({
-  ...b.common(HAR, null, 93, 52, { related: [shot3.event_id] }),
-  type: "var_review_end",
-  outcome: "no_goal",
-});
-// The provider re-sends the shot with the corrected outcome (full payload, v2).
-b.update<ShotEvent>({ ...shot3, outcome: "off_target" }, 2);
-b.advance(20_000);
+interface Insight {
+  no: number;
+  player_id: string | null;
+  metric: Metric | null;
+  template: TemplateId;
+  clock: number;
+  priority: number;
+  source: string[];
+  variants: Variants;
+}
 
-// 4. Northgate free kick for offside; Osei fouls Nakamura and is booked.
-b.newPossession(NOR, "from_free_kick");
-b.passes(
-  NOR,
-  [
-    ["ply_0201", 15, 50],
-    ["ply_0206", 45, 45],
-    ["ply_0207", 62, 70],
-  ],
-  2400,
-);
-const foul = b.emit<FoulCommittedEvent>({
-  ...b.common(HAR, "ply_0103", 100 - 62, 100 - 70, { related: [] }),
-  type: "foul_committed",
-  card: "yellow",
-  penalty: false,
-});
-b.advance(15_000);
-b.emit<CardEvent>({
-  ...b.common(HAR, "ply_0103", 100 - 62, 100 - 70, { related: [foul.event_id] }),
-  type: "card",
-  card: "yellow",
-});
+interface SpeedArgs {
+  name: string;
+  nameJa: string;
+  value: number;
+  norm: number;
+  pct: string;
+  pctJa: string;
+  n: number;
+  w: number;
+  bucket: string;
+  bucketJa: string;
+  xg: string;
+  psxg: string;
+  headline: string;
+  headlineJa: string;
+}
 
-export const demoFeed: FeedMessage[] = b.messages;
-
-/** First and last match clock covered by the replay. */
-export const demoClockRange = {
-  startMs: 38 * 60_000,
-  endMs: b.clock,
-};
-
-export const demoViewers: ViewerProfile[] = [
-  {
-    viewer_id: "casual_ja",
-    label: "Casual fan (日本語) · Northgate",
-    mode: "casual",
-    lang: "ja",
-    favorite_club_ids: [NOR],
-    favorite_player_ids: ["ply_0207"],
-    focus_player_id: null,
-    my_metric: null,
-  },
-  {
-    viewer_id: "analyst_en",
-    label: "Analyst (English) · following Reyner",
-    mode: "analyst",
-    lang: "en",
-    favorite_club_ids: [HAR],
-    favorite_player_ids: ["ply_0107"],
-    focus_player_id: "ply_0107",
-    my_metric: null,
-  },
-];
-
-// Overlays appear ~1.5 s after the event they explain (engine + agent latency).
-const LATENCY = 1500;
-const at = (e: MatchEvent, extra = 0) => e.match_clock_ms + LATENCY + extra;
-const MATCH_TTL = 60 * 60_000;
-
-const casualJa: Overlay[] = [
-  {
-    overlay_id: "ovl_ja_0001",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(shot2),
-    ttl_ms: 8000,
-    template_id: "shot_speed_card",
-    priority: 1,
-    audience_mode: "casual",
-    lang: "ja",
-    slots: {
-      headline: "ナカムラ、自己最速クラスの一撃！",
-      stat: "112 km/h",
-      sub: "今季の自身の左足シュートで上位4%の速さ（推定）",
+function speedVariants(a: SpeedArgs): Variants {
+  const d = +(a.value - a.norm).toFixed(1);
+  const abs = Math.abs(Math.round(d));
+  const below = d < 0;
+  const bars = (thisLabel: string, normLabel: string) => [
+    { label: thisLabel, value: a.value, display: `${Math.round(a.value)} km/h`, highlight: true },
+    { label: normLabel, value: a.norm, display: `${Math.round(a.norm)} km/h`, highlight: false },
+  ];
+  const sign = d > 0 ? `+${d}` : `${d}`;
+  return {
+    en: {
+      casual: {
+        tag: 'SHOT SPEED · VS HIS OWN NORM',
+        headline: a.headline,
+        bars: bars('This shot', 'His norm'),
+        sub: `About ${abs} km/h ${below ? 'below' : 'above'} his typical shot from this range (estimate).`,
+      },
+      analyst: {
+        tag: 'SHOT SPEED · PERSONAL BASELINE',
+        headline: `${a.name} ${a.value} km/h · Δ ${sign} vs baseline`,
+        rows: [
+          { label: 'Baseline (shrunk)', value: `${a.norm} km/h` },
+          { label: 'Sample · weight', value: `n=${a.n} · ${a.w}` },
+          { label: 'Comparison group', value: a.bucket },
+          { label: 'Percentile', value: a.pct },
+          { label: 'xG · PSxG', value: `${a.xg} · ${a.psxg}` },
+        ],
+        sub: 'All figures are model estimates.',
+      },
     },
-    insight_id: "ins_0043",
-    source_event_ids: [shot2.event_id, keyPass2.event_id],
-    verified: true,
-  },
-  {
-    overlay_id: "ovl_ja_0002",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(shot3),
-    ttl_ms: 8000,
-    template_id: "baseline_percentile_card",
-    priority: 2,
-    audience_mode: "casual",
-    lang: "ja",
-    slots: {
-      headline: "レイナー、珍しいヘディング弾",
-      metric_label: "コースの精度（本人比）",
-      percentile: 91,
-      sample_note: "ヘディングのデータが少ないため参考値（推定）",
+    ja: {
+      casual: {
+        tag: 'シュートスピード・本人比',
+        headline: a.headlineJa,
+        bars: bars('今回', '本人の平均'),
+        sub: `この距離からの普段のシュートより約${abs} km/h${below ? '遅い' : '速い'}（推定）`,
+      },
+      analyst: {
+        tag: 'シュートスピード・本人ベースライン',
+        headline: `${a.nameJa} ${a.value} km/h・基準比 ${sign}`,
+        rows: [
+          { label: '基準値（縮小推定）', value: `${a.norm} km/h` },
+          { label: 'サンプル数・重み', value: `n=${a.n}・${a.w}` },
+          { label: '比較グループ', value: a.bucketJa },
+          { label: 'パーセンタイル', value: a.pctJa },
+          { label: 'xG・PSxG', value: `${a.xg}・${a.psxg}` },
+        ],
+        sub: '数値はすべてモデルによる推定値です。',
+      },
     },
-    insight_id: "ins_0044",
-    source_event_ids: [shot3.event_id, cross.event_id],
-    verified: true,
-  },
-  {
-    overlay_id: "ovl_ja_0003",
-    op: "retract",
-    supersedes_overlay_id: "ovl_ja_0002",
-    match_clock_ms: at(varEnd),
-    ttl_ms: 0,
-    template_id: null,
-    slots: null,
-    priority: 1,
-    audience_mode: "casual",
-    lang: "ja",
-    insight_id: "ins_0044",
-    source_event_ids: [shot3.event_id, varEnd.event_id],
-    verified: true,
-  },
-  {
-    overlay_id: "ovl_ja_0004",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(varEnd),
-    ttl_ms: 10_000,
-    template_id: "correction_banner",
-    priority: 1,
-    audience_mode: "casual",
-    lang: "ja",
-    slots: {
-      headline: "VAR：レイナーのゴールは取り消し",
-      sub: "先ほどのヘディングの分析を取り消しました",
-    },
-    insight_id: null,
-    source_event_ids: [shot3.event_id, varStart.event_id, varEnd.event_id],
-    verified: true,
-  },
-];
-
-const reynerStrip = (
-  overlayId: string,
-  op: "show" | "correct",
-  supersedes: string | null,
-  clockMs: number,
-  sources: EventId[],
-  stats: { shots: number; on_target: number; avg: number; vs: number },
-): Overlay => {
-  const base = {
-    overlay_id: overlayId,
-    match_clock_ms: clockMs,
-    ttl_ms: MATCH_TTL,
-    template_id: "player_focus_strip" as const,
-    priority: 0,
-    audience_mode: "analyst" as const,
-    lang: "en" as const,
-    slots: {
-      player_id: "ply_0107",
-      player_name: "Reyner",
-      shots: stats.shots,
-      on_target: stats.on_target,
-      avg_shot_speed_kmh: stats.avg,
-      speed_vs_baseline_kmh: stats.vs,
-    },
-    insight_id: null,
-    source_event_ids: sources,
-    verified: true,
   };
-  if (op === "show") return { ...base, op, supersedes_overlay_id: supersedes };
-  if (!supersedes) throw new Error(`${overlayId}: a correction must supersede an overlay`);
-  return { ...base, op, supersedes_overlay_id: supersedes };
-};
+}
 
-const analystEn: Overlay[] = [
-  // Two earlier foot shots this match (outside the replay window) averaged 97.0 km/h
-  // against a season baseline of 96.0 km/h.
-  reynerStrip("ovl_en_0001", "show", null, demoClockRange.startMs, [], {
-    shots: 2,
-    on_target: 1,
-    avg: 97.0,
-    vs: 1.0,
-  }),
+const insights: Insight[] = [
   {
-    overlay_id: "ovl_en_0002",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(shot1),
-    ttl_ms: 9000,
-    template_id: "shot_speed_card",
-    priority: 1,
-    audience_mode: "analyst",
-    lang: "en",
-    slots: {
-      headline: "Reyner — well below his usual power",
-      stat: "84.1 km/h",
-      sub: "15.2 km/h below his baseline for right-foot shots from this zone (estimate)",
-      details: [
-        { label: "Zone", value: "Central, 16–20 m" },
-        { label: "His baseline (shrunk)", value: "99.3 km/h" },
-        { label: "Sample", value: "n = 11 · weight 0.62 vs FWD prior" },
-        { label: "Under pressure", value: "Yes · nearest defender 2.3 m" },
-      ],
+    no: 1, player_id: 'ply_0107', metric: 'finishing', template: 'placement_card', clock: m(12, 7), priority: 3, source: ['evt_000311'],
+    variants: {
+      en: {
+        casual: { tag: 'FINISHING · VS HIS OWN NORM', headline: 'Reyner picks his corner', sub: 'Placement in the top 20% of his finishes from the edge of the box (estimate).' },
+        analyst: {
+          tag: 'FINISHING · PERSONAL BASELINE', headline: 'Reyner placement: 80th percentile',
+          rows: [
+            { label: 'Comparison group', value: 'Edge of box · R foot' },
+            { label: 'Sample · weight', value: 'n=24 · 0.83' },
+            { label: 'xG · PSxG', value: '0.07 · 0.21' },
+          ],
+          sub: 'All figures are model estimates.',
+        },
+      },
+      ja: {
+        casual: { tag: 'フィニッシュ・本人比', headline: 'レイナー、コースを突いた', sub: 'ペナルティエリア手前からの本人のシュートの中で、上位20%のコース（推定）' },
+        analyst: {
+          tag: 'フィニッシュ・本人ベースライン', headline: 'レイナーのコース：80パーセンタイル',
+          rows: [
+            { label: '比較グループ', value: 'エリア手前・右足' },
+            { label: 'サンプル数・重み', value: 'n=24・0.83' },
+            { label: 'xG・PSxG', value: '0.07・0.21' },
+          ],
+          sub: '数値はすべてモデルによる推定値です。',
+        },
+      },
     },
-    insight_id: "ins_0041",
-    source_event_ids: [shot1.event_id, keyPass1.event_id, pressureOnReyner.event_id],
-    verified: true,
-  },
-  reynerStrip("ovl_en_0003", "show", "ovl_en_0001", at(shot1, 500), [shot1.event_id], {
-    shots: 3,
-    on_target: 2,
-    avg: 92.7,
-    vs: -3.3,
-  }),
-  {
-    overlay_id: "ovl_en_0004",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(shot1, 4000),
-    ttl_ms: 9000,
-    template_id: "chance_vs_norm_card",
-    priority: 2,
-    audience_mode: "analyst",
-    lang: "en",
-    slots: {
-      headline: "Saved — a low-quality finish by his standards",
-      chance_pct: 7,
-      norm_pct: 31,
-      sub: "Post-shot chance ~7% vs ~31% for his typical good finish from here (model estimates)",
-      details: [
-        { label: "xG (pre-shot)", value: "0.14" },
-        { label: "PSxG", value: "0.07" },
-        { label: "Placement", value: "Central, 0.6 m high" },
-      ],
-    },
-    insight_id: "ins_0042",
-    source_event_ids: [shot1.event_id],
-    verified: true,
   },
   {
-    overlay_id: "ovl_en_0005",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(shot2),
-    ttl_ms: 9000,
-    template_id: "baseline_percentile_card",
-    priority: 2,
-    audience_mode: "analyst",
-    lang: "en",
-    slots: {
-      headline: "Nakamura — a top-end strike by his standards",
-      metric_label: "Shot speed vs his own left-foot shots",
-      percentile: 96,
-      sample_note: "Based on 23 similar shots; light shrinkage, weight 0.81 (estimate)",
-      details: [
-        { label: "Shot speed", value: "112.4 km/h" },
-        { label: "His baseline (shrunk)", value: "94.8 km/h" },
-        { label: "Play pattern", value: "Counter, through ball from Duarte" },
-      ],
-    },
-    insight_id: "ins_0043",
-    source_event_ids: [shot2.event_id, keyPass2.event_id],
-    verified: true,
+    no: 2, player_id: 'ply_0210', metric: 'shot_speed', template: 'shot_speed_card', clock: m(27, 54), priority: 3, source: ['evt_000655'],
+    variants: speedVariants({
+      name: 'Okafor', nameJa: 'オカフォー', value: 62.0, norm: 51.5, pct: '96th', pctJa: '96パーセンタイル', n: 14, w: 0.74,
+      bucket: 'Six-yard area · header', bucketJa: 'ゴールエリア・ヘディング', xg: '0.31', psxg: '0.44',
+      headline: "Okafor's fastest header of the season", headlineJa: 'オカフォー、今季最速のヘディング',
+    }),
   },
   {
-    overlay_id: "ovl_en_0006",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(shot3),
-    ttl_ms: 9000,
-    template_id: "baseline_percentile_card",
-    priority: 1,
-    audience_mode: "analyst",
-    lang: "en",
-    slots: {
-      headline: "Reyner — placement in his top 10% of headers",
-      metric_label: "Header placement vs his own headers",
-      percentile: 91,
-      sample_note: "Only 6 headers, so heavily blended with the FWD prior, weight 0.27 (estimate)",
-      details: [
-        { label: "Goal-mouth point", value: "1.1 m high, 0.4 m inside post" },
-        { label: "Delivery", value: "Cross from Achterberg" },
-      ],
-    },
-    insight_id: "ins_0044",
-    source_event_ids: [shot3.event_id, cross.event_id],
-    verified: true,
+    no: 3, player_id: 'ply_0107', metric: 'shot_speed', template: 'shot_speed_card', clock: m(40, 14), priority: 2, source: ['evt_000873'],
+    variants: speedVariants({
+      name: 'Reyner', nameJa: 'レイナー', value: 84.1, norm: 99.4, pct: '12th', pctJa: '12パーセンタイル', n: 31, w: 0.86,
+      bucket: 'Edge of box · R foot · pressured', bucketJa: 'エリア手前・右足・プレッシャー下', xg: '0.06', psxg: '0.09',
+      headline: 'Reyner — not his usual strike', headlineJa: 'レイナー、いつもの威力がない',
+    }),
   },
-  reynerStrip("ovl_en_0007", "show", "ovl_en_0003", at(shot3, 500), [shot1.event_id, shot3.event_id], {
-    shots: 4,
-    on_target: 3,
-    avg: 92.7,
-    vs: -3.3,
-  }),
   {
-    overlay_id: "ovl_en_0008",
-    op: "retract",
-    supersedes_overlay_id: "ovl_en_0006",
-    match_clock_ms: at(varEnd),
-    ttl_ms: 0,
-    template_id: null,
-    slots: null,
-    priority: 1,
-    audience_mode: "analyst",
-    lang: "en",
-    insight_id: "ins_0044",
-    source_event_ids: [shot3.event_id, varEnd.event_id],
-    verified: true,
+    no: 4, player_id: 'ply_0107', metric: 'shot_speed', template: 'shot_speed_card', clock: m(63, 44), priority: 1, source: ['evt_001204'],
+    variants: speedVariants({
+      name: 'Reyner', nameJa: 'レイナー', value: 118.3, norm: 99.4, pct: '100th (season max)', pctJa: '今季最高', n: 32, w: 0.86,
+      bucket: 'Box · R foot', bucketJa: 'エリア内・右足', xg: '0.14', psxg: '0.52',
+      headline: "Reyner's fastest goal of the season", headlineJa: 'レイナー、今季最速のゴール',
+    }),
   },
-  reynerStrip(
-    "ovl_en_0009",
-    "correct",
-    "ovl_en_0007",
-    at(varEnd),
-    [shot1.event_id, shot3.event_id, varEnd.event_id],
-    { shots: 4, on_target: 2, avg: 92.7, vs: -3.3 },
-  ),
   {
-    overlay_id: "ovl_en_0010",
-    op: "show",
-    supersedes_overlay_id: null,
-    match_clock_ms: at(varEnd),
-    ttl_ms: 10_000,
-    template_id: "correction_banner",
-    priority: 1,
-    audience_mode: "analyst",
-    lang: "en",
-    slots: {
-      headline: "VAR: Reyner goal disallowed",
-      sub: "Header placement insight withdrawn; his header baseline rolled back to before this shot",
+    no: 5, player_id: null, metric: null, template: 'correction_banner', clock: m(65, 29), priority: 1, source: ['evt_001219', 'evt_001204'],
+    variants: {
+      en: {
+        casual: { tag: 'CORRECTION · VAR', headline: 'Goal disallowed (offside in the build-up)', sub: 'The earlier stat has been withdrawn.' },
+        analyst: { tag: 'CORRECTION · VAR', headline: 'Goal disallowed (offside in the build-up)', sub: 'Overlay withdrawn; finishing baseline rebuilt from the event log (season goals 7 → 6).' },
+      },
+      ja: {
+        casual: { tag: '訂正・VAR', headline: 'ゴール取り消し（ビルドアップでオフサイド）', sub: '先ほどの表示を取り消しました。' },
+        analyst: { tag: '訂正・VAR', headline: 'ゴール取り消し（ビルドアップでオフサイド）', sub: '表示を取り消し、イベントログからフィニッシュの基準値を再計算しました（今季ゴール 7 → 6）。' },
+      },
     },
-    insight_id: null,
-    source_event_ids: [shot3.event_id, varStart.event_id, varEnd.event_id],
-    verified: true,
+  },
+  {
+    no: 6, player_id: 'ply_0208', metric: 'finishing', template: 'finish_quality_card', clock: m(78, 22), priority: 4, source: ['evt_001289'],
+    variants: {
+      en: {
+        casual: { tag: 'FINISHING · VS HIS OWN NORM', headline: 'Brandt snatches at it', sub: 'One of his least accurate attempts from distance this season (estimate).' },
+        analyst: {
+          tag: 'FINISHING · PERSONAL BASELINE', headline: 'Brandt miss: 9th percentile placement',
+          rows: [
+            { label: 'Comparison group', value: 'Long range · R foot' },
+            { label: 'Sample · weight', value: 'n=19 · 0.79' },
+            { label: 'xG', value: '0.03' },
+          ],
+          sub: 'All figures are model estimates.',
+        },
+      },
+      ja: {
+        casual: { tag: 'フィニッシュ・本人比', headline: 'ブラント、焦ったシュート', sub: '今季のミドルシュートの中でも特に精度の低い一本（推定）' },
+        analyst: {
+          tag: 'フィニッシュ・本人ベースライン', headline: 'ブラントのミス：コース9パーセンタイル',
+          rows: [
+            { label: '比較グループ', value: 'ロングレンジ・右足' },
+            { label: 'サンプル数・重み', value: 'n=19・0.79' },
+            { label: 'xG', value: '0.03' },
+          ],
+          sub: '数値はすべてモデルによる推定値です。',
+        },
+      },
+    },
   },
 ];
 
-export const demoOverlays: Record<string, Overlay[]> = {
-  casual_ja: casualJa,
-  analyst_en: analystEn,
-};
+const LANGS: Lang[] = ['en', 'ja'];
+const MODES: AudienceMode[] = ['casual', 'analyst'];
+const overlayId = (no: number, lang: Lang, mode: AudienceMode) => `ovl_${String(no).padStart(4, '0')}_${lang}_${mode}`;
+
+function buildOverlays(): Overlay[] {
+  const out: Overlay[] = [];
+  for (const ins of insights) {
+    for (const lang of LANGS) {
+      for (const mode of MODES) {
+        out.push({
+          overlay_id: overlayId(ins.no, lang, mode),
+          op: 'show',
+          supersedes_overlay_id: null,
+          match_clock_ms: ins.clock,
+          ttl_ms: 12000,
+          template_id: ins.template,
+          priority: ins.priority,
+          audience_mode: mode,
+          lang,
+          slots: ins.variants[lang][mode],
+          insight_id: `ins_${String(ins.no).padStart(4, '0')}`,
+          player_id: ins.player_id,
+          metric: ins.metric,
+          source_event_ids: ins.source,
+          verified: true,
+        });
+      }
+    }
+  }
+  // VAR: retract every variant of insight 4 (the overturned goal).
+  for (const lang of LANGS) {
+    for (const mode of MODES) {
+      out.push({
+        overlay_id: `ovl_0004r_${lang}_${mode}`,
+        op: 'retract',
+        supersedes_overlay_id: overlayId(4, lang, mode),
+        match_clock_ms: m(65, 28),
+        ttl_ms: 0,
+        template_id: 'shot_speed_card',
+        priority: 1,
+        audience_mode: mode,
+        lang,
+        slots: { tag: '', headline: '' },
+        insight_id: 'ins_0004',
+        player_id: 'ply_0107',
+        metric: 'shot_speed',
+        source_event_ids: ['evt_001204'],
+        verified: true,
+      });
+    }
+  }
+  return out;
+}
+
+/** The full demo stream, sorted by match clock, as the backend would send it over SSE. */
+export function buildDemoStream(): { clock: number; msg: StreamMessage }[] {
+  const items: { clock: number; msg: StreamMessage }[] = [];
+  for (const e of [...keyEvents, ...fillerPasses()]) items.push({ clock: e.match_clock_ms, msg: { kind: 'event', event: e } });
+  items.push({ clock: VAR_UPDATE_AT, msg: { kind: 'event', event: varUpdate } });
+  for (const o of buildOverlays()) items.push({ clock: o.match_clock_ms, msg: { kind: 'overlay', overlay: o } });
+  return items.sort((a, b) => a.clock - b.clock);
+}
+
+export const MATCH_END_MS = m(90);

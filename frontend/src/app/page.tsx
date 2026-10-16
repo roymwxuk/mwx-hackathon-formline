@@ -1,9 +1,5 @@
-import { Viewer } from "@/components/viewer/Viewer";
+import App from '@/components/App';
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <Viewer />
-    </main>
-  );
+  return <App />;
 }

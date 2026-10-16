@@ -159,7 +159,7 @@ Emitted when the possession number changes. `from_team_id`, `to_team_id`, `endin
 `insight_id`, `type`, `player_id`, `values{}`, `confidence`, `salience`, `source_event_ids[]`, `status (active / retracted / corrected)`
 
 ### 6.5 `overlay` (output contract)
-`overlay_id`, `op (show / correct / retract)`, `supersedes_overlay_id`, `match_clock_ms`, `ttl_ms`, `template_id`, `priority`, `audience_mode (casual / analyst)`, `lang (en / ja)`, `slots{}`, `insight_id`, `source_event_ids[]`, `verified`
+`overlay_id`, `op (show / correct / retract)`, `supersedes_overlay_id`, `match_clock_ms`, `ttl_ms`, `template_id`, `priority`, `audience_mode (casual / analyst)`, `lang (en / ja)`, `slots{}`, `insight_id`, `player_id`, `metric (shot_speed / finishing / null)`, `source_event_ids[]`, `verified`
 
 ---
 

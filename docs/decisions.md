@@ -65,3 +65,46 @@ Changes against `DATA_SCHEMA.md` v0.2:
    comparisons.
 5. **Coordinates.** Each team's events are normalized to attack toward x = 100.
    Renderers flip the away team.
+
+---
+
+## ADR-004: Adopt the claude.ai UI prototype as the viewer, inside Next.js
+
+**Status:** Accepted (2026-10-16). Supersedes ADR-003 items 2 and 3, and replaces the
+step-2 viewer (`docs/ui-step-2-pitch-and-clock.md`).
+
+**Context.** A separate design session produced a complete Vite + React viewer
+(`formline-ui`): live viewer, two-viewer page, settings panel, focus strip,
+overlay log, VAR withdrawal, phone layout and 8 logic tests. It covers UI steps
+3–5, which were still unbuilt here. Its types are simpler than
+`frontend/src/contract/`.
+
+**Options.**
+- (a) Keep Vite and replace `frontend/` with the prototype as is.
+- (b) Port the prototype into the existing Next.js app, adopting its types.
+- (c) Port only its components and re-fit them to the richer ADR-003 contract.
+
+**Decision.** (b).
+
+**Why.** It gets the finished UI in about an hour, where (c) would mean
+rewriting most of it. Keeping Next.js leaves the existing scaffold, lint and
+CI setup intact, and a later server route (e.g. an SSE proxy) has an obvious home.
+The UI only needs the fields it renders, so the full feed envelope and typed
+template slots now belong to the backend's Pydantic models.
+
+**What changed.**
+1. **Stream contract** is `StreamMessage` (`frontend/src/lib/types.ts`):
+   `{kind:'event'}` or `{kind:'overlay'}` per SSE `data:` line. Events carry
+   `version`; the client keeps the highest version per `event_id`.
+2. **Generic slots.** Overlays use one slot shape: `tag`, `headline`, `sub`,
+   with `bars` for casual and `rows` for analyst. Density still differs by
+   mode, but the template catalog is enforced by the backend, not by TS types.
+3. **Personalization is client-side for now.** The stream carries every
+   EN/JA × casual/analyst variant, and `personalize()` filters per viewer. The
+   rules are pure and unit-tested. Moving the filter to the backend later
+   doesn't change the contract.
+4. **Overlay gains `player_id` and `metric`**, so favorites and "my metric"
+   can filter without parsing slots (`DATA_SCHEMA.md` §6.5 updated).
+5. **Tailwind removed.** The prototype uses one plain stylesheet with design
+   tokens (`frontend/src/app/globals.css`). Fonts load through `next/font`.
+6. Kept from step 2: `?t=mm:ss` opens the mock replay at that moment.
