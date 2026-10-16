@@ -1,6 +1,6 @@
 /**
  * Hand-written mock replay for building the viewer UI before the backend emits
- * overlays. Covers about five minutes of the first half (38:00–43:30):
+ * overlays. Covers about nearly four minutes of the first half (38:00–41:42):
  *
  * 1. Harbourside build-up; Reyner's shot is saved (below his usual power).
  * 2. Northgate counter; Nakamura scores a top-end strike by his standards.
