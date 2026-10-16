@@ -155,3 +155,8 @@ cannot do.
    with the VAR sequence) is committed so readers can see the format.
 7. **Calibration.** Checked against public 2024/25 league aggregates in
    `docs/realism-report.md`; a test fails if any metric leaves its range.
+8. **Revised in task 2 (shot features).** Computing distances exposed that 35% of
+   shots came from the six-yard box (median 11 m). Open-play passes now stop short
+   of the six-yard box, crosses land shallower, and shot probability rises more
+   gently near goal: now 9% six-yard, median 14 m, 69% inside the box. Two
+   location checks were added to the realism report.

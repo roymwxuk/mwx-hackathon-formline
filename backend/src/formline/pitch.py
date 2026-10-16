@@ -13,6 +13,9 @@ POST_HIGH_Y = GOAL_Y + (GOAL_WIDTH_M / 2) / PITCH_WIDTH_M * 100  # ≈ 55.38
 BOX_X = 100 - 16.5 / PITCH_LENGTH_M * 100  # ≈ 84.29
 BOX_Y_LOW = GOAL_Y - 20.16 / PITCH_WIDTH_M * 100  # ≈ 20.35
 BOX_Y_HIGH = GOAL_Y + 20.16 / PITCH_WIDTH_M * 100  # ≈ 79.65
+SIX_YARD_X = 100 - 5.5 / PITCH_LENGTH_M * 100  # ≈ 94.76
+SIX_YARD_Y_LOW = GOAL_Y - 9.16 / PITCH_WIDTH_M * 100  # ≈ 36.53
+SIX_YARD_Y_HIGH = GOAL_Y + 9.16 / PITCH_WIDTH_M * 100  # ≈ 63.47
 
 
 def clamp(v: float, lo: float = 0.5, hi: float = 99.5) -> float:

@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from math import exp
 
 from formline.generator.league import LatentProfile, League
-from formline.generator.pitch import (
+from formline.pitch import (
     GOAL_HEIGHT_M,
     GOAL_WIDTH_M,
     PITCH_WIDTH_M,
@@ -395,12 +395,12 @@ class MatchSim:
                                        and rng.random() < 0.6):
             if pass_type == "corner":
                 x, y = 99.5, rng.choice([0.5, 99.5])
-            ex, ey = rng.uniform(88, 97), rng.uniform(36, 64)
+            ex, ey = rng.triangular(84, 97, 90), rng.uniform(36, 64)
             p, height, cross = 0.32, "high", True
         else:
             r = rng.random()
             if x > 72 and (y < 25 or y > 75) and r < 0.30:
-                ex, ey = rng.uniform(86, 97), rng.uniform(34, 66)
+                ex, ey = rng.triangular(84, 97, 89), rng.uniform(34, 66)
                 p, height, cross = 0.27, "high", True
             elif x > 55 and r < 0.05:
                 ex, ey = x + rng.uniform(10, 24), y + (50 - y) * rng.uniform(0.2, 0.6)
@@ -412,7 +412,9 @@ class MatchSim:
                 ex = x + rng.gauss(5.0 if x < 65 else 1.0, 11)
                 ey = y + rng.gauss((50 - y) * 0.1, 14)
                 p = 0.94
-            ex, ey = clamp(ex, 1, 99.6), clamp(ey, 0.5, 99.5)
+            # Open-play passes rarely reach the six-yard box; crosses get there instead.
+            ex = clamp(ex, 1, 99.6 if cross else 93.0 if through else 91.0)
+            ey = clamp(ey, 0.5, 99.5)
             length = to_m(ex - x, ey - y)
             if not cross and not through:
                 p -= 0.004 * max(0.0, length - 12) + 0.08 * (ex > 84) + 0.04 * (height == "high")
@@ -453,7 +455,7 @@ class MatchSim:
         prof = self.profiles[carrier]
         if from_cross and in_box(x, y):
             return 0.5
-        p = 0.025 + 0.32 * exp(-(d - 6) / 6.0)
+        p = 0.035 + 0.15 * exp(-(d - 11) / 8.0)
         if d > 18:
             p *= 0.5 + 1.5 * prof.long_range_tendency
         return min(0.6, p * (0.6 + 0.4 * min(1.0, prof.shot_volume / 2)))
@@ -559,7 +561,7 @@ class MatchSim:
         else:
             block_p = 0.0 if header or shot_type == "penalty" else (
                 0.20 + 0.08 * pressured + 0.06 * (d > 18))
-            on_p = (0.47 + 0.3 * (prof.placement_skill - 0.5) - 0.012 * (d - 11)
+            on_p = (0.53 + 0.3 * (prof.placement_skill - 0.5) - 0.012 * (d - 11)
                     - 0.08 * pressured - 0.06 * header - 0.08 * (body_part == weak))
             if shot_type == "penalty":
                 on_p = 0.82
@@ -568,7 +570,7 @@ class MatchSim:
                 outcome = "blocked"
             elif rng.random() < max(0.08, on_p):
                 corner_ness = min(0.98, rng.betavariate(1 + 3 * prof.placement_skill, 1.6))
-                logit = (-2.45 + 0.035 * (speed - 75) + 2.4 * corner_ness - 0.06 * (d - 12)
+                logit = (-2.65 + 0.035 * (speed - 75) + 2.4 * corner_ness - 0.06 * (d - 12)
                          - 0.3 * header)
                 goal_p = 0.76 if shot_type == "penalty" else 1 / (1 + exp(-logit))
                 outcome = "goal" if rng.random() < goal_p else "saved"
