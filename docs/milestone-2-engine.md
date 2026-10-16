@@ -227,7 +227,9 @@ quiet spells leave room.
 - ADR-005, item 8: generator shot-location fix.
 - ADR-006: fallback ladder, exact fixed-point buckets, empirical Bayes shrinkage, frozen
   priors, model-estimated percentiles.
-- To add at the end of the milestone: the definition of convergence, and the chaos model.
+- ADR-007: chaos injector design (damage delivery not content, five damage types,
+  realistic corrections, no drops, real updates left alone, deterministic per seed) and the
+  definition of convergence.
 
 ## Out of scope here
 

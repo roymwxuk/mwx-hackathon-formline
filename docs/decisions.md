@@ -201,3 +201,66 @@ roll a shot back out of every bucket.
 little in finishing relative to shot-to-shot noise. That matches the public
 analytics view that finishing skill is hard to detect, and it is why finishing
 insights must be worded cautiously.
+
+---
+
+## ADR-007: Chaos injector design
+
+**Status:** Accepted (2026-10-17)
+
+**Context.** `CLAUDE.md` requires the pipeline to survive what real feeds deliver:
+duplicates, late and out-of-order messages, and corrections. We need a way to produce
+such feeds on demand, both for property-based convergence tests and to show the
+pipeline coping live in the demo.
+
+**Options.**
+- (a) Bake the damage into the generator's output files.
+- (b) A separate transform that damages delivery of a clean feed at replay time.
+- (c) Randomly mutate messages (drop fields, corrupt values).
+
+**Decision.** (b): `formline/chaos.py`, `inject(feed, ChaosConfig) -> (messages, report)`,
+plugged into `replay(..., transform=...)` and exposed as `?chaos=true&chaos_seed=N`.
+
+**Why.** The clean feed stays the reference, so every chaotic run can be compared with
+it. The same match can be replayed clean or chaotic, which is exactly what a
+convergence test and a side-by-side demo need. (c) tests input validation, not feed
+robustness, and creates states no provider would send.
+
+**Design choices.**
+1. **Damage delivery, not content.** Each message gets an arrival time (its
+   `emitted_at`); the injector perturbs arrival times and delivers in arrival order.
+   The provider's `emitted_at` and `sequence` stay on each message, as they would in
+   reality. The only new content is injected corrections, which real feeds also send.
+2. **Five damage types with configurable rates** (defaults in brackets): duplicate
+   (3%), in-window reorder of 0.2–3 s (5%), beyond-window delay of 6–30 s (1%), shot
+   correction (15% of eligible shots) with revert (50% of corrections), and delete
+   (0%, opt-in). Reorder and late are separate on purpose: one exercises the
+   reorder buffer, the other the late-arrival and correction path.
+3. **Realistic corrections.** A correction is a new version of a shot with the outcome
+   swapped (goal → saved, saved → off target, …) or, 30% of the time, a different
+   shooter from the same team (attribution fix). A revert is a further version that
+   restores the original payload exactly, modelling "temporary" then "final" event
+   files.
+4. **Never drop messages.** Missing-data inference is out of scope in `CLAUDE.md`, and a
+   dropped message makes "convergence" undefined (the truth is no longer in the log).
+5. **Leave real updates alone.** Shots that already have an update (the VAR overturn)
+   are never given injected corrections, so injected and real versions cannot collide
+   and the demo storyline always survives chaos.
+6. **Deterministic per seed.** `random.Random(f"chaos:{seed}")`, and a tiebreak counter
+   for equal arrival times, so any failing convergence case can be replayed exactly
+   from its seed.
+7. **Report what was injected.** `ChaosReport` counts each damage type and lists the
+   corrected event ids, so tests can check rates and the README can quote numbers.
+
+**What "converged" means (used by the convergence tests).** The truth is the final
+version of every event in the append-only log (`current_events`). A chaotic run has
+converged when its incrementally built state equals a rebuild from that truth. Without
+injected corrections, the truth equals the clean feed, so the state must also equal
+the clean run's.
+
+**Observed on the live match (seed 1).** 1,324 messages in, 1,386 out: 51 duplicates,
+60 reordered, 12 delayed, 6 corrections, 5 reverts. The ingestor dropped all 51
+duplicates and produced 12 revisions. 9 of the 12 delayed messages crossed the
+watermark; 3 landed inside it because the watermark follows the latest event time and
+quiet spells leave room. "Late" is therefore a property of arrival relative to the
+stream, not of the delay alone.
