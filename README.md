@@ -1,7 +1,7 @@
 # mwx-hackathon-formline
 
 **Formline** — a Synthetic Match Insights Engine for the *Inside the Game* Developer Hackathon
-(Microsoft × Premier League). Submissions close **Oct 27, 2026**. Full brief: [info.md](info.md).
+(Microsoft × Premier League). Submissions close **Oct 27, 2026**. Full brief: [HACKATHON_BRIEF.md](HACKATHON_BRIEF.md).
 
 Formline turns synthetic football events into explainable, personalized match intelligence
 for studio and streaming use.
@@ -21,7 +21,7 @@ for studio and streaming use.
 ```
 backend/    Python 3.12 · FastAPI · Microsoft Agent Framework (uv)
 frontend/   Next.js · TypeScript · Tailwind (pnpm)
-info.md     Hackathon brief
+HACKATHON_BRIEF.md  Hackathon brief
 ```
 
 ## Run locally
