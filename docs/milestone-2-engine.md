@@ -1,6 +1,6 @@
 # Milestone 2: engine core
 
-**Status:** In progress. Tasks 1–4 done, 5–8 to do (updated 2026-10-17)
+**Status:** In progress. Tasks 1–5 done, 6–8 to do (updated 2026-10-17)
 **Branch:** `feat/engine`, built on `feat/generator`
 **Planned:** Oct 12–15 in `CLAUDE.md`, so running late. Estimate 7–9 h in total.
 
@@ -17,12 +17,12 @@ These are the "depth levers" in `CLAUDE.md`.
 | 2 | Shot features (xG, PSxG, placement) | ✅ Done | `cf1e931` | 13 |
 | 3 | Baseline engine (like-for-like ladder) | ✅ Done | `a4a025b` | 11 |
 | 4 | Empirical Bayes shrinkage | ✅ Done | `a713cd9` | 9 |
-| 5 | Insight detection and lineage | ⏳ Next | | |
-| 6 | Chaos injector | ⬜ To do | | |
+| 5 | Insight detection and lineage | ✅ Done | `96b7d3a` | 8 |
+| 6 | Chaos injector | ⏳ Next | | |
 | 7 | Convergence tests (property-based) | ⬜ To do | | |
 | 8 | Shrinkage accuracy vs hidden truth | ⬜ To do | | |
 
-The suite is 56 tests in total, including the 11 generator tests.
+The backend suite is 67 tests in total (including generator and API tests).
 
 ---
 
@@ -143,14 +143,40 @@ Finishing insights need cautious wording.
 
 ---
 
-## Task 5: insight detection and lineage ⏳ Next
+## Task 5: insight detection and lineage ✅
 
-- Detect shots far from the player's shrunk norm (by estimated percentile), and season
-  bests or worsts with the same body part.
-- Each insight records `source_event_ids` (lineage) plus the numbers it is built on, so the
-  verifier (milestone 3) can check every number.
-- On a `Revised` change, look up dependent insights by lineage and mark them retracted or
-  corrected. The VAR goal is the flagship case.
+**Files:** `backend/src/formline/engine/insights.py`, `pipeline.py` · **Tests:** `tests/test_insights.py`
+
+- **Detection** (deterministic): a metric on a live shot becomes an insight when its
+  **estimated** percentile (after shrinkage) is ≤ 25 or ≥ 75, or when it is a **season
+  best or worst** speed with the same body part.
+  - Types: `shot_speed_vs_norm`, `placement_vs_norm`, `finish_vs_norm`, `season_best`, `season_worst`.
+  - Season records need ≥ 5 earlier shots with that body part and must agree with the
+    direction against the norm. Speed only, because placement and PSxG are too noisy.
+  - Thin comparisons with fewer than 3 shots are skipped.
+  - **Salience** (0–1) grows with extremity, scaled by the weight on the player's own
+    shots, plus bonuses for season records and goals. **Confidence** is high, medium or
+    low from that weight. Choosing what to show is the Insight Selector's job (milestone 3).
+- **`facts`**: every number a narrator may use, rounded for display (value, norm, delta,
+  estimated percentile, sample size, comparison label, weight, group prior, zone, body
+  part, pressure, distance, outcome, xG, PSxG, season record). The verifier checks
+  narratives against these.
+- **Lineage:** each insight cites `source_event_ids` (the shot plus its key pass) and has a
+  deterministic id. The tracker indexes event id → insights. On a revision it re-detects
+  from the corrected shot. Each dependent insight is then unchanged, **corrected**
+  (version 2, `supersedes`, with a reason such as "outcome goal → off_target"), or
+  **retracted** (with a reason such as "placement no longer applies (outcome off_target)").
+  Deletes retract everything citing the event.
+- **`LivePipeline`**: feed message → ingestor → baseline engine → insight tracker.
+
+**Live match result:** 22 insights. Examples: Reyner's 84.1 km/h at 40:12 (below his norm
+of 92.3, est. 21st percentile, medium confidence) and Silvestri's 107.6 km/h season best.
+**VAR at 63:42:** Reyner's goal had a season-best speed insight (118.3 km/h) and a placement
+insight. After the overturn, placement was **retracted** (no longer on target) and the
+season best was **corrected** (still his fastest shot, but no longer a goal).
+
+**Known limit:** a revision rolls the baseline back exactly, but insights already produced
+for later shots are not recomputed (their baseline briefly included the revised shot).
 
 ## Task 6: chaos injector ⬜
 

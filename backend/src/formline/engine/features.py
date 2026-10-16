@@ -49,6 +49,9 @@ class ShotFeatures:
     player_id: str
     team_id: str
     event_time: datetime
+    period: int
+    match_clock_ms: int
+    key_pass_event_id: str | None
     shot_type: str
     outcome: str
     distance_m: float
@@ -167,6 +170,9 @@ def shot_features(shot: ShotEvent, player: Player | None = None) -> ShotFeatures
         player_id=shot.player_id,
         team_id=shot.team_id,
         event_time=shot.event_time,
+        period=shot.period,
+        match_clock_ms=shot.match_clock_ms,
+        key_pass_event_id=shot.key_pass_event_id,
         shot_type=shot.shot_type,
         outcome=shot.outcome,
         distance_m=round(distance, 2),

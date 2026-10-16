@@ -42,6 +42,7 @@ class MetricComparison:
     group_n: int
     group_mean: float | None
     group_sd: float | None
+    season_n: int  # his previous values with the same body part (season-record sample)
     season_best: bool  # beats every previous value with the same body part
     season_worst: bool
 
@@ -154,6 +155,7 @@ class BaselineEngine:
                 group_n=g.n if g else 0,
                 group_mean=g.mean if g else None,
                 group_sd=g.sd if g else None,
+                season_n=widest.player.n if widest and widest.player else 0,
                 season_best=ext is not None and scaled > round(ext[1] * METRICS[metric]),
                 season_worst=ext is not None and scaled < round(ext[0] * METRICS[metric]),
             )
