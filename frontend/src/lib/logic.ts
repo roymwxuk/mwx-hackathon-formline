@@ -89,14 +89,18 @@ export function isFavoriteOverlay(o: Overlay, s: ViewerSettings, players: Player
 export interface FocusStats {
   shots: number;
   avgSpeed: number | null;
-  norm: number;
+  norm: number | null;
   lastSpeed: number | null;
   goals: number;
 }
 
 export function focusStats(store: Map<string, MatchEvent>, player: Player): FocusStats {
   const shots = orderedEvents(store).filter((e) => e.type === 'shot' && e.player_id === player.player_id);
-  const speeds = shots.map((e) => e.tracking?.shot_speed_kmh).filter((v): v is number => typeof v === 'number');
+  // Speed comparisons use foot shots only: headers would drag the average down.
+  const speeds = shots
+    .filter((e) => e.body_part !== 'head' && e.body_part !== 'other')
+    .map((e) => e.tracking?.shot_speed_kmh)
+    .filter((v): v is number => typeof v === 'number');
   return {
     shots: shots.length,
     avgSpeed: speeds.length ? speeds.reduce((a, b) => a + b, 0) / speeds.length : null,

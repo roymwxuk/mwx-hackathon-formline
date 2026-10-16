@@ -77,6 +77,19 @@ class BaselineEngine:
         mean = group_bucket.mean if group_bucket and group_bucket.n else 0.0
         return Prior(metric, group, f.body_group, var, var / DEFAULT_K, mean, 0, "default")
 
+    def season_norm(self, player_id: str, metric: str = "shot_speed_kmh",
+                    body_group: str = "strong_foot") -> float | None:
+        """His shrunk season baseline for one metric and body part, anywhere on the pitch."""
+        player = self.players.get(player_id)
+        if player is None or player.position_group == "GK":
+            return None
+        prior = self.priors.get((metric, player.position_group, body_group))
+        bucket = self.store.bucket(player_id, metric, "body", (body_group,))
+        if prior is None:
+            return bucket.mean if bucket else None
+        n = bucket.n if bucket else 0
+        return shrink(n, bucket.mean if bucket else None, prior.mean, prior).mean
+
     # ---------- change handling ----------
 
     def apply(self, change: Change) -> list[ShotComparison]:

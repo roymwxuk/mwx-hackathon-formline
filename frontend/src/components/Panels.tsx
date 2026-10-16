@@ -16,7 +16,8 @@ export function ScoreBug({ clubs, score, clockMs }: { clubs: Club[]; score: [num
 export function FocusStrip({ store, player, lang }: { store: Map<string, MatchEvent>; player: Player; lang: Lang }) {
   const str = t(lang);
   const f = focusStats(store, player);
-  const delta = f.avgSpeed !== null ? f.avgSpeed - f.norm : null;
+  const delta = f.avgSpeed !== null && f.norm !== null ? f.avgSpeed - f.norm : null;
+  const norm = f.norm !== null ? Math.round(f.norm) : null;
   const name = lang === 'ja' ? player.display_name_ja : player.display_name;
   return (
     <section className="panel" lang={lang}>
@@ -34,13 +35,13 @@ export function FocusStrip({ store, player, lang }: { store: Map<string, MatchEv
           <span className="tile-label">{str.avgSpeed}</span>
           <span className="tile-value">{f.avgSpeed !== null ? `${Math.round(f.avgSpeed)} km/h` : '—'}</span>
           <span className={`tile-note ${delta !== null && delta < 0 ? 'warn' : ''}`}>
-            {delta === null ? str.noShots : `${Math.abs(Math.round(delta))} km/h ${delta < 0 ? str.below : str.above} (${str.norm} ${f.norm})`}
+            {delta === null ? str.noShots : `${Math.abs(Math.round(delta))} km/h ${delta < 0 ? str.below : str.above} (${str.norm} ${norm})`}
           </span>
         </div>
         <div className="tile">
           <span className="tile-label">{str.lastShot}</span>
           <span className="tile-value">{f.lastSpeed !== null ? `${Math.round(f.lastSpeed)} km/h` : '—'}</span>
-          <span className="tile-note">{str.norm} {f.norm} km/h</span>
+          <span className="tile-note">{norm !== null ? `${str.norm} ${norm} km/h` : '—'}</span>
         </div>
       </div>
     </section>

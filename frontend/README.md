@@ -60,4 +60,4 @@ Currently the client filters a stream that contains every variant. Later the bac
 
 1. Make the backend emit `StreamMessage` JSON over SSE.
 2. Point `NEXT_PUBLIC_STREAM_URL` at it and check the three key moments: a shot overlay, the two-viewer view, and the VAR retraction.
-3. Remove `src/mock/` and the `CLUBS`/`PLAYERS` import in `src/components/App.tsx`, and load clubs and players from the backend instead.
+3. Clubs and players already come from the backend in live mode (`src/lib/league.ts` calls `/matches/{id}/league`, derived from the stream URL). Remove `src/mock/` once real overlays stream too.

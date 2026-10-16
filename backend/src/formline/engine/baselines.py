@@ -175,6 +175,9 @@ class BaselineStore:
                 widest = BaselineView(metric, level, key, pb, gb, thin=True)
         return widest
 
+    def bucket(self, scope: str, metric: str, level: str, key: tuple) -> Bucket | None:
+        return self._buckets.get((scope, metric, level, key))
+
     def per_player_samples(self) -> dict[tuple[str, str, str], list[list[float]]]:
         """(metric, group, body_group) -> each player's values, for fitting priors."""
         out: dict[tuple[str, str, str], list[list[float]]] = {}

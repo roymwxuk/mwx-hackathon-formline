@@ -59,8 +59,10 @@ NEXT_PUBLIC_STREAM_URL="http://localhost:8000/matches/mtc_s26_md11_har_nor/strea
 - **Sample:** `backend/data/sample/` holds the league, the match list and a live-feed
   excerpt including the VAR correction.
 
-API: `GET /matches`, and `GET /matches/{match_id}/stream?speed=N`, where each SSE `data:`
-line is one viewer `StreamMessage`.
+API: `GET /matches`; `GET /matches/{match_id}/league` (both squads with each player's
+shrunk season shot-speed norm); and `GET /matches/{match_id}/stream?speed=N`, where each SSE
+`data:` line is one viewer `StreamMessage`. In live mode the viewer loads the league endpoint
+next to the stream URL, so its settings list the real squads.
 
 ## Planned Azure stack
 

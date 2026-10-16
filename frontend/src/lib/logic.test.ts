@@ -59,3 +59,11 @@ describe('overlays', () => {
     expect(vis.some((v) => v.overlay.template_id === 'correction_banner')).toBe(true);
   });
 });
+
+describe('league URL', () => {
+  it('derives the league endpoint from the stream URL', async () => {
+    const { leagueUrlFromStream } = await import('./league');
+    expect(leagueUrlFromStream('http://localhost:8000/matches/mtc_s26_md11_har_nor/stream?speed=20'))
+      .toBe('http://localhost:8000/matches/mtc_s26_md11_har_nor/league');
+  });
+});
