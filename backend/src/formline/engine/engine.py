@@ -11,6 +11,13 @@ from dataclasses import dataclass
 from formline.engine.baselines import METRICS, BaselineStore, metric_values
 from formline.engine.features import ShotFeatures, shot_features
 from formline.engine.ingest import Applied, Change, Revised
+from formline.engine.shrinkage import (
+    DEFAULT_K,
+    Prior,
+    estimated_percentile,
+    fit_priors,
+    shrink,
+)
 from formline.schema.reference import Player
 
 
@@ -26,7 +33,12 @@ class MetricComparison:
     n: int
     mean: float | None
     sd: float | None
-    percentile: float | None  # where this shot ranks among his comparable shots, 0–100
+    percentile: float | None  # raw rank among his comparable shots, 0–100
+    shrunk_mean: float  # his baseline after shrinkage toward the group (model estimate)
+    weight: float  # share of shrunk_mean that comes from his own shots
+    prior_mean: float  # group mean at the same level, excluding him
+    k: float  # shrinkage strength: shots' worth of weight given to the group
+    est_percentile: float  # model-estimated percentile vs his shrunk baseline, 1–99
     group_n: int
     group_mean: float | None
     group_sd: float | None
@@ -46,6 +58,24 @@ class BaselineEngine:
         self.players = {p.player_id: p for p in players}
         self.store = BaselineStore({p.player_id: p.position_group for p in self.players.values()})
         self.features: dict[str, ShotFeatures] = {}  # event_id -> features currently applied
+        self.priors: dict[tuple, Prior] = {}
+
+    def fit_priors(self) -> dict[tuple, Prior]:
+        """Estimate shrinkage priors from everything applied so far, then freeze them.
+
+        Call once after the historical bootstrap; live updates keep the same priors.
+        """
+        self.priors = fit_priors(self.store.per_player_samples())
+        return self.priors
+
+    def _prior(self, metric: str, f: ShotFeatures, group_bucket) -> Prior:
+        group = self.players[f.player_id].position_group
+        prior = self.priors.get((metric, group, f.body_group))
+        if prior is not None:
+            return prior
+        var = (group_bucket.sd or 1.0) ** 2 if group_bucket else 1.0
+        mean = group_bucket.mean if group_bucket and group_bucket.n else 0.0
+        return Prior(metric, group, f.body_group, var, var / DEFAULT_K, mean, 0, "default")
 
     # ---------- change handling ----------
 
@@ -86,6 +116,13 @@ class BaselineEngine:
             widest = self.store.lookup(f, metric, min_n=10**9)  # player's body-level bucket
             ext = widest.player.extremes() if widest and widest.player else None
             scaled = round(value * METRICS[metric])
+            prior = self._prior(metric, f, g)
+            # Group mean at the same level, leaving this player out.
+            if g and g.n > p.n:
+                prior_mean = (g.total - p.total) / (g.n - p.n) / METRICS[metric]
+            else:
+                prior_mean = prior.mean
+            s = shrink(p.n, p.mean, prior_mean, prior)
             out[metric] = MetricComparison(
                 metric=metric,
                 value=value,
@@ -96,6 +133,11 @@ class BaselineEngine:
                 mean=p.mean,
                 sd=p.sd,
                 percentile=p.percentile_of(value),
+                shrunk_mean=s.mean,
+                weight=s.weight,
+                prior_mean=s.prior_mean,
+                k=s.k,
+                est_percentile=estimated_percentile(value, s, p.n),
                 group_n=g.n if g else 0,
                 group_mean=g.mean if g else None,
                 group_sd=g.sd if g else None,

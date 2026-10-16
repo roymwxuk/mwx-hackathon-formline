@@ -160,3 +160,44 @@ cannot do.
    of the six-yard box, crosses land shallower, and shot probability rises more
    gently near goal: now 9% six-yard, median 14 m, 69% inside the box. Two
    location checks were added to the realism report.
+
+---
+
+## ADR-006: Personal baselines with shrinkage
+
+**Status:** Accepted (2026-10-17)
+
+**Context.** The flagship insight compares each shot with the shooter's own
+history. A striker has ~35 shots a season, so like-for-like buckets (zone × body
+part × pressure) hold only a handful of shots each, and corrections (VAR) must
+roll a shot back out of every bucket.
+
+**Decisions.**
+1. **Fallback ladder.** zone × body × pressure → zone × body → area × body →
+   body. Use the most specific level with ≥ 5 shots and report which level was
+   used, so the narrator never claims "from this spot" when it compared all
+   strong-foot shots. 5, not 8: with 8, even the busiest strikers rarely got a
+   zone-level comparison.
+2. **Exact fixed-point buckets.** Values are stored as integers (speed × 10,
+   placement × 1000, PSxG × 10000) in sorted lists with integer sums. Add and
+   remove are exact and order-independent, so corrections need no recompute and
+   a chaotic stream can be checked for *exact* equality with a clean one.
+   Alternative considered: Welford running variance with removal; rejected
+   because floating-point drift makes the result depend on arrival order.
+3. **Empirical Bayes shrinkage.** Normal–normal model per metric × position group
+   × body part: shrunk = (n·x̄ + k·prior) / (n + k), k = σ²/τ², with σ² (shot to
+   shot) and τ² (player to player) estimated by method of moments from the
+   history. The prior is the group's mean **at the same ladder level, excluding
+   the player**. Fallback when a group has too few players: the same body part
+   across all groups (never across body parts: headers must not inherit a
+   foot-shot spread or mean). k is capped at 50.
+4. **Priors are fitted once and frozen** after the historical bootstrap, so live
+   updates and corrections stay exact and deterministic.
+5. **Percentiles are model estimates** from N(shrunk, σ² + σ²/(n+k)), clipped to
+   1–99, shown next to the raw rank. Example: Okafor's pressured header ranks last
+   of 5 raw shots, but is estimated at the 59th percentile after shrinkage.
+
+**Finding worth reporting.** PSxG gets the maximum k (50): players differ very
+little in finishing relative to shot-to-shot noise. That matches the public
+analytics view that finishing skill is hard to detect, and it is why finishing
+insights must be worded cautiously.

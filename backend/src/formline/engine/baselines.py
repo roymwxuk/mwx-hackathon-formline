@@ -175,6 +175,17 @@ class BaselineStore:
                 widest = BaselineView(metric, level, key, pb, gb, thin=True)
         return widest
 
+    def per_player_samples(self) -> dict[tuple[str, str, str], list[list[float]]]:
+        """(metric, group, body_group) -> each player's values, for fitting priors."""
+        out: dict[tuple[str, str, str], list[list[float]]] = {}
+        for (scope, metric, level, key), b in sorted(self._buckets.items()):
+            if level != "body" or scope.startswith("group:") or not b.n:
+                continue
+            group = self.position_groups[scope]
+            out.setdefault((metric, group, key[0]), []).append(
+                [v / b.scale for v, _ in b.values])
+        return out
+
     def snapshot(self) -> dict[tuple, tuple]:
         """Exact, order-independent state, for convergence and rebuild checks."""
         return {k: (b.n, b.total, b.total_sq, tuple(b.values))
