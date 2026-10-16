@@ -1,0 +1,185 @@
+# Milestone 2: engine core
+
+**Status:** In progress. Tasks 1–4 done, 5–8 to do (updated 2026-10-17)
+**Branch:** `feat/engine`, built on `feat/generator`
+**Planned:** Oct 12–15 in `CLAUDE.md`, so running late. Estimate 7–9 h in total.
+
+**Goal:** a deterministic engine (no LLM) that reads the generator's feed and produces
+personal-baseline shot insights. It must survive a messy live feed (duplicates,
+reordering, corrections) and converge to exactly the same state as a clean one.
+These are the "depth levers" in `CLAUDE.md`.
+
+## Tasks
+
+| # | Task | Status | Commit | Tests |
+|---|---|---|---|---|
+| 1 | Event log and ingestion | ✅ Done | `01063bc` | 12 |
+| 2 | Shot features (xG, PSxG, placement) | ✅ Done | `cf1e931` | 13 |
+| 3 | Baseline engine (like-for-like ladder) | ✅ Done | `a4a025b` | 11 |
+| 4 | Empirical Bayes shrinkage | ✅ Done | `a713cd9` | 9 |
+| 5 | Insight detection and lineage | ⏳ Next | | |
+| 6 | Chaos injector | ⬜ To do | | |
+| 7 | Convergence tests (property-based) | ⬜ To do | | |
+| 8 | Shrinkage accuracy vs hidden truth | ⬜ To do | | |
+
+The suite is 56 tests in total, including the 11 generator tests.
+
+---
+
+## Task 1: event log and ingestion ✅
+
+**Files:** `backend/src/formline/engine/log.py`, `ingest.py` · **Tests:** `tests/test_ingest.py`
+
+- **Append-only event log.** Every distinct message is stored once, in arrival order.
+  A message is a duplicate if its `(event_id, version)` is already in the log.
+  In-memory and JSONL implementations share one interface (Postgres later, in the Azure step).
+- **`current_events()`** gives the final state of every event: highest version wins,
+  deletes remove it, sorted by event time. Every rebuild starts from this.
+- **Ingestor** turns the messy feed into an ordered stream of changes:
+  - duplicates and stale (older) versions are dropped and counted;
+  - events wait in a **reorder window** (default 5 s of event time) and are released in
+    event-time order once the watermark passes them;
+  - events arriving after the watermark are applied immediately and flagged `late`;
+  - a newer version of a still-buffered event replaces it silently;
+  - a newer version or delete of an already-released event becomes a **`Revised`**
+    change (before and after), so downstream state can roll back and re-apply.
+
+**Verified:** the clean live feed gives zero late events and each event exactly once in
+event-time order. The VAR overturn arrives as exactly one revision (goal → off target).
+
+---
+
+## Task 2: shot features ✅
+
+**Files:** `backend/src/formline/engine/features.py`, `backend/src/formline/pitch.py` · **Tests:** `tests/test_features.py`
+
+Pure functions of one shot plus squad data:
+
+| Feature | How |
+|---|---|
+| Distance, angle | From the shot location |
+| Zone (5) | six-yard, box central, box wide, outside central, long range |
+| Body group | strong foot, weak foot, head, other (uses preferred foot) |
+| Pressure | Nearest defender in the freeze frame < 2.3 m → pressured |
+| Defenders in cone | Defenders inside the shooter–posts triangle |
+| Placement (on target) | 0 = at the keeper's centre … 1 = top corner |
+| xG | Fixed logistic formula: distance, angle, header, pressure, blockers, free kick; penalty 0.76 |
+| PSxG (on target) | xG plus placement, speed and distance |
+
+- The formulas are **fixed and documented**, not fitted to our synthetic outcomes, which
+  would just learn the generator back. Only the intercepts are calibrated, to
+  league-average conversion.
+- **Results on 30 past matches:** mean xG 0.108 per shot (league ~11%), total xG 0.98× goals,
+  mean PSxG 0.33 against a 34% on-target goal rate, AUC 0.72 (xG) and 0.73 (PSxG).
+- Pitch geometry moved to `formline/pitch.py`, so the engine doesn't import the generator.
+
+**Generator fix found here:** 35% of shots came from the six-yard box (median 11 m).
+Open-play passes now stop short of the six-yard box, crosses land shallower, and shot
+probability rises more gently near goal. Result: 9% six-yard, median 14 m, 69% inside
+the box. Two location checks were added to the realism report (14 checks, all pass).
+
+---
+
+## Task 3: baseline engine ✅
+
+**Files:** `backend/src/formline/engine/baselines.py`, `engine.py` · **Tests:** `tests/test_baselines.py`
+
+- **Fallback ladder** (most specific first), filled per player **and** per position group:
+
+  | Level | Key | Narrator wording |
+  |---|---|---|
+  | L0 | zone × body × pressure | "same zone, body part and pressure" |
+  | L1 | zone × body | "same zone and body part" |
+  | L2 | area (inside/outside box) × body | "same area and body part" |
+  | L3 | body | "same body part, anywhere" |
+
+  A lookup uses the most specific level with **≥ 5 shots** and reports which one, or
+  flags the comparison as `thin` when no level reaches 5.
+- **Exact fixed-point buckets:** values are stored as integers (speed × 10, placement × 1000,
+  PSxG × 10000) in sorted lists plus integer sums. Add and remove are exact and
+  order-independent. Percentiles and season bests or worsts come straight from the sorted values.
+- **Metrics:** shot speed (all non-penalty shots), placement and PSxG (on-target shots).
+- **Engine:** compares each shot **before** adding it (never against itself). A revision
+  removes the old version and re-adds the new one, with no recompute.
+
+**Verified:** Reyner's 84.1 km/h shot at 40:12 reads below his norm. After the VAR
+revision, the cancelled goal's placement and PSxG are gone from every bucket. Incremental
+processing of the live feed equals a rebuild from the final log, exactly.
+
+**Finding:** the busiest strikers have only 33–44 shots across 30 matches. With a minimum
+of 8, they rarely got a zone-level comparison, so the minimum is 5 and shrinkage handles
+small samples.
+
+---
+
+## Task 4: empirical Bayes shrinkage ✅
+
+**Files:** `backend/src/formline/engine/shrinkage.py` (plus `engine.py`, `baselines.py`) · **Tests:** `tests/test_shrinkage.py`
+
+- **Model** (per metric × position group × body part): a player's true mean ~ N(group mean, τ²),
+  each shot ~ N(true mean, σ²).
+  **shrunk = (n · his mean + k · prior) / (n + k)**, with **k = σ² / τ²** and weight on his
+  own shots = n / (n + k).
+- σ² and τ² come from the history by method of moments. **k is learned, not hand-picked**
+  (capped at 50).
+- **Prior** = the group's mean at the **same ladder level, excluding the player**.
+- **Fallback** when a group has too few players: the same body part across all groups,
+  never across body parts, so headers don't inherit a foot-shot average.
+- **Priors are fitted once** after the historical bootstrap, then frozen.
+- **Percentiles are model estimates** from N(shrunk, σ² + σ²/(n+k)), clipped to 1–99,
+  reported next to the raw rank.
+
+**Examples (live match):**
+
+| Shot | Raw rank | After shrinkage |
+|---|---|---|
+| Okafor header 57.1 km/h (5 comparable) | 0th (last of 5) | 59th |
+| Reyner 93.1 km/h (5 comparable) | 100th | 75th |
+| Reyner 84.1 km/h, 40:12 (well supported) | 20th | 21st |
+
+**Finding:** PSxG gets the maximum k (50). Players barely differ in finishing compared with
+shot-to-shot noise, which matches the public view that finishing skill is hard to detect.
+Finishing insights need cautious wording.
+
+---
+
+## Task 5: insight detection and lineage ⏳ Next
+
+- Detect shots far from the player's shrunk norm (by estimated percentile), and season
+  bests or worsts with the same body part.
+- Each insight records `source_event_ids` (lineage) plus the numbers it is built on, so the
+  verifier (milestone 3) can check every number.
+- On a `Revised` change, look up dependent insights by lineage and mark them retracted or
+  corrected. The VAR goal is the flagship case.
+
+## Task 6: chaos injector ⬜
+
+- A replay transform (`replay(..., transform=...)` already has the hook) that injects
+  duplicates, reordering within and beyond the window, delays, and extra corrections
+  (changed outcome, changed player), at configurable rates from a seed.
+
+## Task 7: convergence tests ⬜
+
+- Property-based tests (`hypothesis`) across many chaos seeds and rates. The final baseline
+  snapshot from a chaotic stream must **exactly** equal the clean stream's and a rebuild
+  from the log. The result goes into the README.
+
+## Task 8: shrinkage accuracy vs hidden truth ⬜
+
+- Compare raw and shrunk baselines with the generator's hidden profiles
+  (`gen_only/latent_profiles.json`), especially for small samples. This gives a concrete
+  number for the README ("shrinkage cuts error by X% for players with fewer than N shots").
+
+---
+
+## Decisions
+
+- ADR-005, item 8: generator shot-location fix.
+- ADR-006: fallback ladder, exact fixed-point buckets, empirical Bayes shrinkage, frozen
+  priors, model-estimated percentiles.
+- To add at the end of the milestone: the definition of convergence, and the chaos model.
+
+## Out of scope here
+
+Overlays, narration, verification and agents (milestone 3); connecting the engine to the
+UI; Postgres and Azure.
