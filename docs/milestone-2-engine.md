@@ -1,6 +1,6 @@
 # Milestone 2: engine core
 
-**Status:** In progress. Tasks 1–5 done, 6–8 to do (updated 2026-10-17)
+**Status:** In progress. Tasks 1–6 done, 7–8 to do (updated 2026-10-17)
 **Branch:** `feat/engine`, built on `feat/generator`
 **Planned:** Oct 12–15 in `CLAUDE.md`, so running late. Estimate 7–9 h in total.
 
@@ -18,11 +18,11 @@ These are the "depth levers" in `CLAUDE.md`.
 | 3 | Baseline engine (like-for-like ladder) | ✅ Done | `a4a025b` | 11 |
 | 4 | Empirical Bayes shrinkage | ✅ Done | `a713cd9` | 9 |
 | 5 | Insight detection and lineage | ✅ Done | `ccdd59c` | 8 |
-| 6 | Chaos injector | ⏳ Next | | |
-| 7 | Convergence tests (property-based) | ⬜ To do | | |
+| 6 | Chaos injector | ✅ Done | TASK6 | 9 |
+| 7 | Convergence tests (property-based) | ⏳ Next | | |
 | 8 | Shrinkage accuracy vs hidden truth | ⬜ To do | | |
 
-The backend suite is 67 tests in total (including generator and API tests).
+The backend suite is 76 tests in total (including generator and API tests).
 
 ---
 
@@ -178,11 +178,35 @@ season best was **corrected** (still his fastest shot, but no longer a goal).
 **Known limit:** a revision rolls the baseline back exactly, but insights already produced
 for later shots are not recomputed (their baseline briefly included the revised shot).
 
-## Task 6: chaos injector ⬜
+## Task 6: chaos injector ✅
 
-- A replay transform (`replay(..., transform=...)` already has the hook) that injects
-  duplicates, reordering within and beyond the window, delays, and extra corrections
-  (changed outcome, changed player), at configurable rates from a seed.
+**Files:** `backend/src/formline/chaos.py` (plus the `chaos` option in `api.py`) · **Tests:** `tests/test_chaos.py`
+
+- `inject(feed, ChaosConfig(seed=...))` gives every message an arrival time, damages the
+  schedule and delivers in arrival order. It returns the messages plus a `ChaosReport`.
+
+  | Damage | Default rate | What happens |
+  |---|---|---|
+  | Duplicate | 3% of messages | Same message (same `message_id`) again, 0.1–10 s later |
+  | Reorder | 5% | Jitter of 0.2–3 s, inside the 5 s reorder window |
+  | Late | 1% | Delay of 6–30 s, beyond the window |
+  | Correction | 15% of eligible shots | New version 20–120 s later: outcome swapped (e.g. saved → off target) or, 30% of the time, a different shooter from the same team |
+  | Revert | 50% of corrections | A further version restoring the original |
+  | Delete | 0% (opt-in) | The event is retracted entirely |
+
+- **Nothing is dropped** (missing data is out of scope). Provider `emitted_at` and
+  `sequence` stay on each message; injected versions get new, higher versions and sequence numbers.
+- Shots that already have a real update (the VAR overturn) are never given injected
+  corrections, so versions never collide.
+- Deterministic per seed, so any failing convergence case can be replayed exactly.
+- **API:** `GET /matches/{id}/stream?chaos=true&chaos_seed=N` replays the live match with
+  chaos, for showing the pipeline coping live in the demo.
+
+**On the live match (seed 1):** 1,324 messages in, 1,386 out: 51 duplicates, 60 reordered,
+12 delayed, 6 corrections, 5 reverts. The ingestor dropped all 51 duplicates and produced
+12 revisions. 9 of the 12 delayed messages crossed the window and were flagged late; the
+other 3 still landed inside it, because the window follows the latest event time and
+quiet spells leave room.
 
 ## Task 7: convergence tests ⬜
 

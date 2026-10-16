@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
+from formline.chaos import ChaosConfig, inject
 from formline.config import settings
 from formline.engine.bootstrap import bootstrap_history
 from formline.engine.engine import BaselineEngine
@@ -51,15 +52,21 @@ def league(match_id: str) -> dict:
 
 
 @app.get("/matches/{match_id}/stream")
-async def stream(match_id: str, speed: float | None = Query(None, gt=0)) -> EventSourceResponse:
-    """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode)."""
+async def stream(match_id: str, speed: float | None = Query(None, gt=0),
+                 chaos: bool = False, chaos_seed: int = 0) -> EventSourceResponse:
+    """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode).
+
+    `chaos=true` replays the feed through the chaos injector (duplicates, reordering,
+    late messages, injected corrections) to show the pipeline coping live.
+    """
     path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
     if not path.exists():
         raise HTTPException(404, f"Unknown match {match_id}")
     feed = read_feed(path)
 
     async def gen():
-        async for msg in replay(feed, speed or settings.sim_speed):
+        transform = (lambda f: inject(f, ChaosConfig(seed=chaos_seed)).messages) if chaos else None
+        async for msg in replay(feed, speed or settings.sim_speed, transform=transform):
             payload = to_stream_message(msg)
             if payload:
                 yield {"data": json.dumps(payload, ensure_ascii=False)}
