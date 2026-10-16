@@ -46,6 +46,27 @@ pnpm dev
 NEXT_PUBLIC_STREAM_URL="http://localhost:8000/matches/mtc_s26_md11_har_nor/stream?speed=20" pnpm dev
 ```
 
+## Feed robustness: convergence under chaos
+
+Real feeds deliver duplicates, late and out-of-order messages, and corrections. The
+engine is event-sourced (append-only log, highest version wins) and its baselines use
+exact integer arithmetic, so the final state must not depend on delivery order.
+
+`uv run python -m formline.convergence --runs 300` replays the live match 300 times
+through the chaos injector with random rates and seeds:
+
+| Check | Result |
+|---|---|
+| Messages delivered | 464,365 (60,482 duplicates, 62,890 reordered, 7,902 late, 2,098 injected corrections, 1,049 reverts, 3,536 deletes) |
+| Baselines == batch rebuild from the log | **300 / 300** |
+| Baselines == clean run (no corrections or deletes injected) | **107 / 107** |
+| Insights == clean run (also no beyond-window late messages) | **57 / 57** |
+
+Insights describe what was known when a shot happened, so a shot arriving after the
+reorder window may legitimately be compared differently. In this sweep late messages
+were almost always passes, and insights still matched in 50 of 50 such runs. The same
+properties run as `hypothesis` tests in CI (`backend/tests/test_convergence.py`).
+
 ## Synthetic data
 
 - **League:** 6 fictional clubs, 18 players each, 30 past matches and 1 live demo match.

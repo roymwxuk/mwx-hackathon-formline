@@ -1,6 +1,6 @@
 # Milestone 2: engine core
 
-**Status:** In progress. Tasks 1–6 done, 7–8 to do (updated 2026-10-17)
+**Status:** In progress. Tasks 1–7 done, 8 to do (updated 2026-10-17)
 **Branch:** `feat/engine`, built on `feat/generator`
 **Planned:** Oct 12–15 in `CLAUDE.md`, so running late. Estimate 7–9 h in total.
 
@@ -19,10 +19,10 @@ These are the "depth levers" in `CLAUDE.md`.
 | 4 | Empirical Bayes shrinkage | ✅ Done | `a713cd9` | 9 |
 | 5 | Insight detection and lineage | ✅ Done | `ccdd59c` | 8 |
 | 6 | Chaos injector | ✅ Done | `4d89316` | 9 |
-| 7 | Convergence tests (property-based) | ⏳ Next | | |
-| 8 | Shrinkage accuracy vs hidden truth | ⬜ To do | | |
+| 7 | Convergence tests (property-based) | ✅ Done | TASK7 | 4 (140 random cases) |
+| 8 | Shrinkage accuracy vs hidden truth | ⏳ Next | | |
 
-The backend suite is 76 tests in total (including generator and API tests).
+The backend suite is 80 tests in total (including generator and API tests).
 
 ---
 
@@ -208,11 +208,36 @@ for later shots are not recomputed (their baseline briefly included the revised 
 other 3 still landed inside it, because the window follows the latest event time and
 quiet spells leave room.
 
-## Task 7: convergence tests ⬜
+## Task 7: convergence tests ✅
 
-- Property-based tests (`hypothesis`) across many chaos seeds and rates. The final baseline
-  snapshot from a chaotic stream must **exactly** equal the clean stream's and a rebuild
-  from the log. The result goes into the README.
+**Files:** `backend/src/formline/convergence.py` · **Tests:** `tests/test_convergence.py`
+
+- **Truth** = the final version of every event in the log (`current_events`), per ADR-007.
+- `ConvergenceChecker` holds the clean reference for a match. For each chaotic replay it runs
+  the full live pipeline (ingest → baselines → insights) from a fresh copy of the
+  season-so-far engine and checks:
+  1. **Baselines == batch rebuild from the log**: always required.
+  2. **Baselines == clean run**: required when no corrections or deletes were injected.
+  3. **Insights == clean run**: required when there were also no beyond-window late
+     messages. A late shot can legitimately change what later shots were compared against.
+- **Property-based tests** (`hypothesis`): 60 + 40 + 40 random chaos configurations per run,
+  plus one fixed heavy-chaos case (50% duplicates, 50% reorder, 20% late, corrections on
+  every eligible shot, 10% deletes).
+- **Sweep CLI** for the README: `uv run python -m formline.convergence --runs 300`.
+
+**Result (300 replays, 464,365 messages):** 60,482 duplicates, 62,890 reordered, 7,902 late,
+2,098 corrections, 1,049 reverts and 3,536 deletes injected.
+
+| Check | Result |
+|---|---|
+| Baselines == rebuild from log | **300/300** |
+| Baselines == clean run | **107/107** |
+| Insights == clean run (in-window chaos) | **57/57** |
+| Info: insights unchanged despite late messages | 50/50 (late messages were almost always passes) |
+
+**Why it holds:** idempotent ingestion keyed on (event_id, version), highest version wins,
+the reorder buffer releases in event-time order, and the integer buckets make add and
+remove exact and order-independent (ADR-006).
 
 ## Task 8: shrinkage accuracy vs hidden truth ⬜
 

@@ -264,3 +264,9 @@ duplicates and produced 12 revisions. 9 of the 12 delayed messages crossed the
 watermark; 3 landed inside it because the watermark follows the latest event time and
 quiet spells leave room. "Late" is therefore a property of arrival relative to the
 stream, not of the delay alone.
+
+**Result (task 7).** `python -m formline.convergence --runs 300`: baselines equal the
+rebuild from the log in 300/300 chaotic replays, equal the clean run in 107/107 runs
+without injected corrections or deletes, and insights equal the clean run in 57/57 runs
+that also had no beyond-window late messages. Property-based tests (`hypothesis`, 140
+random configurations per test run) check the same three properties.
