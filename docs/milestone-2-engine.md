@@ -19,7 +19,7 @@ These are the "depth levers" in `CLAUDE.md`.
 | 4 | Empirical Bayes shrinkage | ✅ Done | `a713cd9` | 9 |
 | 5 | Insight detection and lineage | ✅ Done | `ccdd59c` | 8 |
 | 6 | Chaos injector | ✅ Done | `4d89316` | 9 |
-| 7 | Convergence tests (property-based) | ✅ Done | TASK7 | 4 (140 random cases) |
+| 7 | Convergence tests (property-based) | ✅ Done | `bbb105a` | 4 (140 random cases) |
 | 8 | Shrinkage accuracy vs hidden truth | ⏳ Next | | |
 
 The backend suite is 80 tests in total (including generator and API tests).
