@@ -1,7 +1,7 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** In progress. T0 (ADR-010), T1 (schema) and T2 (team shape, preview in
-`docs/tracking/t2-shape-preview.png`) done on 2026-10-17.
+**Status:** In progress. Done on 2026-10-17: T0 (ADR-010), T1 (schema), T2 (team shape,
+`docs/tracking/t2-shape-preview.png`), T3 (event anchors, `docs/tracking/t3-anchor-preview.png`).
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.
@@ -97,6 +97,16 @@ in the buffer. Stretch task S1 starts only if everything above is done early.
 | Time: the deadline is Oct 26 with the video and redeploy still to do | Built on its own branch; the MVP cut line; if it isn't convincing by about Oct 21, it is shelved and the ball path (already built) stays |
 | Stream volume at high speed | Frames are sampled at 4 per second of real time regardless of playback speed; the client interpolates |
 | Image and memory size | Live match only, gzip on disk, frames loaded per period |
+
+## Findings so far
+
+- **Anchors are reachable (T3):** the live match yields 2,230 anchors (933 passers, 776
+  receivers, 337 other actors, 34 shooters, 150 freeze-frame spots). Between a player's
+  consecutive anchors the needed speed has a median of 0.5 m/s and a 99th percentile of
+  6.4 m/s; only 0.2% exceed a sprint (9.5 m/s), which the motion model (T4) softens.
+- **Generator quirk:** one pass (57:56) is credited to a player substituted off at 56:53. The
+  anchors skip actions by players not on the pitch rather than fixing the generator, which
+  would re-randomize the rest of the match and invalidate the Foundry-narrated overlays.
 
 ## Out of scope
 
