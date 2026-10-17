@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceTime, applyEvents, applyOverlays, orderedEvents, personalize, score } from '@/lib/logic';
+import { advanceTime, applyEvents, applyOverlays, orderedEvents, personalize, score, timeAfter } from '@/lib/logic';
 import { buildDemoStream, PLAYERS } from '@/mock/demo-match';
 import type { MatchEvent, Overlay, ViewerSettings } from '@/lib/types';
 
@@ -142,5 +142,18 @@ describe('live stream controls', () => {
     // first-half stoppage time is capped at 45:00; the second half stays above it
     expect(liveStreamUrl(base, 20, { period: 1, clockMs: 46 * 60_000 })).toContain('start=45%3A00');
     expect(liveStreamUrl(base, 20, { period: 2, clockMs: 45 * 60_000 })).toContain('start=45%3A01');
+  });
+});
+
+describe('clock messages', () => {
+  it('move the match time during gaps, never backwards, and reset with a new period', () => {
+    let t = { period: 1, clockMs: 190_000 };
+    t = timeAfter(t, { kind: 'clock', period: 1, match_clock_ms: 195_000 });
+    expect(t).toEqual({ period: 1, clockMs: 195_000 });
+    t = timeAfter(t, { kind: 'clock', period: 1, match_clock_ms: 192_000 });
+    expect(t.clockMs).toBe(195_000);
+    t = timeAfter(t, { kind: 'clock', period: 2, match_clock_ms: 2_705_000 });
+    expect(t).toEqual({ period: 2, clockMs: 2_705_000 });
+    expect(timeAfter(t, { kind: 'end' })).toBe(t);
   });
 });

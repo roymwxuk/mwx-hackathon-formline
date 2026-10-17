@@ -94,6 +94,7 @@ export interface OverlaySlots {
 export type StreamMessage =
   | { kind: 'event'; event: MatchEvent }
   | { kind: 'overlay'; overlay: Overlay }
+  | { kind: 'clock'; period: number; match_clock_ms: number } // running match time during gaps
   | { kind: 'end' }; // the match feed is over
 
 export interface ViewerSettings {

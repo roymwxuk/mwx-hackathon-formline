@@ -142,32 +142,102 @@ def test_start_delivers_the_past_at_once_then_continues(client):
     assert max((e["period"], e["match_clock_ms"]) for e in events) <= (1, 41 * 60_000)
 
 
-def test_pacing_slows_down_around_key_moments(monkeypatch):
-    from datetime import datetime, timedelta
-
+def _fake_clock(monkeypatch):
+    """Patch replay sleeps: record them and keep a fake real-time clock."""
     from formline import replay as rp
 
-    waits: list[float] = []
+    state = {"now": 0.0, "waits": []}
 
     async def fake_sleep(seconds):
-        waits.append(seconds)
+        state["waits"].append(seconds)
+        state["now"] += seconds
 
     monkeypatch.setattr(rp.asyncio, "sleep", fake_sleep)
+    return rp, state
+
+
+def _events(times_s, period=1, types=None):
+    from datetime import datetime, timedelta
+
     t0 = datetime(2026, 10, 24, 19, 0)
-    items = [(t0 + timedelta(seconds=10 * i),
-              {"kind": "event", "event": {"period": 1, "match_clock_ms": 10_000 * i}})
-             for i in range(6)]
-    key = [t0 + timedelta(seconds=50)]  # a shot at the last item
+    return [(t0 + timedelta(seconds=t),
+             {"kind": "event", "event": {"period": period, "match_clock_ms": 1000 * t,
+                                         "type": (types or {}).get(t, "pass")}})
+            for t in times_s]
+
+
+def test_pacing_slows_down_around_key_moments(monkeypatch):
+    rp, state = _fake_clock(monkeypatch)
+    items = _events([0, 10, 20, 30, 40, 50])
+    key = [items[-1][0]]  # a shot at the last item
 
     async def run(**kw):
-        waits.clear()
-        return [i async for i, _ in rp.paced(items, 10.0, key_times=key, **kw)]
+        """Real seconds waited before each event."""
+        state["waits"].clear()
+        out, last = [], 0.0
+        state["now"] = 0.0
+        async for i, _ in rp.paced(items, 10.0, key_times=key, **kw):
+            if i is not None:
+                out.append((i, round(state["now"] - last, 6)))
+                last = state["now"]
+        return out
 
-    ids = asyncio.run(run())
-    assert ids == [1, 2, 3, 4, 5, 6]
-    assert waits[:3] == [1.0, 1.0, 1.0]  # 10 s of feed at 10x
-    assert waits[-1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))  # near the shot: slower
-    asyncio.run(run(slow=False))
-    assert waits == [1.0] * 5
-    asyncio.run(run(start=(1, 30_000)))
-    assert waits[0] == 1.0 and len(waits) == 2  # 40 s and 50 s; the rest arrived at once
+    got = asyncio.run(run())
+    assert [i for i, _ in got] == [1, 2, 3, 4, 5, 6]
+    assert [w for _, w in got[1:4]] == [1.0, 1.0, 1.0]  # 10 s of feed at 10x
+    assert got[-1][1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))  # near the shot: slower
+    assert [w for _, w in asyncio.run(run(slow=False))[1:]] == [1.0] * 5
+    got = asyncio.run(run(start=(1, 30_000)))
+    assert [w for _, w in got][:5] == [0, 0, 0, 0, 1.0]  # the past arrived at once
+    assert got[-1][1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))
+
+
+def test_gaps_carry_clock_messages_with_the_running_match_time(monkeypatch):
+    rp, _ = _fake_clock(monkeypatch)
+    items = _events([0, 27, 30])  # a 27 s gap: at 20x, 1.35 s of real time
+
+    async def run():
+        return [x async for x in rp.paced(items, 20.0, slow=False)]
+
+    out = asyncio.run(run())
+    ids = [i for i, _ in out if i is not None]
+    ticks = [p for i, p in out if i is None]
+    assert ids == [1, 2, 3]  # clock messages take no id
+    assert all(p["kind"] == "clock" and p["period"] == 1 for p in ticks)
+    times = [p["match_clock_ms"] for p in ticks]
+    assert len(times) == 5  # every 0.25 s within the 1.35 s gap (3 s gap: none)
+    assert times == sorted(times) and times[0] == 5_000 and times[-1] <= 27_000
+    first_after_gap = next(n for n, (i, _) in enumerate(out) if i == 2)
+    assert all(i is None for i, _ in out[1:first_after_gap])  # ticks sit inside the gap
+
+
+def test_no_clock_messages_while_the_clock_is_stopped(monkeypatch):
+    rp, _ = _fake_clock(monkeypatch)
+    first = _events([2700, 2760], types={2760: "half_end"})
+    second = _events([2700, 2760], period=2, types={2700: "half_start"})
+    from datetime import timedelta
+    second = [(at + timedelta(seconds=900), p) for at, p in second]  # half-time break
+
+    async def run():
+        return [x async for x in rp.paced(first + second, 20.0, slow=False)]
+
+    out = asyncio.run(run())
+    half_end = next(n for n, (i, p) in enumerate(out) if i == 2)
+    half_start = next(n for n, (i, p) in enumerate(out) if i == 3)
+    before = [p for i, p in out[:half_end] if i is None]
+    assert before and all(p["period"] == 1 and p["match_clock_ms"] <= 2_760_000 for p in before)
+    assert half_start == half_end + 1  # no ticks during the break
+    after = [p for i, p in out[half_start:] if i is None]
+    assert after and all(p["period"] == 2 for p in after)  # the second half ticks again
+
+
+def test_clock_messages_carry_no_sse_id(client, monkeypatch):
+    _fake_clock(monkeypatch)  # instant sleeps: 20x pacing without the wait
+    with client.stream("GET", f"/matches/{LIVE}/stream?speed=20&until=03:00&slow=false") as r:
+        raw = r.read().decode()
+    blocks = [b for b in raw.split("\r\n\r\n") if "data:" in b]
+    clock = [b for b in blocks if '"kind": "clock"' in b]
+    assert clock and all("id:" not in b for b in clock)
+    ids = [int(line[3:].strip()) for b in blocks for line in b.splitlines()
+           if line.startswith("id:")]
+    assert ids == list(range(1, len(ids) + 1))

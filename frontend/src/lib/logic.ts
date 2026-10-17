@@ -1,4 +1,4 @@
-import type { MatchEvent, Overlay, Player, ViewerSettings } from '@/lib/types';
+import type { MatchEvent, Overlay, Player, StreamMessage, ViewerSettings } from '@/lib/types';
 
 // ---------- Event store: idempotent, keeps the highest version per event_id ----------
 
@@ -43,6 +43,14 @@ export function advanceTime(t: MatchTime, period: number | undefined, clockMs: n
   if (p > t.period) return { period: p, clockMs };
   if (p < t.period) return t;
   return { period: p, clockMs: Math.max(t.clockMs, clockMs) };
+}
+
+/** The match time after one stream message (clock messages tick it during gaps). */
+export function timeAfter(t: MatchTime, msg: StreamMessage): MatchTime {
+  if (msg.kind === 'event') return advanceTime(t, msg.event.period, msg.event.match_clock_ms);
+  if (msg.kind === 'clock') return advanceTime(t, msg.period, msg.match_clock_ms);
+  if (msg.kind === 'overlay') return advanceTime(t, undefined, msg.overlay.match_clock_ms);
+  return t;
 }
 
 export function score(store: Map<string, MatchEvent>, clubIds: [string, string]): [number, number] {
