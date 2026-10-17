@@ -137,6 +137,18 @@ Realism note: providers also re-issue corrected event files after the match (e.g
 
 > VAR in real feeds is a **pair of events**: review started, then review concluded with an outcome. If the goal is cancelled, the target shot then receives an `update` (outcome changed) through the envelope.
 
+### 5.4 Tracking frame (RAW-TRACK, synthetic)
+
+Every player on the pitch and the ball, 10 frames per second (tracking providers deliver about 25). In Formline, frames are **derived from the event feed** by a team shape model with hard event anchors and motion limits (ADR-010), for the live demo match only.
+
+| Field | Meaning |
+|---|---|
+| `period`, `match_clock_ms` | Match time of the frame (every 100 ms) |
+| `ball` | `x`, `y` on the pitch, `z` height in meters |
+| `home[]`, `away[]` | `{shirt, x, y}` for each player on the pitch |
+
+Unlike events, tracking uses **one shared frame**: 0–100 on both axes, the home team attacking toward x = 100 in both periods. Stored as gzipped JSONL (`data/tracking/<match_id>.jsonl.gz`), one compact row per frame: `{"p": 1, "t": 12300, "b": [x, y, z], "h": [[shirt, x, y], ...], "a": [...]}`.
+
 ---
 
 ## 6. Derived data (engine output)

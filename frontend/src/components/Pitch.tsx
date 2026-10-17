@@ -1,3 +1,4 @@
+import { ballAt } from '@/lib/ball';
 import type { Club, Lang, MatchEvent, Player } from '@/lib/types';
 
 interface Props {
@@ -32,12 +33,9 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props
   const showShot = lastShot && clockMs - lastShot.match_clock_ms < SHOT_HOLD_MS && lastShot === last;
   const trail = onBall.filter((e) => e.type === 'pass').slice(-4);
 
-  const ball = (() => {
-    if (!last) return toScreen(50, 50, false);
-    const flip = last.team_id === away;
-    if (last.type === 'shot') return toScreen(last.end_x ?? 100, last.end_y ?? 50, flip);
-    return toScreen(last.end_x ?? last.x!, last.end_y ?? last.y!, flip);
-  })();
+  // Ball path reconstructed from event data (see lib/ball.ts); already in the shared frame.
+  const ballPoint = ballAt(events, clockMs, away);
+  const ball = toScreen(ballPoint.x, ballPoint.y, false);
 
   const label = (id: string | null) => {
     const p = id ? playerById.get(id) : undefined;
@@ -134,7 +132,10 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props
         );
       })()}
 
-      <circle cx={ball[0]} cy={ball[1]} r={7} fill="#fff" stroke="#111" strokeWidth={2} className="ball" />
+      {/* Positioned by transform so CSS can glide between updates (clock ticks every 0.25 s). */}
+      <g className="ball" style={{ transform: `translate(${ball[0]}px, ${ball[1]}px)` }}>
+        <circle r={7} fill="#fff" stroke="#111" strokeWidth={2} />
+      </g>
     </svg>
   );
 }

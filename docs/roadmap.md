@@ -28,6 +28,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [ ] Live seek bar in the viewer (the backend already supports `start=mm:ss`)
 
 **Could (only if time allows)**
+- [ ] Epic: synthetic tracking data, all 22 players and the ball (`docs/epic-tracking.md`; MVP about 8 h, shelve if not convincing by Oct 21)
 - [ ] Infrastructure as code: Bicep + `azd` (M4 task 6)
 - [ ] Foundry evaluations (M3 task 11)
 - [ ] Half-time or full-time baseline recap card (M3 task 12, frontend gap 7)
