@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from formline.generator.output import read_feed
-from formline.generator.pitch import in_box
+from formline.pitch import SIX_YARD_X, SIX_YARD_Y_HIGH, SIX_YARD_Y_LOW, goal_distance_m, in_box
 from formline.schema.feed import FeedMessage
 
 SOURCES = {
@@ -52,7 +52,7 @@ def compute(data: Path) -> tuple[list[Check], dict]:
     matches = json.loads((data / "matches.json").read_text())
     history = [m for m in matches if not m["is_live_demo"]]
     per_match = []
-    foot, head, shooters = [], [], Counter()
+    foot, head, shooters, distances, six_yard = [], [], Counter(), [], 0
     for m in history:
         events = latest_events(read_feed(data / "feeds" / f"{m['match_id']}.jsonl"))
         passes = [e for e in events if e.type == "pass"]
@@ -70,6 +70,8 @@ def compute(data: Path) -> tuple[list[Check], dict]:
         })
         for s in shots:
             shooters[s.player_id] += 1
+            distances.append(goal_distance_m(s.x, s.y))
+            six_yard += s.x >= SIX_YARD_X and SIX_YARD_Y_LOW <= s.y <= SIX_YARD_Y_HIGH
             (head if s.body_part == "head" else foot).append(s.tracking.shot_speed_kmh)
 
     def avg(key: str) -> float:
@@ -90,6 +92,10 @@ def compute(data: Path) -> tuple[list[Check], dict]:
               "{:.1f}%"),
         Check("Shots from inside the box", avg("in_box") * 100, 60, 82,
               "most shots (assumption)", "{:.1f}%"),
+        Check("Shot distance, median (m)", pct(distances, 0.5), 12, 18,
+              "mid-teens of metres (assumption)"),
+        Check("Shots from the six-yard box", six_yard / total_shots * 100, 5, 15,
+              "about 1 in 10 (assumption)", "{:.1f}%"),
         Check("Foot shot speed, median (km/h)", pct(foot, 0.5), 70, 90,
               "most shots well under 100 km/h"),
         Check("Foot shots above 100 km/h", sum(v > 100 for v in foot) / len(foot) * 100, 1, 10,

@@ -144,6 +144,9 @@ legend.field-label { margin-bottom: 4px; }
 .segmented button { flex: 1; }
 .segmented button[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-bg); color: #fff; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.club-groups { display: flex; flex-direction: column; gap: 12px; }
+.club-group { display: flex; flex-direction: column; gap: 6px; }
+.club-group-label { font-size: 12px; color: var(--muted); }
 .chip { padding: 0 14px; border-radius: 999px; font-size: 14px; }
 .chip[aria-pressed='true'] { border-color: #5b8def; background: #12233f; color: #fff; }
 .radio { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 15px; cursor: pointer; }

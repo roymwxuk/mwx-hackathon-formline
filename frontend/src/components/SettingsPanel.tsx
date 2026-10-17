@@ -52,18 +52,27 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players }: Pro
 
       <div className="field">
         <span className="field-label" id={`${id}-players`}>Favorite players</span>
-        <div className="chip-row" role="group" aria-labelledby={`${id}-players`}>
-          {players.map((p) => (
-            <button
-              key={p.player_id}
-              type="button"
-              className="chip"
-              aria-pressed={s.favoritePlayers.includes(p.player_id)}
-              onClick={() => set({ favoritePlayers: toggle(s.favoritePlayers, p.player_id) })}
-            >
-              {s.favoritePlayers.includes(p.player_id) ? '✓ ' : ''}
-              {p.display_name}
-            </button>
+        <div role="group" aria-labelledby={`${id}-players`} className="club-groups">
+          {clubs.map((c) => (
+            <div key={c.club_id} className="club-group">
+              <span className="club-group-label">{c.name}</span>
+              <div className="chip-row">
+                {players
+                  .filter((p) => p.club_id === c.club_id)
+                  .map((p) => (
+                    <button
+                      key={p.player_id}
+                      type="button"
+                      className="chip"
+                      aria-pressed={s.favoritePlayers.includes(p.player_id)}
+                      onClick={() => set({ favoritePlayers: toggle(s.favoritePlayers, p.player_id) })}
+                    >
+                      {s.favoritePlayers.includes(p.player_id) ? '✓ ' : ''}
+                      {p.display_name}
+                    </button>
+                  ))}
+              </div>
+            </div>
           ))}
         </div>
         <span className="field-hint">Favorites get first claim on overlay slots.</span>
@@ -77,10 +86,16 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players }: Pro
           onChange={(e) => set({ focusPlayer: e.target.value || null })}
         >
           <option value="">Off</option>
-          {players.map((p) => (
-            <option key={p.player_id} value={p.player_id}>
-              #{p.shirt_number} {p.display_name}
-            </option>
+          {clubs.map((c) => (
+            <optgroup key={c.club_id} label={c.name}>
+              {players
+                .filter((p) => p.club_id === c.club_id && p.season_shot_speed_norm_kmh !== null)
+                .map((p) => (
+                  <option key={p.player_id} value={p.player_id}>
+                    #{p.shirt_number} {p.display_name}
+                  </option>
+                ))}
+            </optgroup>
           ))}
         </select>
       </div>

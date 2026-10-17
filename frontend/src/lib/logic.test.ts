@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyEvents, applyOverlays, personalize, score } from '@/lib/logic';
+import { advanceTime, applyEvents, applyOverlays, orderedEvents, personalize, score } from '@/lib/logic';
 import { buildDemoStream, PLAYERS } from '@/mock/demo-match';
 import type { MatchEvent, Overlay, ViewerSettings } from '@/lib/types';
 
@@ -57,5 +57,36 @@ describe('overlays', () => {
     const vis = personalize(applyOverlays(overlays), { ...base, metric: 'shot_speed' }, PLAYERS);
     expect(vis.every((v) => v.overlay.metric === 'shot_speed' || v.overlay.template_id === 'correction_banner')).toBe(true);
     expect(vis.some((v) => v.overlay.template_id === 'correction_banner')).toBe(true);
+  });
+});
+
+describe('league URL', () => {
+  it('derives the league endpoint from the stream URL', async () => {
+    const { leagueUrlFromStream } = await import('./league');
+    expect(leagueUrlFromStream('http://localhost:8000/matches/mtc_s26_md11_har_nor/stream?speed=20'))
+      .toBe('http://localhost:8000/matches/mtc_s26_md11_har_nor/league');
+  });
+});
+
+describe('half-time ordering', () => {
+  const ev = (id: string, period: number, min: number, sec: number): MatchEvent => ({
+    event_id: id, version: 1, type: 'pass', period, match_clock_ms: (min * 60 + sec) * 1000,
+    team_id: null, player_id: null, x: null, y: null,
+  });
+
+  it('puts first-half stoppage time before the second half', () => {
+    const store = applyEvents([ev('b', 2, 45, 10), ev('a', 1, 46, 30), ev('c', 2, 47, 0)]);
+    expect(orderedEvents(store).map((e) => e.event_id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('resets the live clock when the second half starts', () => {
+    let t = { period: 1, clockMs: 0 };
+    t = advanceTime(t, 1, 2_790_000); // 46:30, first-half stoppage
+    t = advanceTime(t, 2, 2_700_000); // second half kicks off at 45:00
+    expect(t).toEqual({ period: 2, clockMs: 2_700_000 });
+    t = advanceTime(t, 1, 2_795_000); // a late first-half message
+    expect(t.clockMs).toBe(2_700_000);
+    t = advanceTime(t, undefined, 2_710_000); // overlays carry no period
+    expect(t).toEqual({ period: 2, clockMs: 2_710_000 });
   });
 });

@@ -19,8 +19,9 @@ export interface Player {
   display_name_ja: string;
   club_id: string;
   shirt_number: number;
-  /** Season shot-speed baseline (shrunk mean). Comes from the engine, shown in focus mode. */
-  season_shot_speed_norm_kmh: number;
+  position?: string;
+  /** Season strong-foot shot-speed baseline (shrunk mean) from the engine; null for keepers. */
+  season_shot_speed_norm_kmh: number | null;
 }
 
 export interface FreezeFramePlayer {
@@ -35,6 +36,8 @@ export interface MatchEvent {
   event_id: string;
   version: number;
   type: 'pass' | 'shot' | 'var_review_start' | 'var_review_end' | 'half_start' | 'half_end';
+  /** 1 or 2. The clock restarts at 45:00 in period 2, so order by (period, clock). */
+  period?: number;
   match_clock_ms: number;
   team_id: string | null;
   player_id: string | null;
@@ -43,6 +46,7 @@ export interface MatchEvent {
   end_x?: number;
   end_y?: number;
   outcome?: string;
+  body_part?: string;
   freeze_frame?: FreezeFramePlayer[];
   tracking?: { shot_speed_kmh?: number };
   related_event_ids?: string[];

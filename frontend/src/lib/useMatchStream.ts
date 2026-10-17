@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
+import { advanceTime, type MatchTime } from '@/lib/logic';
 import type { MatchEvent, Overlay, StreamMessage } from '@/lib/types';
 
 export type StreamSource = 'mock' | 'sse';
@@ -67,6 +68,7 @@ export function useMatchStream(): MatchStream {
   // ----- Live SSE -----
   useEffect(() => {
     if (source !== 'sse' || !SSE_URL) return;
+    let time: MatchTime = { period: 1, clockMs: 0 };
     const es = new EventSource(SSE_URL);
     es.onopen = () => setConnected(true);
     es.onerror = () => setConnected(false); // EventSource reconnects by itself
@@ -74,8 +76,10 @@ export function useMatchStream(): MatchStream {
       try {
         const msg = JSON.parse(ev.data) as StreamMessage;
         setReceived((r) => [...r, msg]);
-        const clock = msg.kind === 'event' ? msg.event.match_clock_ms : msg.overlay.match_clock_ms;
-        setClockMs((c) => Math.max(c, clock));
+        time = msg.kind === 'event'
+          ? advanceTime(time, msg.event.period, msg.event.match_clock_ms)
+          : advanceTime(time, undefined, msg.overlay.match_clock_ms);
+        setClockMs(time.clockMs);
       } catch {
         // Ignore malformed messages rather than breaking the viewer.
       }

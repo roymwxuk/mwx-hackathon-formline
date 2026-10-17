@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Viewer } from './Viewer';
 import { applyEvents, applyOverlays, formatClock } from '@/lib/logic';
-import { CLUBS, PLAYERS } from '@/mock/demo-match';
+import { useLeague } from '@/lib/league';
 import type { ViewerSettings } from '@/lib/types';
 import { useMatchStream } from '@/lib/useMatchStream';
 
@@ -38,6 +38,7 @@ const VIEWER_B: ViewerSettings = {
 
 export default function App() {
   const stream = useMatchStream();
+  const league = useLeague();
   const [view, setView] = useState<View>('single');
   const [single, setSingle] = useState(SINGLE_DEFAULT);
   const [a, setA] = useState(VIEWER_A);
@@ -46,7 +47,7 @@ export default function App() {
   const store = useMemo(() => applyEvents(stream.events), [stream.events]);
   const overlayStates = useMemo(() => applyOverlays(stream.overlays), [stream.overlays]);
 
-  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: CLUBS, players: PLAYERS };
+  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players };
 
   return (
     <div className="app">
@@ -62,6 +63,11 @@ export default function App() {
         </nav>
 
         <div className="controls">
+          {league.status !== 'ready' && (
+            <span className={`source ${league.status === 'error' ? 'off' : ''}`}>
+              {league.status === 'loading' ? 'Loading squads…' : 'Squads unavailable'}
+            </span>
+          )}
           <span className={`source ${stream.connected ? 'on' : 'off'}`}>
             {stream.source === 'mock' ? 'Mock replay' : stream.connected ? 'Live feed' : 'Reconnecting…'}
           </span>

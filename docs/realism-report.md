@@ -5,27 +5,29 @@ matches. The live demo match is excluded because its key moments are scripted.
 
 | Metric | Generated | Target range | Reference | OK |
 |---|---|---|---|---|
-| Passes per match | 958 | 850–1050 | ~900 attempts (748 completed/match, PL 2024/25) | ✅ |
-| Pass completion | 83.6% | 78.0%–86.0% | ~83% (748 completed of ~900) | ✅ |
-| Shots per match | 24.6 | 22.0–30.0 | 26.1 (PL 2024/25) | ✅ |
-| Goals per match | 2.43 | 2.40–3.40 | 2.97 (PL 2024/25) | ✅ |
-| Shot conversion | 9.9% | 9.0%–13.0% | 11% (PL 2024/25) | ✅ |
-| Shots on target | 32.4% | 30.0%–38.0% | about a third (assumption) | ✅ |
-| Shots from inside the box | 77.7% | 60.0%–82.0% | most shots (assumption) | ✅ |
-| Foot shot speed, median (km/h) | 79.7 | 70.0–90.0 | most shots well under 100 km/h | ✅ |
-| Foot shots above 100 km/h | 3.4% | 1.0%–10.0% | >100 km/h is highlighted as notable | ✅ |
-| Header speed, median (km/h) | 52.8 | 40.0–65.0 | headers much slower than foot shots | ✅ |
-| Fouls per match | 21.4 | 16.0–26.0 | about 20 (assumption) | ✅ |
-| Cards per match | 3.3 | 2.0–5.0 | about 3.5 (assumption) | ✅ |
+| Passes per match | 983 | 850–1050 | ~900 attempts (748 completed/match, PL 2024/25) | ✅ |
+| Pass completion | 84.0% | 78.0%–86.0% | ~83% (748 completed of ~900) | ✅ |
+| Shots per match | 25.9 | 22.0–30.0 | 26.1 (PL 2024/25) | ✅ |
+| Goals per match | 2.87 | 2.40–3.40 | 2.97 (PL 2024/25) | ✅ |
+| Shot conversion | 11.1% | 9.0%–13.0% | 11% (PL 2024/25) | ✅ |
+| Shots on target | 31.7% | 30.0%–38.0% | about a third (assumption) | ✅ |
+| Shots from inside the box | 68.7% | 60.0%–82.0% | most shots (assumption) | ✅ |
+| Shot distance, median (m) | 14.3 | 12.0–18.0 | mid-teens of metres (assumption) | ✅ |
+| Shots from the six-yard box | 9.3% | 5.0%–15.0% | about 1 in 10 (assumption) | ✅ |
+| Foot shot speed, median (km/h) | 81.4 | 70.0–90.0 | most shots well under 100 km/h | ✅ |
+| Foot shots above 100 km/h | 4.2% | 1.0%–10.0% | >100 km/h is highlighted as notable | ✅ |
+| Header speed, median (km/h) | 52.0 | 40.0–65.0 | headers much slower than foot shots | ✅ |
+| Fouls per match | 21.5 | 16.0–26.0 | about 20 (assumption) | ✅ |
+| Cards per match | 3.2 | 2.0–5.0 | about 3.5 (assumption) | ✅ |
 
-**Shot speed distribution (foot shots, km/h):** p10 64 · p25 72 · p50 80 · p75 87 · p90 94 · p99 106 · max 113.
-Headers are 11.7% of shots.
+**Shot speed distribution (foot shots, km/h):** p10 65 · p25 73 · p50 81 · p75 89 · p90 96 · p99 106 · max 128.
+Headers are 10.9% of shots.
 
-**Baseline sample sizes:** 17 players have at least 15 shots in
-the history and 6 have at least 25 (top: 55).
+**Baseline sample sizes:** 21 players have at least 15 shots in
+the history and 9 have at least 25 (top: 44).
 Low-volume players are kept on purpose: they are the case shrinkage exists for.
 
-**Pressure events:** 183 per match (pressure is logged only on the
+**Pressure events:** 190 per match (pressure is logged only on the
 ball carrier here, so it is lower than full-pitch pressure counts).
 
 ## Sources
