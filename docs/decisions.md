@@ -15,6 +15,7 @@ happened, so the reasoning at the time remains visible.
 | [007](#adr-007-chaos-injector-design) | Chaos injector: duplicates, reordering, late messages, corrections | Accepted |
 | [008](#adr-008-multi-agent-architecture-for-narration) | Multi-agent workflow on Agent Framework with a deterministic verifier | Accepted |
 | [009](#adr-009-deploy-on-azure-container-apps-with-scale-to-zero-and-keyless-foundry-access) | Container Apps, scale to zero, GHCR, managed identity for Foundry | Accepted |
+| [010](#adr-010-synthetic-tracking-data-derived-from-the-event-feed) | Synthetic tracking for all 22 players and the ball, derived from the events | Accepted (checkpoint Oct 21) |
 
 ---
 
@@ -440,3 +441,48 @@ within the monthly free grant. A ¥3,000 budget alerts at 50% and 100%.
 demo); max 1 replica means no high availability; JSONL baked into the image means data
 changes need a new image. All acceptable for a demo, and each has a clear upgrade path
 (min 1 replica, more replicas behind the same ingress, Postgres behind the event log interface).
+
+---
+
+## ADR-010: Synthetic tracking data derived from the event feed
+
+**Status:** Accepted (2026-10-17), with a checkpoint on Oct 21: if the result is not
+convincing at 10× and 20×, the work is shelved and the event-based ball path stays. Plan and
+tasks: [docs/epic-tracking.md](epic-tracking.md).
+
+**Context.** The viewer shows the event actors and a ball path reconstructed from events.
+Professional feeds pair event data with optical tracking (every player and the ball, many
+times a second), and a full pitch reads as live football. The project plan allows only
+fields that event and tracking data capture today, so tracking is in bounds; it is also the
+data behind the plan's optional extension (sprint speed vs a player's own norm).
+
+**Options.**
+- (a) Simulate positions inside the match simulator, emitting events from them.
+- (b) Derive tracking afterwards from each match's events, with a team shape model, hard
+  event anchors and motion limits.
+- (c) No tracking: show only event actors with a "last seen" fade.
+
+**Decision.** (b), with these choices:
+
+| # | Choice | Decision |
+|---|---|---|
+| D1 | Where tracking comes from | A separate `tracking` module that reads a match's events; the event generator is unchanged |
+| D2 | Which matches | The live demo match, plus a committed sample excerpt |
+| D3 | Frame rate | 10 Hz (providers deliver 25 Hz; the viewer interpolates) |
+| D4 | Storage | Gzipped JSONL, one compact row per frame: period, clock, ball `[x, y, z]`, then `[shirt, x, y]` per player and side, 0.1 precision |
+| D5 | Delivery | Frame messages replace the clock messages: every 0.25 s of real time the stream sends the frame at the current match time |
+| D6 | Consistency | Hard anchors: event actors stand at their event positions at event times; shot freeze-frame spots are taken by the nearest real players |
+
+Coordinates use one shared frame, unlike events: 0–100 on both axes with the **home team
+attacking toward x = 100 in both periods**, which is exactly what the viewer draws. Event
+positions are converted into it (away team flipped) before anchoring.
+
+**Why.** (a) would change the seeded event data, and with it the baselines, the 88
+Foundry-narrated overlays and their measured results; (b) leaves all of that untouched, so
+tracking can never break the core and can be dropped cleanly at the checkpoint. Anchors make
+the pitch agree with every card and freeze frame. (c) is honest but sparse.
+
+**Trade-offs.** Positions between anchors are modeled, not observed, so they are plausible
+rather than "true" even within the synthetic world; the README says so. Only the live match
+has tracking, so tracking-based baselines (sprint speed) would need history matches first.
+
