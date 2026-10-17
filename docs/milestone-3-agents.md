@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4 and 6 done; task 5 done except the Azure steps (2026-10-17)
+**Status:** In progress. Tasks 1–4, 6 and 7 done; task 5 done except the Azure steps (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -60,7 +60,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 4 | ✅ Verifier catch-rate harness | SHOULD | 1 h | 3 |
 | 5 | 🟡 LLM client setup and fake client (Azure steps pending) | MUST | 1 h | D1 |
 | 6 | ✅ Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
-| 7 | Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
+| 7 | ✅ Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
 | 8 | Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
 | 9 | Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
 | 10 | Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
@@ -307,7 +307,7 @@ Each agent has one job, a typed input and output, and a fallback.
 - 11 tests: shortlist rules, LLM pick and fallbacks, payload, parsing, first-time pass,
   retry with feedback, template fallback (wrong numbers and garbage), composer, full card set.
 
-### Task 7: workflow orchestration with Agent Framework (MUST)
+### Task 7: workflow orchestration with Agent Framework (MUST) ✅ Done
 
 **Goal:** an explicit, inspectable multi-agent workflow: roles, shared state, handoffs, recovery.
 
@@ -326,6 +326,40 @@ Each agent has one job, a typed input and output, and a fallback.
   both produce valid overlays; the attempt counts are right.
 - **Done when:** running the workflow on the live match's insights produces all overlays, and the
   run summary shows the LLM, retry and fallback counts.
+
+**Result** (`agents/workflow.py`, tests `tests/test_workflow.py`):
+
+```
+Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
+                              Narrator[en·analyst] ├─► Verifier ─switch─┬─ ok ───► Composer ─► Collector ─► output
+                              Narrator[ja·casual]  │                    ├─ retry ► same Narrator (with feedback)
+                              Narrator[ja·analyst] ┘                    └─ else ─► TemplateFallback ─► Composer
+```
+
+- Built with `WorkflowBuilder`: `add_fan_out_edges` (Selector → 4 narrators, run in
+  parallel), `add_edge`, and `add_switch_case_edge_group` on the Verifier (`Case` ok →
+  Composer; one `Case` per variant routes a retry back to its own Narrator, which makes the
+  retry loop an explicit cycle in the graph; `Default` → TemplateFallback).
+- **Typed handoffs:** `Moment` → `Selection` → `Draft` → `Checked` → `Card` → `MomentResult`.
+- **Shared state:** the workflow context holds the run trace (every handoff and verdict, also
+  logged as JSON lines via `formline.workflow`) and the collected cards.
+- **Failure recovery:** bad JSON, timeouts, network errors and an exhausted budget become
+  verifier failures (retry, then template); a selector failure falls back to rules. A run
+  always completes.
+- `run_match(insights, deps)` runs moment by moment in match order (the selector's cooldowns
+  carry over) and returns a `RunSummary`.
+
+**Live match (fake model):**
+
+| Model behaviour | Cards | From model | Template | Retried | Model calls |
+|---|---|---|---|---|---|
+| Well-behaved | 56 | 56 | 0 | 0 | 61 |
+| Wrong on first attempt | 56 | 56 | 0 | 56 | 117 |
+| Always garbage | 56 | 0 | 56 | 56 | 173 |
+
+- 8 tests: graph roles, the three behaviours, model exceptions (selector falls back to rules,
+  narration to templates), an exhausted budget (mix of model and template text),
+  determinism, a moment where nothing is selected.
 
 ### Task 8: corrections path (MUST)
 
