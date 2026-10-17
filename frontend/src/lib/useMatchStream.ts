@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
 import { formatClock, timeAfter, type MatchTime } from '@/lib/logic';
-import type { MatchEvent, Overlay, StreamMessage } from '@/lib/types';
+import type { MatchEvent, Overlay, StreamMessage, TrackingFrameMessage } from '@/lib/types';
 
 export type StreamSource = 'mock' | 'sse';
 
@@ -17,6 +17,8 @@ export interface MatchStream {
   connected: boolean;
   /** Live mode: the backend sent its final message (full time). */
   ended: boolean;
+  /** Latest tracking frame (live mode, when the match has tracking), else null. */
+  frame: TrackingFrameMessage | null;
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
   restart: () => void;
@@ -74,6 +76,7 @@ export function useMatchStream(): MatchStream {
   );
 
   const [clockMs, setClockMs] = useState(0);
+  const [frame, setFrame] = useState<TrackingFrameMessage | null>(null);
   const [playing, setPlayingState] = useState(true);
   const [speed, setSpeedState] = useState(() => (SSE_URL ? initialLiveSpeed(SSE_URL) : 60));
   const [connectKey, setConnectKey] = useState(0);
@@ -124,6 +127,7 @@ export function useMatchStream(): MatchStream {
           setPlayingState(false);
           return;
         }
+        if (msg.kind === 'frame') setFrame(msg);
         if (msg.kind !== 'clock' && msg.kind !== 'frame') {  // these only move the time here
           const key = messageKey(msg);
           if (seenRef.current.has(key)) return;
@@ -145,6 +149,7 @@ export function useMatchStream(): MatchStream {
     seenRef.current = new Set();
     setReceived([]);
     setClockMs(0);
+    setFrame(null);
     setEnded(false);
     setPlayingState(true);
     setConnectKey((k) => k + 1);
@@ -197,5 +202,5 @@ export function useMatchStream(): MatchStream {
 
   const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
 
-  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, setPlaying, setSpeed, restart };
+  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, frame, setPlaying, setSpeed, restart };
 }

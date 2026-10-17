@@ -1,9 +1,8 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** In progress. Done: T0 (ADR-010), T1 (schema), T2 (team shape,
-`docs/tracking/t2-shape-preview.png`), T3 (event anchors, `docs/tracking/t3-anchor-preview.png`),
-T4 (motion) and T5 (`formline-gen tracking`, Docker, sample excerpt). Moving preview:
-`docs/tracking/preview.html` (11:30–13:00).
+**Status:** In progress. Done: T0–T5, T7 and T8 (the viewer draws all 22 players from
+streamed frames). Left: T6 realism checks in the report, T9 size check, T10 docs. Moving
+preview outside the app: `docs/tracking/preview.html`.
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.

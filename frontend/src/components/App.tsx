@@ -52,7 +52,7 @@ export default function App() {
   const store = useMemo(() => applyEvents(stream.events), [stream.events]);
   const overlayStates = useMemo(() => applyOverlays(stream.overlays), [stream.overlays]);
 
-  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players };
+  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame };
 
   return (
     <div className="app">

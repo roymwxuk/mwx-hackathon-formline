@@ -55,6 +55,7 @@ export interface MatchEvent {
   freeze_frame?: FreezeFramePlayer[];
   tracking?: { shot_speed_kmh?: number };
   related_event_ids?: string[];
+  recipient_id?: string | null;
 }
 
 export type TemplateId =
