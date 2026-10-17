@@ -19,7 +19,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [x] Milestone 5: architecture diagram (`docs/architecture/`)
 - [x] Milestone 5: `docs/decisions.md` cleanup (index, outcome notes)
 - [ ] Milestone 5: demo video under 2 minutes, recorded against Azure (no trademarks, no copyrighted music)
-- [ ] Milestone 5: pitch text naming the Microsoft and Azure technologies
+- [x] Milestone 5: pitch text naming the Microsoft and Azure technologies (`docs/pitch.md`; add the video URL)
 - [ ] Submit (buffer day Oct 26)
 
 **Should**
@@ -50,7 +50,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 | 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | ✅ Done (Foundry connected); optional 11–12 not started | `docs/milestone-3-agents.md`, ADR-008 |
 | 3b | ⭐ Optional plus: studio graphics producer copilot (a real agent with human approval, autonomy levels, audit log) | Only if time allows after milestone 4 MUST tasks | ⬜ Not started | `docs/milestone-3b-studio-copilot.md` |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 Tasks 1–4, 7 and 8 done; deployed once and stopped; redeploy and task 5 (observability) left; task 6 (IaC) optional | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
-| 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
+| 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | 🟡 Diagram, README, ADR cleanup, demo tuning and pitch done; redeploy, video, final check, submit left | `docs/video-plan.md`, `docs/pitch.md` |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
 
 ## Branches

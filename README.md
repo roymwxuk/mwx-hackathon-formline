@@ -294,6 +294,7 @@ overridden through the variables in `scripts/azure/common.sh`.
 | Microsoft Entra ID | Managed identity and the "Foundry User" role, no API keys | ✅ In use |
 | Azure Monitor Log Analytics | Container logs from both apps | ✅ In use |
 | GitHub Actions | CI: lint, typecheck, tests; publishes images to GHCR | ✅ In use |
+| GitHub Copilot in VS Code | Development | ✅ Used |
 
 ## Layout
 
@@ -326,6 +327,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 
 | Topic | Where |
 |---|---|
+| Project pitch | [docs/pitch.md](docs/pitch.md) |
 | Design decisions (ADR-001 to ADR-009) | [docs/decisions.md](docs/decisions.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |
