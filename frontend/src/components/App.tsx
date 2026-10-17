@@ -77,22 +77,18 @@ export default function App() {
             {stream.source === 'mock' ? 'Mock replay' : stream.ended ? 'Full time' : stream.connected ? 'Live feed' : 'Reconnecting…'}
           </span>
           <span className="clock-big">{formatClock(stream.clockMs)}</span>
-          {stream.source === 'mock' && (
-            <>
-              <button type="button" className="ctl" onClick={() => stream.setPlaying(!stream.playing)}>
-                {stream.playing ? 'Pause' : 'Play'}
-              </button>
-              <button type="button" className="ctl" onClick={stream.restart}>Restart</button>
-              <label className="speed">
-                <span>Speed</span>
-                <select value={stream.speed} onChange={(e) => stream.setSpeed(Number(e.target.value))}>
-                  <option value={30}>30×</option>
-                  <option value={60}>60×</option>
-                  <option value={120}>120×</option>
-                </select>
-              </label>
-            </>
-          )}
+          <button type="button" className="ctl" onClick={() => stream.setPlaying(!stream.playing)}>
+            {stream.playing ? 'Pause' : 'Play'}
+          </button>
+          <button type="button" className="ctl" onClick={stream.restart}>Restart</button>
+          <label className="speed">
+            <span>Speed</span>
+            <select value={stream.speed} onChange={(e) => stream.setSpeed(Number(e.target.value))}>
+              {stream.speedOptions.map((v) => (
+                <option key={v} value={v}>{v}×</option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 

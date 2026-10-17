@@ -106,3 +106,68 @@ def test_until_stops_at_a_match_moment(client):
     assert max((e["period"], e["match_clock_ms"]) for e in events) <= (1, 40 * 60_000 + 30_000)
     second_half = read_stream(client, "until=65:40")
     assert any(m["kind"] == "overlay" and m["overlay"]["op"] == "correct" for m in second_half)
+
+
+def read_raw(client, query: str, headers: dict | None = None) -> list[tuple[int, dict]]:
+    """(id, message) pairs from the SSE stream."""
+    out, current_id = [], None
+    with client.stream("GET", f"/matches/{LIVE}/stream?speed=1e9&{query}",
+                       headers=headers or {}) as r:
+        for line in r.iter_lines():
+            if line.startswith("id:"):
+                current_id = int(line[3:].strip())
+            elif line.startswith("data:"):
+                out.append((current_id, json.loads(line[5:].strip())))
+    return out
+
+
+def test_every_message_has_a_sequential_id(client):
+    pairs = read_raw(client, "until=05:00")
+    ids = [i for i, _ in pairs]
+    assert ids == list(range(1, len(ids) + 1))
+    assert pairs[-1][1]["kind"] == "end"
+
+
+def test_reconnect_resumes_after_last_event_id(client):
+    full = read_raw(client, "until=20:00")
+    resumed = read_raw(client, "until=20:00", headers={"Last-Event-ID": "100"})
+    assert resumed[0][0] == 101
+    assert [m for _, m in resumed] == [m for i, m in full if i > 100]
+
+
+def test_start_delivers_the_past_at_once_then_continues(client):
+    from_40 = read_raw(client, "start=40:00&until=41:00")
+    events = [m["event"] for _, m in from_40 if m["kind"] == "event"]
+    assert events[0]["match_clock_ms"] == 0  # history up to 40:00 is included
+    assert max((e["period"], e["match_clock_ms"]) for e in events) <= (1, 41 * 60_000)
+
+
+def test_pacing_slows_down_around_key_moments(monkeypatch):
+    from datetime import datetime, timedelta
+
+    from formline import replay as rp
+
+    waits: list[float] = []
+
+    async def fake_sleep(seconds):
+        waits.append(seconds)
+
+    monkeypatch.setattr(rp.asyncio, "sleep", fake_sleep)
+    t0 = datetime(2026, 10, 24, 19, 0)
+    items = [(t0 + timedelta(seconds=10 * i),
+              {"kind": "event", "event": {"period": 1, "match_clock_ms": 10_000 * i}})
+             for i in range(6)]
+    key = [t0 + timedelta(seconds=50)]  # a shot at the last item
+
+    async def run(**kw):
+        waits.clear()
+        return [i async for i, _ in rp.paced(items, 10.0, key_times=key, **kw)]
+
+    ids = asyncio.run(run())
+    assert ids == [1, 2, 3, 4, 5, 6]
+    assert waits[:3] == [1.0, 1.0, 1.0]  # 10 s of feed at 10x
+    assert waits[-1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))  # near the shot: slower
+    asyncio.run(run(slow=False))
+    assert waits == [1.0] * 5
+    asyncio.run(run(start=(1, 30_000)))
+    assert waits[0] == 1.0 and len(waits) == 2  # 40 s and 50 s; the rest arrived at once
