@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from formline.agents.catalog import OVERLAY_METRIC, TEMPLATE_FOR_INSIGHT, structured_slots
+from formline.agents.composer import SHOW_DELAY_MS, TTL_MS, overlay_id
 from formline.engine.engine import BaselineEngine
 from formline.engine.ingest import Applied
 from formline.engine.insights import Insight, InsightCorrected, InsightCreated, InsightRetracted
@@ -15,14 +16,6 @@ from formline.engine.log import current_events
 from formline.engine.pipeline import LivePipeline
 from formline.generator.season import generate_season
 from formline.schema.overlay import Overlay, OverlaySlots, overlay_json
-
-SHOW_DELAY_MS = 2_000  # a card appears shortly after the shot
-TTL_MS = 12_000
-
-
-def overlay_id(insight_id: str, lang: str, mode: str, version: int = 1) -> str:
-    base = f"ovl_{insight_id.removeprefix('ins_')}_{lang}_{mode}"
-    return base if version == 1 else f"{base}_v{version}"
 
 
 def _example_text(ins: Insight, lang: str, names: dict[str, tuple[str, str]]) -> dict:

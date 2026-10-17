@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4 done; task 5 done except the Azure steps (2026-10-17)
+**Status:** In progress. Tasks 1–4 and 6 done; task 5 done except the Azure steps (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -59,7 +59,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 3 | ✅ Verifier (deterministic checks) | MUST | 1.5 h | 2 |
 | 4 | ✅ Verifier catch-rate harness | SHOULD | 1 h | 3 |
 | 5 | 🟡 LLM client setup and fake client (Azure steps pending) | MUST | 1 h | D1 |
-| 6 | Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
+| 6 | ✅ Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
 | 7 | Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
 | 8 | Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
 | 9 | Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
@@ -258,7 +258,7 @@ end of the milestone, when the owner has the deployment ready.
 - `backend/.env.example` documents both modes.
 - 9 tests. **Pending (Azure):** 5.1 deployment and 5.3 real smoke test.
 
-### Task 6: agents (MUST; D2, D6)
+### Task 6: agents (MUST; D2, D6) ✅ Done
 
 Each agent has one job, a typed input and output, and a fallback.
 
@@ -281,6 +281,31 @@ Each agent has one job, a typed input and output, and a fallback.
   `ttl_ms`, `priority`, `metric`, `player_id`, `source_event_ids`, `verified`.
 - **Done when:** for one insight, the agents produce 4 verified overlays, against the fake client
   and the real one.
+
+**Result** (`agents/selector.py`, `narrator.py`, `composer.py`, `cards.py`, `fakes.py`; tests
+`tests/test_agents.py`):
+- **Selector:** rules shortlist (salience ≥ 0.35, one card per shot, 3-minute per-player
+  cooldown, at most 3 cards per 10 minutes; salience ≥ 0.9 overrides cooldown and rate),
+  then the LLM picks one shortlist id with a reason (JSON). Bad JSON or an id off the
+  shortlist falls back to the top candidate (`decided_by="rules"`).
+- **Narrator:** one call per (language, mode); the payload carries facts, player name, the
+  comparison level, limits and the audience mode. `narrate_verified()`: verify → retry with
+  the verifier's feedback (bypassing the cache) → after 3 attempts the template narration,
+  which always verifies. Each result records source, attempts and failures.
+- **Composer:** deterministic overlay: catalog bars/rows, ids, show time = shot + 2 s,
+  TTL 12 s (15 s for season records), priority, metric and lineage.
+- **`build_cards()`:** one selection → 4 verified overlays, variants narrated concurrently.
+- **`FakeAgents`:** a well-behaved fake model that can also be wrong on the first n attempts or
+  return garbage, to test retries and fallback.
+- **Whole live match (fake model, wrong on every first attempt):** 22 insights on 16 shots →
+  **14 cards** (cooldowns, rate limit, one per shot); all 56 card texts fixed on retry;
+  117 model calls.
+- **Tuning item for the demo:** at 40:12 the Selector picks Reyner's placement insight
+  (salience 0.55) over the flagship speed insight (0.49). Correct by salience, but the video
+  story is speed. Revisit when the real model is connected (prompt preference or salience
+  weighting).
+- 11 tests: shortlist rules, LLM pick and fallbacks, payload, parsing, first-time pass,
+  retry with feedback, template fallback (wrong numbers and garbage), composer, full card set.
 
 ### Task 7: workflow orchestration with Agent Framework (MUST)
 
