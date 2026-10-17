@@ -13,6 +13,7 @@ is the tracked, up-to-date view: milestones, status, decisions and open actions.
 | 1 | Data schema, synthetic generator, history and live match, replay, realism report | Oct 9–11 | ✅ Done | ADR-005, `docs/realism-report.md` |
 | 2 | Event log, stats engine, personal baselines with shrinkage, chaos injector, convergence tests | Oct 12–15 | ✅ Done | `docs/milestone-2-engine.md`, ADR-006, ADR-007 |
 | 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | ✅ Code complete; Azure steps 5.1/5.3 wait on the owner; optional 11–12 not started | `docs/milestone-3-agents.md`, ADR-008 |
+| 3b | Studio graphics producer copilot (a real agent with human approval, autonomy levels, audit log) | Oct 18–19 (new) | ⬜ Planned; before the Azure deployment | `docs/milestone-3b-studio-copilot.md` |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 UI done early; task 1 (containers) done; CI and Azure deployment next | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
@@ -28,6 +29,15 @@ is the tracked, up-to-date view: milestones, status, decisions and open actions.
 | `feat/agents` | Milestone 3, milestone 4 plan | No |
 
 Each branch builds on the previous one. Nothing is merged into `main` yet.
+
+## Product focus: the studio (decided 2026-10-17)
+
+The project targets the **broadcaster's production gallery** (Premier League Studio, the
+rendering partner's production path), not a consumer app. Checked against the brief: the title
+and description name studio and broadcast use, and stage (e) explicitly allows focusing on
+synchronized overlays in the production path. Stage (e) personalization remains required and is
+already built; it is framed as the broadcaster's **audience feeds** (e.g. JA casual, EN analyst).
+The new agent work is the studio copilot (milestone 3b).
 
 ## What the hackathon requires (from `HACKATHON_BRIEF.md`)
 
