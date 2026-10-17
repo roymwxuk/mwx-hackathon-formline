@@ -219,6 +219,19 @@ it can be measured.
 
 ### Task 5: LLM client setup and fake client (MUST; D1)
 
+**What needs Azure and what doesn't** (decided 2026-10-17): almost all of task 5, and tasks
+6–10, are built and tested against the fake client, with no Azure access. Only creating the
+Foundry deployment (5.1) and the real smoke test (5.3) need Azure; they can be done at the
+end of the milestone, when the owner has the deployment ready.
+
+| Sub-task | Needs Azure? | When |
+|---|---|---|
+| 5.1 Foundry project and model deployment | **Yes** (owner, in the Azure portal) | Before the real narration run |
+| 5.2 Client factory and fake client | No | Now |
+| 5.3 Smoke test with one real call | **Yes** (deployment plus `az login`) | After 5.1 |
+| 5.4 Cost guard (budget, temperature, cache) | No | Now |
+| Settings wiring and tests | No | Now |
+
 - **5.1 Azure:** create (or reuse) a Microsoft Foundry project with a small model deployment.
   Record the endpoint and deployment in `.env` (`AZURE_AI_PROJECT_ENDPOINT`,
   `AZURE_AI_MODEL_DEPLOYMENT_NAME`, already in `config.py`). Auth via `azure-identity`
