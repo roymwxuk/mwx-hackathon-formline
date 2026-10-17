@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
-import { advanceTime, formatClock, type MatchTime } from '@/lib/logic';
+import { formatClock, timeAfter, type MatchTime } from '@/lib/logic';
 import type { MatchEvent, Overlay, StreamMessage } from '@/lib/types';
 
 export type StreamSource = 'mock' | 'sse';
@@ -124,13 +124,13 @@ export function useMatchStream(): MatchStream {
           setPlayingState(false);
           return;
         }
-        const key = messageKey(msg);
-        if (seenRef.current.has(key)) return;
-        seenRef.current.add(key);
-        setReceived((r) => [...r, msg]);
-        timeRef.current = msg.kind === 'event'
-          ? advanceTime(timeRef.current, msg.event.period, msg.event.match_clock_ms)
-          : advanceTime(timeRef.current, undefined, msg.overlay.match_clock_ms);
+        if (msg.kind !== 'clock') {  // clock messages only move the time; nothing to store
+          const key = messageKey(msg);
+          if (seenRef.current.has(key)) return;
+          seenRef.current.add(key);
+          setReceived((r) => [...r, msg]);
+        }
+        timeRef.current = timeAfter(timeRef.current, msg);
         setClockMs(timeRef.current.clockMs);
       } catch {
         // Ignore malformed messages rather than breaking the viewer.

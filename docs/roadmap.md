@@ -15,16 +15,16 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [x] `scripts/azure/teardown.sh`
 - [x] ADR-009: Container Apps + scale to zero, GHCR, managed identity, Japan East, JSONL instead of Postgres, the Foundry 403 / "Foundry User" finding, the ingress cutoff
 - [x] README: "Deploy to Azure" and "Production readiness" sections (M4 task 8)
-- [ ] Milestone 5: README polish (what it is, run locally, Azure services, data realism item (v), limitations, headline numbers)
-- [ ] Milestone 5: architecture diagram
-- [ ] Milestone 5: `docs/decisions.md` cleanup
+- [x] Milestone 5: README polish (what it is, run locally, Azure services, data realism item (v), limitations, headline numbers)
+- [x] Milestone 5: architecture diagram (`docs/architecture/`)
+- [x] Milestone 5: `docs/decisions.md` cleanup (index, outcome notes)
 - [ ] Milestone 5: demo video under 2 minutes, recorded against Azure (no trademarks, no copyrighted music)
-- [ ] Milestone 5: pitch text naming the Microsoft and Azure technologies
+- [x] Milestone 5: pitch text naming the Microsoft and Azure technologies (`docs/pitch.md`; add the video URL)
 - [ ] Submit (buffer day Oct 26)
 
 **Should**
 - [ ] Observability: confirm the JSON trace lines are queryable in Log Analytics (optional App Insights) (M4 task 5)
-- [ ] Demo tuning: at 40:12 the Selector shows the placement card instead of the flagship speed card
+- [x] Demo tuning: 40:12 keeps the placement card (correct by salience); "my metric" now reveals the speed card via secondary insights; video moments in `docs/video-plan.md`
 - [ ] Live seek bar in the viewer (the backend already supports `start=mm:ss`)
 
 **Could (only if time allows)**
@@ -50,7 +50,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 | 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | ✅ Done (Foundry connected); optional 11–12 not started | `docs/milestone-3-agents.md`, ADR-008 |
 | 3b | ⭐ Optional plus: studio graphics producer copilot (a real agent with human approval, autonomy levels, audit log) | Only if time allows after milestone 4 MUST tasks | ⬜ Not started | `docs/milestone-3b-studio-copilot.md` |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 Tasks 1–4, 7 and 8 done; deployed once and stopped; redeploy and task 5 (observability) left; task 6 (IaC) optional | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
-| 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
+| 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | 🟡 Diagram, README, ADR cleanup, demo tuning and pitch done; redeploy, video, final check, submit left | `docs/video-plan.md`, `docs/pitch.md` |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
 
 ## Branches
@@ -135,10 +135,13 @@ production. Signals and status:
 3. **Approve each Azure step** of the redeploy (explained one at a time).
 4. **Choose which optional tasks** to do, if any (IaC, Foundry evals, recap card, studio copilot).
 
-## Known tuning item for the demo
+## Demo tuning (resolved 2026-10-17)
 
-At 40:12 the Selector picks Reyner's placement insight (salience 0.55) over the flagship speed
-insight (0.49). Correct by salience, but the video story is speed. Revisit before recording.
+At 40:12 the Selector picks Reyner's placement insight (salience 0.55) over his speed insight
+(0.49). Kept: the speed gap is modest and the placement card matches the plan's example
+("bottom 15% of finishes"). Each shown card now also brings a **secondary** insight of the
+other metric, visible only to viewers whose "my metric" matches, so a shot-speed viewer gets
+the speed card here. Video moments: `docs/video-plan.md`.
 
 ## README numbers so far
 

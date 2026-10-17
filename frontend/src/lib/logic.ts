@@ -1,4 +1,4 @@
-import type { MatchEvent, Overlay, Player, ViewerSettings } from '@/lib/types';
+import type { MatchEvent, Overlay, Player, StreamMessage, ViewerSettings } from '@/lib/types';
 
 // ---------- Event store: idempotent, keeps the highest version per event_id ----------
 
@@ -45,6 +45,14 @@ export function advanceTime(t: MatchTime, period: number | undefined, clockMs: n
   return { period: p, clockMs: Math.max(t.clockMs, clockMs) };
 }
 
+/** The match time after one stream message (clock messages tick it during gaps). */
+export function timeAfter(t: MatchTime, msg: StreamMessage): MatchTime {
+  if (msg.kind === 'event') return advanceTime(t, msg.event.period, msg.event.match_clock_ms);
+  if (msg.kind === 'clock') return advanceTime(t, msg.period, msg.match_clock_ms);
+  if (msg.kind === 'overlay') return advanceTime(t, undefined, msg.overlay.match_clock_ms);
+  return t;
+}
+
 export function score(store: Map<string, MatchEvent>, clubIds: [string, string]): [number, number] {
   let a = 0;
   let b = 0;
@@ -87,7 +95,8 @@ export function applyOverlays(received: Overlay[]): OverlayState[] {
 /**
  * Personalization changes WHICH overlays appear, not only their wording:
  * - language and mode pick the variant;
- * - "my metric" keeps only that metric (corrections always pass);
+ * - "my metric" keeps only that metric (corrections always pass), and reveals the
+ *   secondary cards of that metric, which no other viewer sees;
  * - casual viewers with favorites see only their favorites (players or clubs);
  * - analysts see everything, with favorites ranked first.
  */
@@ -102,6 +111,7 @@ export function personalize(states: OverlayState[], s: ViewerSettings, players: 
     if (o.lang !== s.lang || o.audience_mode !== s.mode) return false;
     if (o.template_id === 'correction_banner') return true;
     if (s.metric !== 'all' && o.metric !== s.metric) return false;
+    if (o.secondary && s.metric === 'all') return false;
     if (s.mode === 'casual' && hasFavorites && !isFavorite(o)) return false;
     return true;
   });

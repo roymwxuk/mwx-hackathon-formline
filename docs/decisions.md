@@ -1,12 +1,26 @@
 # Design decisions
 
-Short ADRs: context, options, decision, why. Newest last.
+Short ADRs: context, options, decision, why. Newest last. Where a decision was later
+changed, the original text stays and a dated **Outcome** or **Superseded** note says what
+happened, so the reasoning at the time remains visible.
+
+| ADR | Decision | Status |
+|---|---|---|
+| [001](#adr-001-python-backend-typescript-frontend) | Python backend (Agent Framework), TypeScript viewer | Accepted |
+| [002](#adr-002-overlay-contract-first-ui-built-against-a-mock-replay) | Overlay contract first; UI built against a mock replay | Accepted |
+| [003](#adr-003-schema-refinements-made-while-encoding-the-contract) | Schema refinements: op semantics, coordinates, foot-shot averages | Accepted; items 2–3 superseded by 004 |
+| [004](#adr-004-adopt-the-claudeai-ui-prototype-as-the-viewer-inside-nextjs) | Port the UI prototype into Next.js; client-side personalization | Accepted |
+| [005](#adr-005-synthetic-data-generator) | Synthetic generator: fictional league, hidden profiles, calibrated realism | Accepted |
+| [006](#adr-006-personal-baselines-with-shrinkage) | Like-for-like baselines with empirical Bayes shrinkage, exact incremental state | Accepted |
+| [007](#adr-007-chaos-injector-design) | Chaos injector: duplicates, reordering, late messages, corrections | Accepted |
+| [008](#adr-008-multi-agent-architecture-for-narration) | Multi-agent workflow on Agent Framework with a deterministic verifier | Accepted |
+| [009](#adr-009-deploy-on-azure-container-apps-with-scale-to-zero-and-keyless-foundry-access) | Container Apps, scale to zero, GHCR, managed identity for Foundry | Accepted |
 
 ---
 
 ## ADR-001: Python backend, TypeScript frontend
 
-**Status:** Proposed (2026-10-16)
+**Status:** Accepted (proposed 2026-10-16, confirmed 2026-10-17)
 
 **Context.** The owner is strongest in TypeScript. The multi-agent category names
 Microsoft Agent Framework, which ships SDKs for Python and .NET, not TypeScript.
@@ -21,6 +35,10 @@ Microsoft Agent Framework, which ships SDKs for Python and .NET, not TypeScript.
 multi-agent category, and the stats work (shrinkage, property-based convergence
 tests) has better Python tooling. The UI stays TypeScript, where the owner is
 fastest. The cost is keeping one contract in sync across two languages; see ADR-002.
+
+**Outcome (2026-10-17).** The agents run on Agent Framework 1.19 for Python
+(`agent-framework-core` + `agent-framework-foundry`; ADR-008), and the stats engine's
+property-based tests use `hypothesis`.
 
 ---
 
@@ -42,11 +60,17 @@ spec. Follow-up: generate JSON Schema from the backend's Pydantic models and
 validate against it, so the two languages cannot drift. The current
 `backend/src/formline/models.py` predates `DATA_SCHEMA.md` and must be rewritten.
 
+**Outcome (2026-10-17).** Done: the backend's Pydantic models live in
+`backend/src/formline/schema/` (the old `models.py` is gone), `formline-gen` exports
+`docs/contracts/overlay.schema.json`, and `backend/tests/test_overlay_contract.py` checks
+the overlays against it. The backend now emits the overlays the viewer renders.
+
 ---
 
 ## ADR-003: Schema refinements made while encoding the contract
 
-**Status:** Accepted (2026-10-16)
+**Status:** Accepted (2026-10-16). Items 2 and 3 superseded by ADR-004 (generic slots,
+client-side personalization).
 
 Changes against `DATA_SCHEMA.md` v0.2:
 
@@ -149,7 +173,7 @@ cannot do.
    freeze frame (a defender within 2.3 m), so the flag and the frame never disagree.
 5. **Clean feed.** Each event becomes a `create` envelope emitted 250–900 ms
    after the action, so messages are already slightly out of event order. Duplicates
-   and late corrections come from the chaos injector later, not from the generator.
+   and late corrections come from the chaos injector (ADR-007), not from the generator.
 6. **Generated data is not committed.** One seed (2026) reproduces it exactly
    (about 28 MB). `backend/data/sample/` (league, matches, a live-feed excerpt
    with the VAR sequence) is committed so readers can see the format.
@@ -214,7 +238,7 @@ insights must be worded cautiously.
 
 **Status:** Accepted (2026-10-17)
 
-**Context.** `CLAUDE.md` requires the pipeline to survive what real feeds deliver:
+**Context.** The project plan requires the pipeline to survive what real feeds deliver:
 duplicates, late and out-of-order messages, and corrections. We need a way to produce
 such feeds on demand, both for property-based convergence tests and to show the
 pipeline coping live in the demo.
@@ -247,7 +271,7 @@ robustness, and creates states no provider would send.
    shooter from the same team (attribution fix). A revert is a further version that
    restores the original payload exactly, modelling "temporary" then "final" event
    files.
-4. **Never drop messages.** Missing-data inference is out of scope in `CLAUDE.md`, and a
+4. **Never drop messages.** Missing-data inference is out of scope in the project plan, and a
    dropped message makes "convergence" undefined (the truth is no longer in the log).
 5. **Leave real updates alone.** Shots that already have an update (the VAR overturn)
    are never given injected corrections, so injected and real versions cannot collide
@@ -339,7 +363,17 @@ CI and offline demos exercise exactly the same `Agent.run` path.
 
 **Known tuning item.** At 40:12 the Selector picks a placement insight (salience 0.55)
 over the flagship speed insight (0.49): correct by salience, but the demo story is speed.
-To revisit once the real model is connected.
+**Update (2026-10-17):** kept, since the speed gap is modest. Instead, "my metric" now
+reveals the other metric's insight (secondary insights, below).
+
+**Secondary insights (2026-10-17).** One card per shot for everyone meant "my metric" could
+only hide cards. Each shown card now brings the best insight of the other overlay metric for
+the same shot, narrated through the same workflow (a forced selection, like corrections) and
+marked `secondary`; the viewer shows it only when "my metric" matches. Default viewers see
+exactly what they saw before, secondaries skip cooldowns and rate limits, and lineage
+corrects or retracts them like any card. Cost: 20 extra texts for the demo match.
+
+---
 
 ## ADR-009: Deploy on Azure Container Apps with scale to zero and keyless Foundry access
 

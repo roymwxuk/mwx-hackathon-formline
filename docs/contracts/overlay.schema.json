@@ -232,6 +232,12 @@
     "verified": {
       "title": "Verified",
       "type": "boolean"
+    },
+    "secondary": {
+      "default": false,
+      "description": "A runner-up insight of another metric for the same shot, shown only to viewers whose 'my metric' is this overlay's metric",
+      "title": "Secondary",
+      "type": "boolean"
     }
   },
   "required": [

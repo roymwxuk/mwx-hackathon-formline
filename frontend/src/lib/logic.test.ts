@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceTime, applyEvents, applyOverlays, orderedEvents, personalize, score } from '@/lib/logic';
+import { advanceTime, applyEvents, applyOverlays, orderedEvents, personalize, score, timeAfter } from '@/lib/logic';
 import { buildDemoStream, PLAYERS } from '@/mock/demo-match';
 import type { MatchEvent, Overlay, ViewerSettings } from '@/lib/types';
 
@@ -57,6 +57,15 @@ describe('overlays', () => {
     const vis = personalize(applyOverlays(overlays), { ...base, metric: 'shot_speed' }, PLAYERS);
     expect(vis.every((v) => v.overlay.metric === 'shot_speed' || v.overlay.template_id === 'correction_banner')).toBe(true);
     expect(vis.some((v) => v.overlay.template_id === 'correction_banner')).toBe(true);
+  });
+  it('secondary cards appear only for viewers whose "my metric" matches', () => {
+    const speed = overlays.find((o) => o.metric === 'shot_speed' && o.lang === 'en' && o.audience_mode === 'analyst')!;
+    const runnerUp: Overlay = { ...speed, overlay_id: 'ovl_secondary', insight_id: 'ins_secondary', secondary: true };
+    const states = applyOverlays([...overlays, runnerUp]);
+    const ids = (s: ViewerSettings) => personalize(states, s, PLAYERS).map((v) => v.overlay.overlay_id);
+    expect(ids(base)).not.toContain('ovl_secondary');
+    expect(ids({ ...base, metric: 'finishing' })).not.toContain('ovl_secondary');
+    expect(ids({ ...base, metric: 'shot_speed' })).toContain('ovl_secondary');
   });
 });
 
@@ -133,5 +142,18 @@ describe('live stream controls', () => {
     // first-half stoppage time is capped at 45:00; the second half stays above it
     expect(liveStreamUrl(base, 20, { period: 1, clockMs: 46 * 60_000 })).toContain('start=45%3A00');
     expect(liveStreamUrl(base, 20, { period: 2, clockMs: 45 * 60_000 })).toContain('start=45%3A01');
+  });
+});
+
+describe('clock messages', () => {
+  it('move the match time during gaps, never backwards, and reset with a new period', () => {
+    let t = { period: 1, clockMs: 190_000 };
+    t = timeAfter(t, { kind: 'clock', period: 1, match_clock_ms: 195_000 });
+    expect(t).toEqual({ period: 1, clockMs: 195_000 });
+    t = timeAfter(t, { kind: 'clock', period: 1, match_clock_ms: 192_000 });
+    expect(t.clockMs).toBe(195_000);
+    t = timeAfter(t, { kind: 'clock', period: 2, match_clock_ms: 2_705_000 });
+    expect(t).toEqual({ period: 2, clockMs: 2_705_000 });
+    expect(timeAfter(t, { kind: 'end' })).toBe(t);
   });
 });

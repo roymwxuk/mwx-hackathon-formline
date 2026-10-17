@@ -84,7 +84,8 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
 
     Playback controls: `speed` (feed seconds per real second); `start=mm:ss` delivers
     everything before that match time at once, then plays on; `until=mm:ss` stops there;
-    `slow=true` (default) plays about 6x slower around shots and cards. Minutes above 45 mean the
+    `slow=true` (default) plays about 6x slower around shots and cards. During gaps between
+    events, `{"kind": "clock"}` messages (no SSE id) carry the running match time every 0.25 s. Minutes above 45 mean the
     second half. Every message has an SSE id, and a reconnecting client resumes after its
     `Last-Event-ID` instead of restarting the match (proxies may cut long streams).
     """
@@ -98,8 +99,10 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
     resume_after = int(last_id) if last_id.isdigit() else 0
     key_times = [m.emitted_at for m in feed if m.event is not None and m.event.type == "shot"]
 
-    def sse(idx: int, payload: dict) -> dict:
-        return {"id": str(idx), "data": json.dumps(payload, ensure_ascii=False)}
+    def sse(idx: int | None, payload: dict) -> dict:
+        data = json.dumps(payload, ensure_ascii=False)
+        # Clock messages carry no id, so Last-Event-ID always names a real message.
+        return {"data": data} if idx is None else {"id": str(idx), "data": data}
 
     async def live_items(messages):
         orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
@@ -129,7 +132,7 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
             if stop is not None and (mt := match_time(payload)) is not None and mt > stop:
                 break
             yield sse(idx, payload)
-            sent = idx
+            sent = idx if idx is not None else sent
         yield sse(sent + 1, END_MESSAGE)
 
     return EventSourceResponse(gen())

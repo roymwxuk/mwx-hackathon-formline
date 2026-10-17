@@ -100,9 +100,14 @@ def test_deleted_shot_retracts_every_variant(season, live_feed, clean_run):
     orch, out = run(season, [*live_feed, delete])
     assert_consistent(out)
     retracts = [o for o in out if o.op == "retract" and o.source_event_ids[0] == shot]
-    assert len(retracts) == 4 and orch.summary.retracted_cards == 4
-    assert {o.supersedes_overlay_id for o in retracts} == {
-        o.overlay_id for o in overlays if o.insight_id == shown.insight_id and o.op == "show"}
+    # every card of that shot, the shown one and its secondary, in all four variants
+    cards = {o.overlay_id for o in overlays if o.op == "show"
+             and o.template_id != "correction_banner" and o.source_event_ids[0] == shot}
+    assert len(retracts) == len(cards)
+    assert orch.summary.retracted_cards - clean_run[0].summary.retracted_cards == len(cards)
+    assert {o.supersedes_overlay_id for o in retracts} == cards
+    assert {o.overlay_id for o in overlays if o.insight_id == shown.insight_id
+            and o.op == "show"} <= cards
     assert all(o.slots.headline == "" and o.ttl_ms == 0 for o in retracts)
 
 
@@ -112,3 +117,30 @@ def test_chaotic_feed_still_gives_consistent_overlays(season, live_feed, seed):
     orch, out = run(season, chaotic.messages)
     assert_consistent(out)
     assert orch.summary.cards > 0
+
+
+def test_each_shown_card_brings_a_secondary_of_the_other_metric(clean_run):
+    orch, overlays = clean_run
+    shows = [o for o in overlays if o.op == "show" and o.template_id != "correction_banner"]
+    secondary = [o for o in shows if o.secondary]
+    assert secondary, "expected runner-up cards for 'my metric' viewers"
+    primary_by_shot = {o.source_event_ids[0]: o for o in shows if not o.secondary}
+    for o in secondary:
+        primary = primary_by_shot[o.source_event_ids[0]]  # only alongside a shown card
+        assert o.metric != primary.metric
+        assert o.match_clock_ms == primary.match_clock_ms
+    # one secondary insight per shot at most (two overlay metrics), in all four variants
+    per_insight = {}
+    for o in secondary:
+        per_insight.setdefault(o.insight_id, set()).add((o.lang, o.audience_mode))
+    assert all(len(v) == 4 for v in per_insight.values())
+    assert len({o.source_event_ids[0] for o in secondary}) == len(per_insight)
+    assert orch.summary.secondary_cards == len(secondary)
+
+
+def test_secondary_cards_are_corrected_like_any_shown_card(clean_run):
+    _, overlays = clean_run
+    by_id = {o.overlay_id: o for o in overlays}
+    for o in overlays:
+        if o.op in ("correct", "retract") and o.template_id != "correction_banner":
+            assert o.secondary == by_id[o.supersedes_overlay_id].secondary, o.overlay_id

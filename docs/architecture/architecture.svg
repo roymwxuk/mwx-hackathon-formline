@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" role="img" aria-label="Formline architecture"><title>Formline architecture</title><defs><marker id="arr-3fb27f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3fb27f"/></marker><marker id="arr-a78bfa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a78bfa"/></marker><marker id="arr-f2a93b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f2a93b"/></marker><marker id="arr-8b949e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/></marker><marker id="arr-4aa3ff" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4aa3ff"/></marker></defs><rect width="1920" height="1080" fill="#0d1117"/><text x="40" y="58" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="34" fill="#e6edf3" font-weight="800" text-anchor="start" xml:space="preserve">Formline: architecture</text>
+<text x="430" y="58" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">a synthetic match feed becomes explainable, personalized overlays, live</text>
+<rect x="30" y="92" width="1480" height="776" rx="18" fill="none" stroke="#4aa3ff" stroke-width="1.8" stroke-dasharray="8 6"/>
+<text x="54" y="122" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#4aa3ff" font-weight="700" text-anchor="start" xml:space="preserve">Azure Container Apps environment</text>
+<text x="366" y="122" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">· Japan East · consumption plan · min 0 replicas (scale to zero)</text>
+<rect x="54" y="140" width="1086" height="712" rx="14" fill="#10151c" stroke="#30363d" stroke-width="1.5"/>
+<text x="76" y="172" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">formline-api</text>
+<text x="212" y="172" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Python · FastAPI · Microsoft Agent Framework · 0.5 vCPU</text>
+<rect x="76" y="192" width="330" height="262" rx="12" fill="#161b22" stroke="#3fb27f" stroke-width="1.5"/>
+<rect x="76" y="192" width="6" height="262" rx="3" fill="#3fb27f"/>
+<text x="96" y="222" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">a · Ingest</text>
+<text x="96" y="250" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Synthetic match feed (seeded)</text>
+<text x="96" y="272" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Chaos injector: duplicates, late,</text>
+<text x="96" y="294" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  out-of-order and corrected events</text>
+<text x="96" y="316" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Append-only event log</text>
+<text x="96" y="338" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  idempotent on event_id</text>
+<text x="96" y="360" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  reorder window by event time</text>
+<text x="96" y="382" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Pass, shot, tackle, VAR... events</text>
+<rect x="426" y="192" width="340" height="262" rx="12" fill="#161b22" stroke="#3fb27f" stroke-width="1.5"/>
+<rect x="426" y="192" width="6" height="262" rx="3" fill="#3fb27f"/>
+<text x="446" y="222" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">b · Interpret</text>
+<rect x="686.4" y="204" width="65.6" height="24" rx="12" fill="#0d1117" stroke="#3fb27f" stroke-width="1.2"/>
+<text x="719.1999999999999" y="221" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#3fb27f" font-weight="600" text-anchor="middle" xml:space="preserve">no LLM</text>
+<text x="446" y="250" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Shot features: speed, xG,</text>
+<text x="446" y="272" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  placement, pressure</text>
+<text x="446" y="294" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Personal baseline per player</text>
+<text x="446" y="316" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  like-for-like: zone, body part,</text>
+<text x="446" y="338" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  pressure, wider buckets if thin</text>
+<text x="446" y="360" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Empirical Bayes shrinkage</text>
+<text x="446" y="382" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Incremental; rebuilt from the log</text>
+<rect x="786" y="192" width="334" height="262" rx="12" fill="#161b22" stroke="#3fb27f" stroke-width="1.5"/>
+<rect x="786" y="192" width="6" height="262" rx="3" fill="#3fb27f"/>
+<text x="806" y="222" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">c · Insight detectors</text>
+<rect x="1040.4" y="204" width="65.6" height="24" rx="12" fill="#0d1117" stroke="#3fb27f" stroke-width="1.2"/>
+<text x="1073.2" y="221" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#3fb27f" font-weight="600" text-anchor="middle" xml:space="preserve">no LLM</text>
+<text x="806" y="250" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Shot vs the shooter&#x27;s own norm</text>
+<text x="806" y="272" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  speed, placement, finish quality</text>
+<text x="806" y="294" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Salience score per insight</text>
+<text x="806" y="316" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Lineage: source_event_ids</text>
+<text x="806" y="338" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Corrections (VAR overturn):</text>
+<text x="806" y="360" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  roll back the baseline,</text>
+<text x="806" y="382" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  re-issue the insight</text>
+<polyline points="406,323 422,323" fill="none" stroke="#3fb27f" stroke-width="2" marker-end="url(#arr-3fb27f)"/>
+<polyline points="766,323 782,323" fill="none" stroke="#3fb27f" stroke-width="2" marker-end="url(#arr-3fb27f)"/>
+<rect x="76" y="476" width="814" height="358" rx="12" fill="#161b22" stroke="#a78bfa" stroke-width="1.5"/>
+<rect x="76" y="476" width="6" height="358" rx="3" fill="#a78bfa"/>
+<text x="96" y="506" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">c · Explain: multi-agent workflow</text>
+<text x="96" y="530" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="14.5" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Microsoft Agent Framework WorkflowBuilder · shared state · explicit handoffs</text>
+<polyline points="953,454 953,468 483,468 483,476" fill="none" stroke="#3fb27f" stroke-width="2" marker-end="url(#arr-3fb27f)"/>
+<rect x="96" y="600" width="150" height="64" rx="10" fill="#0d1117" stroke="#a78bfa" stroke-width="1.5"/>
+<text x="171.0" y="624" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Insight Selector</text>
+<text x="171.0" y="644" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">rules + LLM pick</text>
+<rect x="282" y="562" width="172" height="40" rx="10" fill="#0d1117" stroke="#a78bfa" stroke-width="1.5"/>
+<text x="368.0" y="586" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Narrator EN · casual</text>
+<polyline points="246,632 276,582" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<polyline points="454,582 484,632" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<rect x="282" y="612" width="172" height="40" rx="10" fill="#0d1117" stroke="#a78bfa" stroke-width="1.5"/>
+<text x="368.0" y="636" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Narrator EN · analyst</text>
+<polyline points="246,632 276,632" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<polyline points="454,632 484,632" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<rect x="282" y="662" width="172" height="40" rx="10" fill="#0d1117" stroke="#a78bfa" stroke-width="1.5"/>
+<text x="368.0" y="686" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Narrator JA · casual</text>
+<polyline points="246,632 276,682" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<polyline points="454,682 484,632" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<rect x="282" y="712" width="172" height="40" rx="10" fill="#0d1117" stroke="#a78bfa" stroke-width="1.5"/>
+<text x="368.0" y="736" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Narrator JA · analyst</text>
+<polyline points="246,632 276,732" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<polyline points="454,732 484,632" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr-a78bfa)"/>
+<rect x="490" y="600" width="176" height="64" rx="10" fill="#0d1117" stroke="#3fb27f" stroke-width="1.5"/>
+<text x="578.0" y="624" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Verifier</text>
+<text x="578.0" y="644" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">numbers · names · wording</text>
+<rect x="706" y="600" width="168" height="64" rx="10" fill="#0d1117" stroke="#3fb27f" stroke-width="1.5"/>
+<text x="790.0" y="624" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Overlay Composer</text>
+<text x="790.0" y="644" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">template catalog</text>
+<rect x="490" y="730" width="176" height="56" rx="10" fill="#0d1117" stroke="#3fb27f" stroke-width="1.5"/>
+<text x="578.0" y="754" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15.5" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">Template fallback</text>
+<text x="578.0" y="774" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">after 3 failures</text>
+<polyline points="666,632 700,632" fill="none" stroke="#3fb27f" stroke-width="2" marker-end="url(#arr-3fb27f)"/>
+<text x="683" y="624" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#3fb27f" font-weight="600" text-anchor="middle" xml:space="preserve">ok</text>
+<polyline points="578,600 578,548 368,548 368,556" fill="none" stroke="#f2a93b" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr-f2a93b)"/>
+<text x="586" y="578" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#f2a93b" font-weight="600" text-anchor="start" xml:space="preserve">retry with feedback</text>
+<polyline points="578,664 578,724" fill="none" stroke="#f2a93b" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr-f2a93b)"/>
+<text x="586" y="700" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#f2a93b" font-weight="600" text-anchor="start" xml:space="preserve">give up</text>
+<polyline points="666,758 790,758 790,670" fill="none" stroke="#3fb27f" stroke-width="2" marker-end="url(#arr-3fb27f)"/>
+<text x="690" y="774" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13.5" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Bad JSON, timeouts → retry</text>
+<text x="690" y="793" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13.5" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">A card is never blocked,</text>
+<text x="690" y="812" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13.5" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">and never wrong</text>
+<rect x="910" y="476" width="210" height="358" rx="12" fill="#161b22" stroke="#3fb27f" stroke-width="1.5"/>
+<rect x="910" y="476" width="6" height="358" rx="3" fill="#3fb27f"/>
+<text x="930" y="506" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">d · Render</text>
+<text x="930" y="534" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Overlay contract</text>
+<text x="930" y="556" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  (JSON schema)</text>
+<text x="930" y="578" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">template_id, slots</text>
+<text x="930" y="600" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">clock, ttl, priority</text>
+<text x="930" y="622" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">source_event_ids</text>
+<text x="930" y="644" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">op: show / correct</text>
+<text x="930" y="666" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  / retract</text>
+<text x="930" y="688" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve"></text>
+<text x="930" y="710" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">SSE stream</text>
+<text x="930" y="732" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  resumable (event ids)</text>
+<text x="930" y="754" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  speed · start=mm:ss</text>
+<polyline points="874,632 904,632" fill="none" stroke="#3fb27f" stroke-width="2" marker-end="url(#arr-3fb27f)"/>
+<rect x="1160" y="140" width="330" height="712" rx="14" fill="#10151c" stroke="#30363d" stroke-width="1.5"/>
+<text x="1180" y="172" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">formline-web</text>
+<text x="1318" y="172" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Next.js · 0.25 vCPU</text>
+<rect x="1180" y="192" width="290" height="642" rx="12" fill="#161b22" stroke="#f2a93b" stroke-width="1.5"/>
+<rect x="1180" y="192" width="6" height="642" rx="3" fill="#f2a93b"/>
+<text x="1200" y="222" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">e · Personalize</text>
+<text x="1200" y="250" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">2D pitch replaying the feed</text>
+<text x="1200" y="272" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Timed overlay cards</text>
+<text x="1200" y="294" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve"></text>
+<text x="1200" y="316" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Viewer settings</text>
+<text x="1200" y="338" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Language: EN / JA</text>
+<text x="1200" y="360" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Casual / Analyst (density)</text>
+<text x="1200" y="382" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Favorite clubs, players</text>
+<text x="1200" y="404" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  → card priority</text>
+<text x="1200" y="426" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Player focus strip</text>
+<text x="1200" y="448" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">  vs his own baseline</text>
+<text x="1200" y="470" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">&quot;My metric&quot; filter</text>
+<text x="1200" y="492" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve"></text>
+<text x="1200" y="514" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Views</text>
+<text x="1200" y="536" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Live viewer</text>
+<text x="1200" y="558" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Two viewers side by side</text>
+<text x="1200" y="580" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve"></text>
+<text x="1200" y="602" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Speed · pause · restart</text>
+<text x="1200" y="624" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">VAR correction banner</text>
+<polyline points="1120,700 1174,700" fill="none" stroke="#f2a93b" stroke-width="2.5" marker-end="url(#arr-f2a93b)"/>
+<text x="1147" y="690" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#f2a93b" font-weight="700" text-anchor="middle" xml:space="preserve">SSE</text>
+<rect x="1540" y="92" width="350" height="360" rx="14" fill="#161b22" stroke="#f2a93b" stroke-width="1.5"/>
+<text x="1560" y="124" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">Viewers (browser)</text>
+<text x="1560" y="148" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="14.5" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">same moment, different insights</text>
+<rect x="1560" y="168" width="310" height="118" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<text x="1578" y="198" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#f2a93b" font-weight="700" text-anchor="start" xml:space="preserve">Viewer A</text>
+<text x="1578" y="226" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">日本語 · casual</text>
+<text x="1578" y="252" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">favorite player</text>
+<text x="1578" y="274" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">fewer, simpler cards</text>
+<rect x="1560" y="304" width="310" height="118" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<text x="1578" y="334" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#f2a93b" font-weight="700" text-anchor="start" xml:space="preserve">Viewer B</text>
+<text x="1578" y="362" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">English · analyst</text>
+<text x="1578" y="388" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">my metric: shot speed</text>
+<text x="1578" y="410" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">every insight, full numbers</text>
+<polyline points="1490,300 1534,300" fill="none" stroke="#f2a93b" stroke-width="2.5" marker-end="url(#arr-f2a93b)"/>
+<rect x="1540" y="474" width="350" height="130" rx="12" fill="#161b22" stroke="#4aa3ff" stroke-width="1.5"/>
+<rect x="1540" y="474" width="6" height="130" rx="3" fill="#4aa3ff"/>
+<text x="1560" y="504" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">Log Analytics</text>
+<text x="1560" y="532" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Container logs</text>
+<text x="1560" y="554" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Console output of both apps</text>
+<polyline points="1490,540 1534,540" fill="none" stroke="#4aa3ff" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr-4aa3ff)"/>
+<rect x="1540" y="626" width="350" height="226" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+<text x="1560" y="658" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">Legend</text>
+<rect x="1560" y="676" width="18" height="18" rx="4" fill="#3fb27f"/>
+<text x="1590" y="690" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Deterministic (no LLM)</text>
+<rect x="1560" y="712" width="18" height="18" rx="4" fill="#a78bfa"/>
+<text x="1590" y="726" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">LLM agent (Foundry model)</text>
+<rect x="1560" y="748" width="18" height="18" rx="4" fill="#f2a93b"/>
+<text x="1590" y="762" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Viewer, personalization</text>
+<rect x="1560" y="784" width="18" height="18" rx="4" fill="#4aa3ff"/>
+<text x="1590" y="798" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Azure service</text>
+<line x1="1560" y1="830" x2="1590" y2="830" stroke="#f2a93b" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="1600" y="835" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Recovery path</text>
+<rect x="76" y="900" width="560" height="150" rx="14" fill="#161b22" stroke="#4aa3ff" stroke-width="1.5"/>
+<rect x="76" y="900" width="6" height="150" rx="3" fill="#4aa3ff"/>
+<text x="96" y="932" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">Microsoft Foundry</text>
+<rect x="470" y="914" width="111.19999999999999" height="24" rx="12" fill="#0d1117" stroke="#4aa3ff" stroke-width="1.2"/>
+<text x="525.6" y="931" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="12.5" fill="#4aa3ff" font-weight="600" text-anchor="middle" xml:space="preserve">gpt-4.1-mini</text>
+<text x="96" y="962" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Project with a Global Standard deployment</text>
+<text x="96" y="986" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Entra ID managed identity, role &quot;Foundry User&quot;: no keys</text>
+<text x="96" y="1010" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">Response cache · call budget · demo overlays precomputed</text>
+<polyline points="171,664 171,894" fill="none" stroke="#4aa3ff" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr-4aa3ff)"/>
+<polyline points="368,752 368,894" fill="none" stroke="#4aa3ff" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr-4aa3ff)"/>
+<text x="380" y="889" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" fill="#4aa3ff" font-weight="600" text-anchor="start" xml:space="preserve">model calls (managed identity)</text>
+<rect x="670" y="900" width="830" height="150" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+<text x="690" y="932" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">Delivery</text>
+<rect x="690" y="950" width="240" height="80" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<text x="810" y="982" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">GitHub Actions</text>
+<text x="810" y="1008" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">lint · typecheck · tests</text>
+<polyline points="930,990 954,990" fill="none" stroke="#8b949e" stroke-width="2" marker-end="url(#arr-8b949e)"/>
+<rect x="960" y="950" width="240" height="80" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<text x="1080" y="982" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">GHCR</text>
+<text x="1080" y="1008" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">amd64 images, tagged by SHA</text>
+<polyline points="1200,990 1224,990" fill="none" stroke="#8b949e" stroke-width="2" marker-end="url(#arr-8b949e)"/>
+<rect x="1230" y="950" width="240" height="80" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<text x="1350" y="982" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#e6edf3" font-weight="700" text-anchor="middle" xml:space="preserve">deploy.sh</text>
+<text x="1350" y="1008" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13.5" fill="#8b949e" font-weight="400" text-anchor="middle" xml:space="preserve">az containerapp update</text>
+<polyline points="1080,950 1080,872" fill="none" stroke="#4aa3ff" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr-4aa3ff)"/>
+<text x="1090" y="890" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" fill="#4aa3ff" font-weight="600" text-anchor="start" xml:space="preserve">pull image</text>
+<rect x="1540" y="900" width="350" height="150" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+<text x="1560" y="932" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700" text-anchor="start" xml:space="preserve">Cost controls</text>
+<text x="1560" y="962" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Scale to zero; ingress off when idle</text>
+<text x="1560" y="986" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#e6edf3" font-weight="400" text-anchor="start" xml:space="preserve">Budget ¥3,000/month, alerts 50/100%</text>
+<text x="1560" y="1010" font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#8b949e" font-weight="400" text-anchor="start" xml:space="preserve">~¥21 in model tokens so far</text></svg>

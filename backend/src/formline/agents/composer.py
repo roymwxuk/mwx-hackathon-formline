@@ -44,4 +44,5 @@ def compose(selection: Selection, lang: str, mode: str, text: dict, *, verified:
         metric=OVERLAY_METRIC[ins.metric],
         source_event_ids=list(ins.source_event_ids),
         verified=verified,
+        secondary=selection.secondary,
     )
