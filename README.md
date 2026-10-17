@@ -313,6 +313,9 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 
 - **Synthetic data only.** The engine and agents never saw real match data; calibration is
   against public league aggregates.
+- **No tracking feed.** The 2D pitch reconstructs the ball's path from event data (passes
+  and shots over their duration, duels, interceptions, recoveries); players appear only in
+  shot freeze frames.
 - **Shots only.** Personal baselines cover shot speed, placement and finish quality; other
   metrics (pass difficulty, sprint speed) would reuse the same engine but are not built.
 - **Personalization is client-side.** The backend produces every variant (EN/JA ×

@@ -35,7 +35,10 @@ export interface FreezeFramePlayer {
 export interface MatchEvent {
   event_id: string;
   version: number;
-  type: 'pass' | 'shot' | 'var_review_start' | 'var_review_end' | 'half_start' | 'half_end';
+  type:
+    | 'pass' | 'shot' | 'duel' | 'interception' | 'ball_recovery' | 'pressure'
+    | 'foul_committed' | 'card' | 'substitution'
+    | 'var_review_start' | 'var_review_end' | 'half_start' | 'half_end';
   /** 1 or 2. The clock restarts at 45:00 in period 2, so order by (period, clock). */
   period?: number;
   match_clock_ms: number;
@@ -45,6 +48,8 @@ export interface MatchEvent {
   y: number | null;
   end_x?: number;
   end_y?: number;
+  /** How long the action took (a pass: ball in flight or rolling), in match ms. */
+  duration_ms?: number;
   outcome?: string;
   body_part?: string;
   freeze_frame?: FreezeFramePlayer[];
