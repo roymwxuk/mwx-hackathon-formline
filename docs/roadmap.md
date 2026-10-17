@@ -15,7 +15,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [x] `scripts/azure/teardown.sh`
 - [x] ADR-009: Container Apps + scale to zero, GHCR, managed identity, Japan East, JSONL instead of Postgres, the Foundry 403 / "Foundry User" finding, the ingress cutoff
 - [x] README: "Deploy to Azure" and "Production readiness" sections (M4 task 8)
-- [ ] Milestone 5: README polish (what it is, run locally, Azure services, data realism item (v), limitations, headline numbers)
+- [x] Milestone 5: README polish (what it is, run locally, Azure services, data realism item (v), limitations, headline numbers)
 - [x] Milestone 5: architecture diagram (`docs/architecture/`)
 - [ ] Milestone 5: `docs/decisions.md` cleanup
 - [ ] Milestone 5: demo video under 2 minutes, recorded against Azure (no trademarks, no copyrighted music)
