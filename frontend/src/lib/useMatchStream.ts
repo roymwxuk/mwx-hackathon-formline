@@ -52,6 +52,11 @@ export function initialLiveSpeed(base: string): number {
   return Number.isFinite(speed) && speed > 0 ? speed : 20;
 }
 
+/** Frames only move forward in match time; an older one (a stale stream) is ignored. */
+export function isNewerFrame(prev: TrackingFrameMessage | null, next: TrackingFrameMessage): boolean {
+  return prev === null || next.p > prev.p || (next.p === prev.p && next.t > prev.t);
+}
+
 /** Identity of a message, to ignore what a reconnect sends again. */
 function messageKey(msg: StreamMessage): string {
   if (msg.kind === 'event') return `e:${msg.event.event_id}:${msg.event.version}`;
@@ -81,6 +86,8 @@ export function useMatchStream(): MatchStream {
   const [speed, setSpeedState] = useState(() => (SSE_URL ? initialLiveSpeed(SSE_URL) : 60));
   const [connectKey, setConnectKey] = useState(0);
   const timeRef = useRef<MatchTime>({ period: 1, clockMs: 0 });
+  const frameRef = useRef<TrackingFrameMessage | null>(null); // latest frame shown
+  const esRef = useRef<EventSource | null>(null); // the one open stream
   const startRef = useRef<MatchTime | null>(null);
   const seenRef = useRef<Set<string>>(new Set());
   const [received, setReceived] = useState<StreamMessage[]>([]);
@@ -115,7 +122,9 @@ export function useMatchStream(): MatchStream {
   // time). Messages already received are ignored, so a reconnect never duplicates cards.
   useEffect(() => {
     if (source !== 'sse' || !SSE_URL || !playing) return;
+    esRef.current?.close(); // never two streams at once (e.g. one left behind by a hot reload)
     const es = new EventSource(liveStreamUrl(SSE_URL, speed, startRef.current));
+    esRef.current = es;
     es.onopen = () => setConnected(true);
     es.onerror = () => setConnected(false); // EventSource reconnects and resumes after its last id
     es.onmessage = (ev) => {
@@ -127,7 +136,10 @@ export function useMatchStream(): MatchStream {
           setPlayingState(false);
           return;
         }
-        if (msg.kind === 'frame') setFrame(msg);
+        if (msg.kind === 'frame' && isNewerFrame(frameRef.current, msg)) {
+          frameRef.current = msg; // an older frame would move every player backwards at once
+          setFrame(msg);
+        }
         if (msg.kind !== 'clock' && msg.kind !== 'frame') {  // these only move the time here
           const key = messageKey(msg);
           if (seenRef.current.has(key)) return;
@@ -140,7 +152,10 @@ export function useMatchStream(): MatchStream {
         // Ignore malformed messages rather than breaking the viewer.
       }
     };
-    return () => es.close();
+    return () => {
+      es.close();
+      if (esRef.current === es) esRef.current = null;
+    };
   }, [source, playing, speed, connectKey]);
 
   const liveRestart = useCallback(() => {
@@ -149,6 +164,7 @@ export function useMatchStream(): MatchStream {
     seenRef.current = new Set();
     setReceived([]);
     setClockMs(0);
+    frameRef.current = null;
     setFrame(null);
     setEnded(false);
     setPlayingState(true);

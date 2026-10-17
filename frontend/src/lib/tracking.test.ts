@@ -32,3 +32,15 @@ describe('labelledPlayers', () => {
     expect([...labelledPlayers([pass], 30_000, null)]).toEqual([]);
   });
 });
+
+describe('isNewerFrame', () => {
+  it('accepts only frames later in match time', async () => {
+    const { isNewerFrame } = await import('@/lib/useMatchStream');
+    const f = (p: number, t: number): TrackingFrameMessage => ({ kind: 'frame', p, t, b: [50, 50, 0], h: [], a: [] });
+    expect(isNewerFrame(null, f(1, 1000))).toBe(true);
+    expect(isNewerFrame(f(1, 1000), f(1, 1250))).toBe(true);
+    expect(isNewerFrame(f(1, 1250), f(1, 1000))).toBe(false); // a stale stream's frame
+    expect(isNewerFrame(f(1, 1250), f(1, 1250))).toBe(false);
+    expect(isNewerFrame(f(1, 2_800_000), f(2, 2_700_000))).toBe(true); // second half
+  });
+});
