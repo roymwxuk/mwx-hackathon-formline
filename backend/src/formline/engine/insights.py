@@ -214,6 +214,9 @@ class InsightTracker:
                 self._index(corrected)
                 changes.append(InsightCorrected(old, corrected, _diff(old.facts, new.facts)))
         for ins in fresh_by_id.values():  # newly notable after the correction
+            known = self.insights.get(ins.insight_id)
+            if known is not None:  # notable again after a retraction: a new version
+                ins = replace(ins, version=known.version + 1, supersedes=known.insight_id)
             self._index(ins)
             changes.append(InsightCreated(ins))
         return changes

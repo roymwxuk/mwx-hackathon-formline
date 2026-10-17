@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4, 6 and 7 done; task 5 done except the Azure steps (2026-10-17)
+**Status:** In progress. Tasks 1–4 and 6–8 done; task 5 done except the Azure steps (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -61,7 +61,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 5 | 🟡 LLM client setup and fake client (Azure steps pending) | MUST | 1 h | D1 |
 | 6 | ✅ Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
 | 7 | ✅ Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
-| 8 | Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
+| 8 | ✅ Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
 | 9 | Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
 | 10 | Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
 | 11 | Foundry evaluations | COULD | 1 h | 6 |
@@ -361,7 +361,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
   narration to templates), an exhausted budget (mix of model and template text),
   determinism, a moment where nothing is selected.
 
-### Task 8: corrections path (MUST)
+### Task 8: corrections path (MUST) ✅ Done
 
 **Goal:** the VAR moment works end to end, the flagship robustness demo.
 
@@ -375,6 +375,31 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
   appears after the VAR decision.
 - **Done when:** the viewer shows the withdrawn card, the corrected card and the banner from
   backend data.
+
+**Result** (`agents/live.py`, tests `tests/test_live.py`):
+- `LiveOrchestrator` drives the live path per feed message: engine pipeline → new insights per
+  shot → workflow → `show` overlays; insight changes → corrections path. It tracks the match
+  clock and VAR events, and which overlays are shown per insight.
+- **Corrected** (a shown card): the new insight goes through the same workflow as a *forced*
+  selection (the Selector passes it through, bypassing cooldowns) and is re-issued as
+  `op: correct` for every variant, superseding the old ids.
+- **Retracted** (a shown card): `op: retract` for every variant (empty slots, TTL 0).
+- **Notable again after a revert:** the engine now gives a re-created insight a new version
+  (it used to reuse version 1), and the orchestrator re-shows the withdrawn card with
+  versioned ids.
+- **Banner:** 4 variants per corrected event when a shown card was affected or a goal was
+  overturned; lineage = the shot plus the VAR events; a later correction of the same shot
+  replaces the banner (`op: correct`).
+- Corrections are timed at arrival (the VAR decision), not at the shot.
+- **Live match:** at 63:44 "Reyner's fastest goal of the season" is shown; at 65:24, after the
+  VAR decision, 4 `correct` overlays ("Reyner's fastest shot of the season" / 「レイナー、今季
+  最速のシュート」) and 4 banners ("Goal disallowed after review" / 「ゴール取り消し（判定変更）」).
+- **Bugs found by chaos tests and fixed:** a repeat banner for the same shot reused the id;
+  an insight re-created after a revert reused version 1 and produced a duplicate card.
+- **Stress run:** 40 heavy-chaos replays (80% of shots corrected, 60% reverted, deletes,
+  late messages): 0 failures, 1,616 corrected cards, 952 retractions, 2,904 banners, ids
+  always unique, every correction superseding a shown card.
+- 7 tests: VAR correction, banner lineage, timing, retract via delete, 3 chaos seeds.
 
 ### Task 9: live integration, overlay cache and SSE (MUST; D3)
 

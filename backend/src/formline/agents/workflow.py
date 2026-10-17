@@ -41,6 +41,7 @@ log = logging.getLogger("formline.workflow")
 @dataclass(frozen=True)
 class Moment:
     candidates: list[Insight]
+    forced: Selection | None = None  # a correction: re-narrate this insight, skip selection
 
 
 @dataclass(frozen=True)
@@ -105,6 +106,12 @@ class SelectorExecutor(Executor):
     async def choose(self, moment, ctx) -> None:
         ctx.set_state("trace", [])
         ctx.set_state("cards", [])
+        if moment.forced is not None:  # corrections bypass cooldowns and rate limits
+            selection = moment.forced
+            _trace(ctx, self.id, "selected", insight=selection.insight.insight_id,
+                   decided_by=selection.decided_by, reason=selection.reason)
+            await ctx.send_message(selection)
+            return
         en_names = {pid: n.en for pid, n in self.deps.names.items()}
         try:
             selection = await select(moment.candidates, self.deps.selector_state,
@@ -247,8 +254,9 @@ def build_workflow(deps: Deps) -> Workflow:
 
 
 async def run_moment(workflow: Workflow, candidates: list[Insight],
-                     selector_state: SelectorState) -> MomentResult:
-    result = await workflow.run(Moment(candidates))
+                     selector_state: SelectorState,
+                     forced: Selection | None = None) -> MomentResult:
+    result = await workflow.run(Moment(candidates, forced))
     outputs = result.get_outputs()
     out = outputs[-1] if outputs else MomentResult(None, [], [])
     if out.cards:  # attach the selection decided in this run
