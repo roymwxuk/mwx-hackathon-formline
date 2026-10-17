@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Task 1 done (2026-10-17)
+**Status:** In progress. Tasks 1–2 done (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -55,7 +55,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | # | Task | Priority | Estimate | Depends on |
 |---|---|---|---|---|
 | 1 | ✅ Overlay contract and template catalog (backend) | MUST | 1 h | — |
-| 2 | Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
+| 2 | ✅ Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
 | 3 | Verifier (deterministic checks) | MUST | 1.5 h | 2 |
 | 4 | Verifier catch-rate harness | SHOULD | 1 h | 3 |
 | 5 | LLM client setup and fake client | MUST | 1 h | D1 |
@@ -112,7 +112,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 - Tests: 16 backend (schema drift guard, examples, op rules, catalog), 4 frontend (the
   viewer loads the backend examples and its retract and personalization logic works on them).
 
-### Task 2: template narrator, the deterministic fallback (MUST)
+### Task 2: template narrator, the deterministic fallback (MUST) ✅ Done
 
 **Goal:** every insight can always be worded correctly without an LLM. This is the fallback
 after verifier failures, and the offline mode.
@@ -132,6 +132,24 @@ after verifier failures, and the offline mode.
   22 insights → check lengths and required slots.
 - **Done when:** all live-match insights produce 4 valid variants each, and the verifier (task 3)
   passes all of them.
+
+**Result** (`formline/agents/template_narrator.py`, tests in `tests/test_template_narrator.py`):
+- `narrate(insight, lang, mode, names)` returns `TextSlots(tag, headline, sub)` for all 5
+  insight types × EN/JA × casual/analyst. `narrate_correction(changes, lang, mode)` words the
+  banner for all insight changes caused by one corrected event ("Goal disallowed after
+  review" / "ゴール取り消し（判定変更）").
+- **Honest comparisons:** the pool is named by the level actually used: "his typical shot from
+  this spot", "… from outside the box", "his typical strong-foot shot" (JA: "この位置からの
+  シュート", "エリア外からのシュート", "利き足シュート全体").
+- **Estimates always marked** ("(estimate)", "Est.", "Model estimates." / "（推定）", "推定");
+  thin samples flagged ("Small sample." / "（サンプル少）"). JA uses the katakana surname, or
+  the full kanji name (伊藤健二).
+- **Example (flagship 40:12 shot):** "Reyner — not his usual strike | 84 km/h, about 8 km/h
+  below his typical shot from outside the box (estimate)." · "レイナー、いつもの威力がない |
+  84 km/h。エリア外からのシュートの平均より約8 km/h遅い（推定）"
+- **8 tests** over all 22 live insights × 4 variants: lengths within catalog limits, only the
+  insight's player named, every number derivable from facts, estimate markers present,
+  "this spot" only at zone level, thin samples flagged, banner wording.
 
 ### Task 3: verifier, deterministic checks (MUST)
 
