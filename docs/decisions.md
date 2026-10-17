@@ -363,8 +363,15 @@ CI and offline demos exercise exactly the same `Agent.run` path.
 
 **Known tuning item.** At 40:12 the Selector picks a placement insight (salience 0.55)
 over the flagship speed insight (0.49): correct by salience, but the demo story is speed.
-**Update (2026-10-17):** still the case with the Foundry model (the 40:14 card is the
-placement insight); tracked as a demo tuning item in `docs/roadmap.md`.
+**Update (2026-10-17):** kept, since the speed gap is modest. Instead, "my metric" now
+reveals the other metric's insight (secondary insights, below).
+
+**Secondary insights (2026-10-17).** One card per shot for everyone meant "my metric" could
+only hide cards. Each shown card now brings the best insight of the other overlay metric for
+the same shot, narrated through the same workflow (a forced selection, like corrections) and
+marked `secondary`; the viewer shows it only when "my metric" matches. Default viewers see
+exactly what they saw before, secondaries skip cooldowns and rate limits, and lineage
+corrects or retracts them like any card. Cost: 20 extra texts for the demo match.
 
 ---
 

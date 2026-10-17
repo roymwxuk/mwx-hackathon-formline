@@ -24,7 +24,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 
 **Should**
 - [ ] Observability: confirm the JSON trace lines are queryable in Log Analytics (optional App Insights) (M4 task 5)
-- [ ] Demo tuning: at 40:12 the Selector shows the placement card instead of the flagship speed card
+- [x] Demo tuning: 40:12 keeps the placement card (correct by salience); "my metric" now reveals the speed card via secondary insights; video moments in `docs/video-plan.md`
 - [ ] Live seek bar in the viewer (the backend already supports `start=mm:ss`)
 
 **Could (only if time allows)**
@@ -135,10 +135,13 @@ production. Signals and status:
 3. **Approve each Azure step** of the redeploy (explained one at a time).
 4. **Choose which optional tasks** to do, if any (IaC, Foundry evals, recap card, studio copilot).
 
-## Known tuning item for the demo
+## Demo tuning (resolved 2026-10-17)
 
-At 40:12 the Selector picks Reyner's placement insight (salience 0.55) over the flagship speed
-insight (0.49). Correct by salience, but the video story is speed. Revisit before recording.
+At 40:12 the Selector picks Reyner's placement insight (salience 0.55) over his speed insight
+(0.49). Kept: the speed gap is modest and the placement card matches the plan's example
+("bottom 15% of finishes"). Each shown card now also brings a **secondary** insight of the
+other metric, visible only to viewers whose "my metric" matches, so a shot-speed viewer gets
+the speed card here. Video moments: `docs/video-plan.md`.
 
 ## README numbers so far
 

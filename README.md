@@ -34,7 +34,10 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
 - **Explains why it matters**, in the viewer's language and depth: casual cards are short
   and simple; analyst cards show baseline, sample size, weight, comparison group, xG.
 - **Personalizes what appears**, not just the wording: favorite clubs and players win the
-  card slot, casual fans with favorites see only theirs, "my metric" filters to one metric,
+  card slot, casual fans with favorites see only theirs, "my metric" switches the card to
+  that metric (at 40:12 a shot-speed viewer gets Reyner's speed card while everyone else
+  gets his placement card: [speed](docs/ui/live/my-metric-speed-40m.png) vs
+  [all](docs/ui/live/my-metric-all-40m.png)),
   and player focus keeps a running strip of one player vs his own norm.
 - **Stays correct when the feed is messy.** Duplicates, late and out-of-order events and
   corrections are absorbed; when VAR overturns a goal, every dependent card is retracted or
@@ -57,7 +60,7 @@ Example cards from the demo match (63:44, Foundry-narrated, verified):
 | Messy feeds converge to the same state | **300 / 300** chaotic replays equal the batch rebuild | `python -m formline.convergence`, `hypothesis` tests in CI |
 | Shrinkage makes baselines more accurate | **30%** lower error than raw averages (**45%** for 1–4 shots) | [docs/shrinkage-accuracy.md](docs/shrinkage-accuracy.md) |
 | The synthetic data is football-realistic | **14 / 14** checks within range of league aggregates | [docs/realism-report.md](docs/realism-report.md) |
-| Agents produce usable text | **60 / 60** Foundry texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
+| Agents produce usable text | **80 / 80** Foundry texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
 | Cost | about **¥21** in model tokens for all runs so far; apps scale to zero | [ADR-009](docs/decisions.md) |
 
 ## How it works
@@ -318,7 +321,6 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Single replica, JSONL event log** baked into the image (the event log interface is
   ready for Postgres); no infrastructure as code yet.
 - **Verifier misses role confusions** (a real fact in the wrong place, 0.4% of injected errors).
-- At 40:12 the Selector prefers a placement insight over the speed insight by salience.
 
 ## Documentation
 
