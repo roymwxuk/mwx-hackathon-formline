@@ -89,6 +89,8 @@ Realism note: providers also re-issue corrected event files after the match (e.g
 
 > `possession_change` is **Derived**: it is detected when the possession number changes. It is not a raw event type.
 > A goal is a `shot` with `outcome: goal`.
+> Match-level events (`half_start`, `half_end`, `var_review_*`) have null `team_id`, `player_id` and location.
+> `match_clock_ms` restarts at 45:00 in period 2, so first-half stoppage time and the start of the second half share clock values (as providers report "45+2"). Order by `event_time` or `(period, match_clock_ms)`.
 
 ---
 
@@ -244,7 +246,7 @@ Emitted when the possession number changes. `from_team_id`, `to_team_id`, `endin
 
 ## 8. Generator realism targets
 
-**Status: assumptions to calibrate, not verified figures.** Before finalizing the generator, look up public season aggregates (e.g. league-average shots per match, pass completion, shot-speed records) and replace these values, citing the source in the README.
+**Status: calibrated (2026-10-17).** The generator is tuned against public season aggregates; the generated values, target ranges and sources are in [`docs/realism-report.md`](docs/realism-report.md). The table below is the original draft.
 
 | Metric | Assumed target |
 |---|---|

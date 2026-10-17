@@ -1,0 +1,1140 @@
+{
+  "clubs": [
+    {
+      "club_id": "clb_harbourside",
+      "name": "Harbourside Athletic",
+      "short_name": "HAR",
+      "colors": {
+        "primary": "#0B3D91",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "club_id": "clb_northgate",
+      "name": "Northgate Rovers",
+      "short_name": "NOR",
+      "colors": {
+        "primary": "#E8E3D9",
+        "secondary": "#111111"
+      }
+    },
+    {
+      "club_id": "clb_elderwick",
+      "name": "Elderwick Town",
+      "short_name": "ELD",
+      "colors": {
+        "primary": "#1E6B3A",
+        "secondary": "#F2E8C9"
+      }
+    },
+    {
+      "club_id": "clb_thornmoor",
+      "name": "Thornmoor United",
+      "short_name": "THO",
+      "colors": {
+        "primary": "#7A1F2B",
+        "secondary": "#E9C46A"
+      }
+    },
+    {
+      "club_id": "clb_kestrelbay",
+      "name": "Kestrel Bay FC",
+      "short_name": "KES",
+      "colors": {
+        "primary": "#F28C28",
+        "secondary": "#1A1A1A"
+      }
+    },
+    {
+      "club_id": "clb_corranvale",
+      "name": "Corranvale City",
+      "short_name": "COR",
+      "colors": {
+        "primary": "#5B3F8C",
+        "secondary": "#DADDE3"
+      }
+    }
+  ],
+  "players": [
+    {
+      "player_id": "ply_0101",
+      "display_name": "Malik Tavener",
+      "display_name_ja": "マリク・タヴナー",
+      "club_id": "clb_harbourside",
+      "shirt_number": 1,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0102",
+      "display_name": "Oskar Thorne",
+      "display_name_ja": "オスカー・ソーン",
+      "club_id": "clb_harbourside",
+      "shirt_number": 2,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0103",
+      "display_name": "Ezra Vellacott",
+      "display_name_ja": "エズラ・ヴェラコット",
+      "club_id": "clb_harbourside",
+      "shirt_number": 4,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0105",
+      "display_name": "Felix Marchetti",
+      "display_name_ja": "フェリックス・マルケッティ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 5,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0106",
+      "display_name": "Pablo Calloway",
+      "display_name_ja": "パブロ・キャロウェイ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 3,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0108",
+      "display_name": "Leon Quayle",
+      "display_name_ja": "レオン・クエール",
+      "club_id": "clb_harbourside",
+      "shirt_number": 6,
+      "position": "DM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0109",
+      "display_name": "Hugo Kessler",
+      "display_name_ja": "ウーゴ・ケスラー",
+      "club_id": "clb_harbourside",
+      "shirt_number": 8,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0110",
+      "display_name": "Bram Ingleby",
+      "display_name_ja": "ブラム・イングルビー",
+      "club_id": "clb_harbourside",
+      "shirt_number": 10,
+      "position": "AM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0104",
+      "display_name": "Marco Silvestri",
+      "display_name_ja": "マルコ・シルヴェストリ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 7,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0107",
+      "display_name": "Tomas Reyner",
+      "display_name_ja": "トマス・レイナー",
+      "club_id": "clb_harbourside",
+      "shirt_number": 9,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0111",
+      "display_name": "Kenji Ito",
+      "display_name_ja": "伊藤健二",
+      "club_id": "clb_harbourside",
+      "shirt_number": 11,
+      "position": "LW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0112",
+      "display_name": "Umar Zelenko",
+      "display_name_ja": "ウマル・ゼレンコ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 13,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0113",
+      "display_name": "Dmitri Lacombe",
+      "display_name_ja": "ドミトリ・ラコンブ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 12,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0114",
+      "display_name": "Teo Kovalenko",
+      "display_name_ja": "テオ・コヴァレンコ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 15,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0115",
+      "display_name": "Pablo Garrow",
+      "display_name_ja": "パブロ・ギャロウ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 14,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0116",
+      "display_name": "Aiden Ivers",
+      "display_name_ja": "エイデン・アイヴァース",
+      "club_id": "clb_harbourside",
+      "shirt_number": 17,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0117",
+      "display_name": "Elias Santangelo",
+      "display_name_ja": "エリアス・サンタンジェロ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 19,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0118",
+      "display_name": "Leon Mbatha",
+      "display_name_ja": "レオン・ムバタ",
+      "club_id": "clb_harbourside",
+      "shirt_number": 20,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0201",
+      "display_name": "Anders Ingleby",
+      "display_name_ja": "アンデシュ・イングルビー",
+      "club_id": "clb_northgate",
+      "shirt_number": 1,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0202",
+      "display_name": "Milan Nakashima",
+      "display_name_ja": "ミラン・ナカシマ",
+      "club_id": "clb_northgate",
+      "shirt_number": 2,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0203",
+      "display_name": "Ilan Rossiter",
+      "display_name_ja": "イラン・ロシター",
+      "club_id": "clb_northgate",
+      "shirt_number": 4,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0204",
+      "display_name": "Yusuf Ellery",
+      "display_name_ja": "ユスフ・エラリー",
+      "club_id": "clb_northgate",
+      "shirt_number": 5,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0205",
+      "display_name": "Yusuf Jessop",
+      "display_name_ja": "ユスフ・ジェソップ",
+      "club_id": "clb_northgate",
+      "shirt_number": 3,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0206",
+      "display_name": "Umar Sandor",
+      "display_name_ja": "ウマル・シャンドル",
+      "club_id": "clb_northgate",
+      "shirt_number": 6,
+      "position": "DM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0208",
+      "display_name": "Lukas Brandt",
+      "display_name_ja": "ルーカス・ブラント",
+      "club_id": "clb_northgate",
+      "shirt_number": 8,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0207",
+      "display_name": "Noah Garrow",
+      "display_name_ja": "ノア・ギャロウ",
+      "club_id": "clb_northgate",
+      "shirt_number": 9,
+      "position": "AM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0209",
+      "display_name": "Umar Okonjo",
+      "display_name_ja": "ウマル・オコンジョ",
+      "club_id": "clb_northgate",
+      "shirt_number": 7,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0210",
+      "display_name": "Daniel Okafor",
+      "display_name_ja": "ダニエル・オカフォー",
+      "club_id": "clb_northgate",
+      "shirt_number": 10,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0211",
+      "display_name": "Rafael Lacombe",
+      "display_name_ja": "ラファエル・ラコンブ",
+      "club_id": "clb_northgate",
+      "shirt_number": 11,
+      "position": "LW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0212",
+      "display_name": "Leon Takeda",
+      "display_name_ja": "レオン・タケダ",
+      "club_id": "clb_northgate",
+      "shirt_number": 13,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0213",
+      "display_name": "Malik Abiodun",
+      "display_name_ja": "マリク・アビオドゥン",
+      "club_id": "clb_northgate",
+      "shirt_number": 12,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0214",
+      "display_name": "Finn Lindahl",
+      "display_name_ja": "フィン・リンダール",
+      "club_id": "clb_northgate",
+      "shirt_number": 15,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0215",
+      "display_name": "Teo Tavener",
+      "display_name_ja": "テオ・タヴナー",
+      "club_id": "clb_northgate",
+      "shirt_number": 14,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0216",
+      "display_name": "Aiden Delacorte",
+      "display_name_ja": "エイデン・デラコルト",
+      "club_id": "clb_northgate",
+      "shirt_number": 17,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0217",
+      "display_name": "Jasper Eskeland",
+      "display_name_ja": "ジャスパー・エスケランド",
+      "club_id": "clb_northgate",
+      "shirt_number": 19,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0218",
+      "display_name": "Quentin Hartigan",
+      "display_name_ja": "カンタン・ハーティガン",
+      "club_id": "clb_northgate",
+      "shirt_number": 20,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0301",
+      "display_name": "Umar Ellery",
+      "display_name_ja": "ウマル・エラリー",
+      "club_id": "clb_elderwick",
+      "shirt_number": 1,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0302",
+      "display_name": "Viktor Ivers",
+      "display_name_ja": "ヴィクトル・アイヴァース",
+      "club_id": "clb_elderwick",
+      "shirt_number": 2,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0303",
+      "display_name": "Caio Kessler",
+      "display_name_ja": "カイオ・ケスラー",
+      "club_id": "clb_elderwick",
+      "shirt_number": 4,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0304",
+      "display_name": "Gael Uchenna",
+      "display_name_ja": "ガエル・ウチェナ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 5,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0305",
+      "display_name": "Ezra Albescu",
+      "display_name_ja": "エズラ・アルベスク",
+      "club_id": "clb_elderwick",
+      "shirt_number": 3,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0306",
+      "display_name": "Anders Takeda",
+      "display_name_ja": "アンデシュ・タケダ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 6,
+      "position": "DM",
+      "position_group": "MID",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0307",
+      "display_name": "Viktor Barrowe",
+      "display_name_ja": "ヴィクトル・バロウ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 8,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0308",
+      "display_name": "Oskar Whitcombe",
+      "display_name_ja": "オスカー・ウィットコム",
+      "club_id": "clb_elderwick",
+      "shirt_number": 10,
+      "position": "AM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0309",
+      "display_name": "Dmitri Solberg",
+      "display_name_ja": "ドミトリ・ソルベルグ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 7,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0310",
+      "display_name": "Otto Dunmore",
+      "display_name_ja": "オットー・ダンモア",
+      "club_id": "clb_elderwick",
+      "shirt_number": 9,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0311",
+      "display_name": "Malik Brannock",
+      "display_name_ja": "マリク・ブラノック",
+      "club_id": "clb_elderwick",
+      "shirt_number": 11,
+      "position": "LW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0312",
+      "display_name": "Milan Jessop",
+      "display_name_ja": "ミラン・ジェソップ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 13,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0313",
+      "display_name": "Arlo Jankov",
+      "display_name_ja": "アーロ・ヤンコフ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 12,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0314",
+      "display_name": "Pablo Pellard",
+      "display_name_ja": "パブロ・ペラール",
+      "club_id": "clb_elderwick",
+      "shirt_number": 15,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0315",
+      "display_name": "Kofi Petrakis",
+      "display_name_ja": "コフィ・ペトラキス",
+      "club_id": "clb_elderwick",
+      "shirt_number": 14,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0316",
+      "display_name": "Haruto Thorne",
+      "display_name_ja": "ハルト・ソーン",
+      "club_id": "clb_elderwick",
+      "shirt_number": 17,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0317",
+      "display_name": "Kofi Santangelo",
+      "display_name_ja": "コフィ・サンタンジェロ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 19,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0318",
+      "display_name": "Emil Desrosiers",
+      "display_name_ja": "エミル・デロジエ",
+      "club_id": "clb_elderwick",
+      "shirt_number": 20,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0401",
+      "display_name": "Hugo Takeda",
+      "display_name_ja": "ウーゴ・タケダ",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 1,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0402",
+      "display_name": "Tiago Radovan",
+      "display_name_ja": "チアゴ・ラドヴァン",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 2,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0403",
+      "display_name": "Tiago Albescu",
+      "display_name_ja": "チアゴ・アルベスク",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 4,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0404",
+      "display_name": "Malik Varga",
+      "display_name_ja": "マリク・ヴァルガ",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 5,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0405",
+      "display_name": "Cyril Ivers",
+      "display_name_ja": "シリル・アイヴァース",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 3,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0406",
+      "display_name": "Milan Castellan",
+      "display_name_ja": "ミラン・カステラン",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 6,
+      "position": "DM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0407",
+      "display_name": "Nico Ferrante",
+      "display_name_ja": "ニコ・フェランテ",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 8,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0408",
+      "display_name": "Finn Ingleby",
+      "display_name_ja": "フィン・イングルビー",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 10,
+      "position": "AM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0409",
+      "display_name": "Rui Abiodun",
+      "display_name_ja": "ルイ・アビオドゥン",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 7,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0410",
+      "display_name": "Yusuf Brannock",
+      "display_name_ja": "ユスフ・ブラノック",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 9,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0411",
+      "display_name": "Charles Sandor",
+      "display_name_ja": "チャールズ・シャンドル",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 11,
+      "position": "LW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0412",
+      "display_name": "Idris Oduya",
+      "display_name_ja": "イドリス・オドゥヤ",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 13,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0413",
+      "display_name": "Dmitri Dunmore",
+      "display_name_ja": "ドミトリ・ダンモア",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 12,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0414",
+      "display_name": "Edward Wexford",
+      "display_name_ja": "エドワード・ウェックスフォード",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 15,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0415",
+      "display_name": "Nico Delacorte",
+      "display_name_ja": "ニコ・デラコルト",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 14,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0416",
+      "display_name": "Oskar Petrakis",
+      "display_name_ja": "オスカー・ペトラキス",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 17,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0417",
+      "display_name": "Milan Hollis",
+      "display_name_ja": "ミラン・ホリス",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 19,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0418",
+      "display_name": "Finn Vellacott",
+      "display_name_ja": "フィン・ヴェラコット",
+      "club_id": "clb_thornmoor",
+      "shirt_number": 20,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0501",
+      "display_name": "Gael Mbatha",
+      "display_name_ja": "ガエル・ムバタ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 1,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0502",
+      "display_name": "Ilan Radovan",
+      "display_name_ja": "イラン・ラドヴァン",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 2,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0503",
+      "display_name": "Arlo Rossiter",
+      "display_name_ja": "アーロ・ロシター",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 4,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0504",
+      "display_name": "Hugo Fairholm",
+      "display_name_ja": "ウーゴ・フェアホルム",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 5,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0505",
+      "display_name": "Cyril Ellery",
+      "display_name_ja": "シリル・エラリー",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 3,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0506",
+      "display_name": "Elias Desrosiers",
+      "display_name_ja": "エリアス・デロジエ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 6,
+      "position": "DM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0507",
+      "display_name": "Ren Yilmazer",
+      "display_name_ja": "レン・ユルマゼル",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 8,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0508",
+      "display_name": "Ilan Jessop",
+      "display_name_ja": "イラン・ジェソップ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 10,
+      "position": "AM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0509",
+      "display_name": "Viktor Eskeland",
+      "display_name_ja": "ヴィクトル・エスケランド",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 7,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0510",
+      "display_name": "Samir Quayle",
+      "display_name_ja": "サミール・クエール",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 9,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0511",
+      "display_name": "Wes Marchetti",
+      "display_name_ja": "ウェス・マルケッティ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 11,
+      "position": "LW",
+      "position_group": "FWD",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0512",
+      "display_name": "Elias Kessler",
+      "display_name_ja": "エリアス・ケスラー",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 13,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0513",
+      "display_name": "Kofi Lacombe",
+      "display_name_ja": "コフィ・ラコンブ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 12,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0514",
+      "display_name": "Zane Oduya",
+      "display_name_ja": "ゼイン・オドゥヤ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 15,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0515",
+      "display_name": "Teo Hollis",
+      "display_name_ja": "テオ・ホリス",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 14,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0516",
+      "display_name": "Sota Wexford",
+      "display_name_ja": "ソウタ・ウェックスフォード",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 17,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0517",
+      "display_name": "Aiden Solberg",
+      "display_name_ja": "エイデン・ソルベルグ",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 19,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0518",
+      "display_name": "Zane Delacorte",
+      "display_name_ja": "ゼイン・デラコルト",
+      "club_id": "clb_kestrelbay",
+      "shirt_number": 20,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0601",
+      "display_name": "Bram Tavener",
+      "display_name_ja": "ブラム・タヴナー",
+      "club_id": "clb_corranvale",
+      "shirt_number": 1,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0602",
+      "display_name": "Aiden Whitcombe",
+      "display_name_ja": "エイデン・ウィットコム",
+      "club_id": "clb_corranvale",
+      "shirt_number": 2,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0603",
+      "display_name": "Nico Fairholm",
+      "display_name_ja": "ニコ・フェアホルム",
+      "club_id": "clb_corranvale",
+      "shirt_number": 4,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0604",
+      "display_name": "Quentin Jessop",
+      "display_name_ja": "カンタン・ジェソップ",
+      "club_id": "clb_corranvale",
+      "shirt_number": 5,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0605",
+      "display_name": "Hugo Radovan",
+      "display_name_ja": "ウーゴ・ラドヴァン",
+      "club_id": "clb_corranvale",
+      "shirt_number": 3,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0606",
+      "display_name": "Ilan Engstrom",
+      "display_name_ja": "イラン・エングストローム",
+      "club_id": "clb_corranvale",
+      "shirt_number": 6,
+      "position": "DM",
+      "position_group": "MID",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0607",
+      "display_name": "Elias Oduya",
+      "display_name_ja": "エリアス・オドゥヤ",
+      "club_id": "clb_corranvale",
+      "shirt_number": 8,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0608",
+      "display_name": "Gael Mercer",
+      "display_name_ja": "ガエル・マーサー",
+      "club_id": "clb_corranvale",
+      "shirt_number": 10,
+      "position": "AM",
+      "position_group": "MID",
+      "preferred_foot": "left"
+    },
+    {
+      "player_id": "ply_0609",
+      "display_name": "Yusuf Desrosiers",
+      "display_name_ja": "ユスフ・デロジエ",
+      "club_id": "clb_corranvale",
+      "shirt_number": 7,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0610",
+      "display_name": "Finn Lowther",
+      "display_name_ja": "フィン・ラウザー",
+      "club_id": "clb_corranvale",
+      "shirt_number": 9,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0611",
+      "display_name": "Rafael Pellard",
+      "display_name_ja": "ラファエル・ペラール",
+      "club_id": "clb_corranvale",
+      "shirt_number": 11,
+      "position": "LW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0612",
+      "display_name": "Edward Calloway",
+      "display_name_ja": "エドワード・キャロウェイ",
+      "club_id": "clb_corranvale",
+      "shirt_number": 13,
+      "position": "GK",
+      "position_group": "GK",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0613",
+      "display_name": "Zane Kessler",
+      "display_name_ja": "ゼイン・ケスラー",
+      "club_id": "clb_corranvale",
+      "shirt_number": 12,
+      "position": "RB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0614",
+      "display_name": "Jasper Petrakis",
+      "display_name_ja": "ジャスパー・ペトラキス",
+      "club_id": "clb_corranvale",
+      "shirt_number": 15,
+      "position": "CB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0615",
+      "display_name": "Rui Hollis",
+      "display_name_ja": "ルイ・ホリス",
+      "club_id": "clb_corranvale",
+      "shirt_number": 14,
+      "position": "LB",
+      "position_group": "DEF",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0616",
+      "display_name": "Zane Nakashima",
+      "display_name_ja": "ゼイン・ナカシマ",
+      "club_id": "clb_corranvale",
+      "shirt_number": 17,
+      "position": "CM",
+      "position_group": "MID",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0617",
+      "display_name": "Charles Lindahl",
+      "display_name_ja": "チャールズ・リンダール",
+      "club_id": "clb_corranvale",
+      "shirt_number": 19,
+      "position": "RW",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    },
+    {
+      "player_id": "ply_0618",
+      "display_name": "Haruto Marchetti",
+      "display_name_ja": "ハルト・マルケッティ",
+      "club_id": "clb_corranvale",
+      "shirt_number": 20,
+      "position": "ST",
+      "position_group": "FWD",
+      "preferred_foot": "right"
+    }
+  ]
+}
