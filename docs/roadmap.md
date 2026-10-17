@@ -17,7 +17,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [x] README: "Deploy to Azure" and "Production readiness" sections (M4 task 8)
 - [x] Milestone 5: README polish (what it is, run locally, Azure services, data realism item (v), limitations, headline numbers)
 - [x] Milestone 5: architecture diagram (`docs/architecture/`)
-- [ ] Milestone 5: `docs/decisions.md` cleanup
+- [x] Milestone 5: `docs/decisions.md` cleanup (index, outcome notes)
 - [ ] Milestone 5: demo video under 2 minutes, recorded against Azure (no trademarks, no copyrighted music)
 - [ ] Milestone 5: pitch text naming the Microsoft and Azure technologies
 - [ ] Submit (buffer day Oct 26)
