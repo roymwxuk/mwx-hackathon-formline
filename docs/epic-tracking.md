@@ -1,7 +1,9 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** In progress. Done on 2026-10-17: T0 (ADR-010), T1 (schema), T2 (team shape,
-`docs/tracking/t2-shape-preview.png`), T3 (event anchors, `docs/tracking/t3-anchor-preview.png`).
+**Status:** In progress. Done: T0 (ADR-010), T1 (schema), T2 (team shape,
+`docs/tracking/t2-shape-preview.png`), T3 (event anchors, `docs/tracking/t3-anchor-preview.png`),
+T4 (motion) and T5 (`formline-gen tracking`, Docker, sample excerpt). Moving preview:
+`docs/tracking/preview.html` (11:30–13:00).
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.
@@ -104,6 +106,11 @@ in the buffer. Stretch task S1 starts only if everything above is done early.
   receivers, 337 other actors, 34 shooters, 150 freeze-frame spots). Between a player's
   consecutive anchors the needed speed has a median of 0.5 m/s and a 99th percentile of
   6.4 m/s; only 0.2% exceed a sprint (9.5 m/s), which the motion model (T4) softens.
+- **Motion is realistic (T4):** 57,651 frames for the live match (3.8 MB gzipped, about 38 s to
+  build). 99.4% of anchors met within 0.5 m; outfield starters cover a median 9.3 km (max
+  11.5 km; real football about 10–11 km); a median 37 s per player above 7 m/s (real high-speed
+  running about 30–40 s); peak speed 9.5 m/s. A 4 s anchor ramp forced sprints and missed
+  anchors (93%), and stronger personal drift inflated distance; 8 s and 0.5 m fixed both.
 - **Generator quirk:** one pass (57:56) is credited to a player substituted off at 56:53. The
   anchors skip actions by players not on the pitch rather than fixing the generator, which
   would re-randomize the rest of the match and invalidate the Foundry-narrated overlays.

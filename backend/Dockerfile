@@ -22,7 +22,8 @@ RUN uv sync --frozen --no-dev
 # Synthetic season (seed 2026) and the live match's overlays. Built with the fake model;
 # overlays precomputed with Microsoft Foundry can be shipped in demo/ (see start.sh).
 RUN .venv/bin/formline-gen generate --out /app/data \
- && .venv/bin/formline-gen overlays --data /app/data
+ && .venv/bin/formline-gen overlays --data /app/data \
+ && .venv/bin/formline-gen tracking --out /app/data
 
 COPY demo ./demo
 COPY scripts/start.sh ./start.sh

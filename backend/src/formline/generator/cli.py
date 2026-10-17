@@ -29,12 +29,18 @@ def main(argv: list[str] | None = None) -> int:
     ovl = sub.add_parser("overlays", help="run the agents over a match and cache its overlays")
     ovl.add_argument("--data", type=Path, default=DEFAULT_DATA)
     ovl.add_argument("--match", default=None, help="match id (default: the live demo match)")
+    trk = sub.add_parser("tracking", help="write synthetic tracking for the live match")
+    trk.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    trk.add_argument("--out", type=Path, default=DEFAULT_DATA)
     con = sub.add_parser("contracts", help="write the overlay JSON Schema and example overlays")
     con.add_argument("--seed", type=int, default=DEFAULT_SEED)
     args = parser.parse_args(argv)
 
     if args.command == "overlays":
         return _overlays(args.data, args.match)
+
+    if args.command == "tracking":
+        return _tracking(args.seed, args.out)
 
     if args.command == "contracts":
         from formline.agents.examples import write_contracts
@@ -72,6 +78,29 @@ def _overlays(data: Path, match_id: str | None) -> int:
                                                    runner))
     print(f"wrote {path}")
     print(json.dumps(summary_dict(summary, runner), indent=2))
+    return 0
+
+
+def _tracking(seed: int, out: Path) -> int:
+    """Tracking for the live match (ADR-010). The season is regenerated from the seed,
+    which reproduces the written feed exactly and provides the starting line-ups."""
+    import json
+
+    from formline.engine.log import current_events
+    from formline.schema.tracking import tracking_path, write_tracking
+    from formline.tracking.motion import build_frames
+
+    season = generate_season(seed)
+    gm = next(g for g in season.matches if g.match.is_live_demo)
+    players = {p.player_id: p for p in season.league.players}
+    frames = build_frames(current_events(gm.feed), gm.match.home_club_id, players,
+                          season.league.starters, seed=seed)
+    path = tracking_path(out, gm.match.match_id)
+    n = write_tracking(path, frames)
+    sample = BACKEND / "data" / "sample" / f"{gm.match.match_id}.tracking.excerpt.jsonl"
+    sample.write_text("".join(json.dumps(f.to_row(), separators=(",", ":")) + "\n"
+                              for f in frames[:200]), encoding="utf-8")  # first 20 seconds
+    print(f"wrote {n} frames to {path} ({path.stat().st_size / 1e6:.1f} MB) and {sample.name}")
     return 0
 
 
