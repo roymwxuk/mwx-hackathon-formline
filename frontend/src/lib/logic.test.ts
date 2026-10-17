@@ -90,3 +90,34 @@ describe('half-time ordering', () => {
     expect(t).toEqual({ period: 2, clockMs: 2_710_000 });
   });
 });
+
+describe('card slot priority', () => {
+  const card = (id: string, priority: number, at: number, player: string): Overlay => ({
+    overlay_id: id, op: 'show', supersedes_overlay_id: null, match_clock_ms: at, ttl_ms: 12_000,
+    template_id: 'shot_speed_card', priority, audience_mode: 'casual', lang: 'en',
+    slots: { tag: 't', headline: id }, insight_id: `ins_${id}`, player_id: player,
+    metric: 'shot_speed', source_event_ids: ['e'], verified: true,
+  });
+  const s: ViewerSettings = { ...base, mode: 'casual', favoritePlayers: ['ply_fav'] };
+  const players = [
+    { player_id: 'ply_fav', display_name: 'A', display_name_ja: 'A', club_id: 'c', shirt_number: 1, season_shot_speed_norm_kmh: 80 },
+    { player_id: 'ply_other', display_name: 'B', display_name_ja: 'B', club_id: 'd', shirt_number: 2, season_shot_speed_norm_kmh: 80 },
+  ];
+
+  it('prefers a favorite, then priority, then the newest among active cards', async () => {
+    const { pickCard } = await import('@/lib/logic');
+    const states = applyOverlays([
+      card('fav_low', 3, 1_000, 'ply_fav'),
+      card('other_high', 1, 2_000, 'ply_other'),
+    ]);
+    expect(pickCard(states, s, players, 5_000)!.overlay.overlay_id).toBe('fav_low');
+    expect(pickCard(states, { ...s, favoritePlayers: [] }, players, 5_000)!.overlay.overlay_id).toBe('other_high');
+  });
+
+  it('keeps the last card up when nothing is active', async () => {
+    const { pickCard } = await import('@/lib/logic');
+    const states = applyOverlays([card('a', 1, 1_000, 'ply_other'), card('b', 2, 20_000, 'ply_other')]);
+    expect(pickCard(states, s, players, 60_000)!.overlay.overlay_id).toBe('b');
+    expect(pickCard([], s, players, 0)).toBeUndefined();
+  });
+});

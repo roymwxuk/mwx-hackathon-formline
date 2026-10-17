@@ -97,3 +97,12 @@ def test_chaos_mode_keeps_overlays_consistent(client):
             assert o["supersedes_overlay_id"] in seen
         seen.add(o["overlay_id"])
     assert seen
+
+
+def test_until_stops_at_a_match_moment(client):
+    messages = read_stream(client, "until=40:30")
+    assert kinds(messages)[-1] == "end"
+    events = [m["event"] for m in messages if m["kind"] == "event"]
+    assert max((e["period"], e["match_clock_ms"]) for e in events) <= (1, 40 * 60_000 + 30_000)
+    second_half = read_stream(client, "until=65:40")
+    assert any(m["kind"] == "overlay" and m["overlay"]["op"] == "correct" for m in second_half)

@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4 and 6–9 done; task 5 done except the Azure steps (2026-10-17)
+**Status:** In progress. Tasks 1–4 and 6–10 done; task 5 done except the Azure steps; task 13 left (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -63,7 +63,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 7 | ✅ Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
 | 8 | ✅ Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
 | 9 | ✅ Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
-| 10 | Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
+| 10 | ✅ Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
 | 11 | Foundry evaluations | COULD | 1 h | 6 |
 | 12 | Half-time or full-time recap card (gap 7) | COULD | 1 h | 7 |
 | 13 | Docs: ADR-008, README, milestone log | MUST | 0.5 h | all |
@@ -427,7 +427,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 - 6 tests: precompute file, cache rerun, overlay placement, default stream, live mode,
   chaos mode (ids unique, every correction supersedes a shown card).
 
-### Task 10: frontend wiring (MUST; gaps 1 and 5)
+### Task 10: frontend wiring (MUST; gaps 1 and 5) ✅ Done
 
 - **10.1** Remove the mock dependency in live mode: overlays come from the stream (gap 1).
 - **10.2** Card slot priority (D5): keep cards visible for `ttl_ms`; show the highest-priority
@@ -436,6 +436,19 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 - **10.4** Check the three key moments in a browser: a shot card, the two-viewer view (JA casual
   vs EN analyst) and the VAR retraction.
 - **Done when:** the demo runs from backend data only, and `docs/frontend-gaps.md` is updated.
+
+**Result:**
+- Live mode renders the backend's overlays (no mock data); the stream's `{kind: 'end'}` closes
+  the connection and the header shows "Full time" instead of reconnecting.
+- `pickCard()`: among cards within their display window, favorites first, then priority, then
+  newest; the last card stays up when none is active.
+- For screenshots and recording: `until=mm:ss` on the stream, `?view=two` in the viewer.
+- **Browser check** of the three key moments from backend data (`docs/ui/live/`): the 40:14 card
+  with catalog bars; the VAR correction at 65:24 (corrected card, banner, withdrawn card in the
+  log); the two-viewer page (JA casual with bars vs EN analyst with rows).
+- Fixed from the check: the analyst row said "xG · PSxG" for off-target shots that have no
+  PSxG; it now says "xG".
+- Tests: 2 frontend (`pickCard`), 1 backend (`until`), 1 backend (row label).
 
 ### Task 11: Foundry evaluations (COULD; D7)
 

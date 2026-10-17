@@ -107,6 +107,29 @@ export function personalize(states: OverlayState[], s: ViewerSettings, players: 
   });
 }
 
+/**
+ * Which card the slot shows (frontend gap 5): among cards still within their display
+ * window, favorites first, then priority (1 = most important), then the newest. When no
+ * card is active, the most recent one stays up, so the stage never goes blank.
+ */
+export function pickCard(
+  cards: OverlayState[],
+  s: ViewerSettings,
+  players: Player[],
+  clockMs: number,
+): OverlayState | undefined {
+  const active = cards.filter(({ overlay: o }) =>
+    clockMs >= o.match_clock_ms && clockMs < o.match_clock_ms + o.ttl_ms);
+  if (active.length === 0) return cards[cards.length - 1];
+  const index = new Map(cards.map((c, i) => [c.overlay.overlay_id, i]));
+  return [...active].sort((a, b) => {
+    const fav = Number(isFavoriteOverlay(b.overlay, s, players)) - Number(isFavoriteOverlay(a.overlay, s, players));
+    if (fav !== 0) return fav;
+    if (a.overlay.priority !== b.overlay.priority) return a.overlay.priority - b.overlay.priority;
+    return index.get(b.overlay.overlay_id)! - index.get(a.overlay.overlay_id)!;
+  })[0];
+}
+
 export function isFavoriteOverlay(o: Overlay, s: ViewerSettings, players: Player[]): boolean {
   if (!o.player_id) return false;
   const club = players.find((p) => p.player_id === o.player_id)?.club_id ?? '';

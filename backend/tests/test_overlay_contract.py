@@ -114,3 +114,10 @@ def test_ordinals(n, en):
 
 def test_japanese_limits_are_tighter():
     assert LIMITS["ja"].headline < LIMITS["en"].headline
+
+
+def test_xg_row_label_matches_what_is_shown():
+    facts = {"value": 118.3, "norm": 87.1, "sample_n": 6, "weight_on_own_shots": 0.73,
+             "comparison_level": "zone_body", "est_percentile": 99, "xg": 0.05}
+    assert rows("shot_speed_card", facts, "en")[-1].label == "xG"
+    assert rows("shot_speed_card", facts | {"psxg": 0.4}, "en")[-1].label == "xG · PSxG"

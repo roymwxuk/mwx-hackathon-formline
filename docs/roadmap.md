@@ -12,7 +12,7 @@ is the tracked, up-to-date view: milestones, status, decisions and open actions.
 |---|---|---|---|---|
 | 1 | Data schema, synthetic generator, history and live match, replay, realism report | Oct 9–11 | ✅ Done | ADR-005, `docs/realism-report.md` |
 | 2 | Event log, stats engine, personal baselines with shrinkage, chaos injector, convergence tests | Oct 12–15 | ✅ Done | `docs/milestone-2-engine.md`, ADR-006, ADR-007 |
-| 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | 🟡 In progress: tasks 1–9 done; 10 and 13 left (≈ 1.5 h) | `docs/milestone-3-agents.md` |
+| 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | 🟡 In progress: tasks 1–10 done; 13 (docs) left (≈ 0.5 h); Azure steps 5.1/5.3 wait on the owner | `docs/milestone-3-agents.md` |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 UI done early; deployment and readiness not started | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
 | — | Buffer and submit | Oct 26 | ⬜ | — |

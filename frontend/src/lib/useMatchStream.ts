@@ -13,6 +13,8 @@ export interface MatchStream {
   playing: boolean;
   speed: number;
   connected: boolean;
+  /** Live mode: the backend sent its final message (full time). */
+  ended: boolean;
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
   restart: () => void;
@@ -41,6 +43,7 @@ export function useMatchStream(): MatchStream {
   const [speed, setSpeed] = useState(60);
   const [received, setReceived] = useState<StreamMessage[]>([]);
   const [connected, setConnected] = useState(source === 'mock');
+  const [ended, setEnded] = useState(false);
   const cursor = useRef(0);
   const clockRef = useRef(0);
 
@@ -75,6 +78,11 @@ export function useMatchStream(): MatchStream {
     es.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as StreamMessage;
+        if (msg.kind === 'end') {
+          es.close(); // full time: don't let EventSource reconnect and replay the match
+          setEnded(true);
+          return;
+        }
         setReceived((r) => [...r, msg]);
         time = msg.kind === 'event'
           ? advanceTime(time, msg.event.period, msg.event.match_clock_ms)
@@ -119,5 +127,5 @@ export function useMatchStream(): MatchStream {
     [received],
   );
 
-  return { source, clockMs, events, overlays, playing, speed, connected, setPlaying, setSpeed, restart };
+  return { source, clockMs, events, overlays, playing, speed, connected, ended, setPlaying, setSpeed, restart };
 }

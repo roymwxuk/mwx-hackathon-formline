@@ -60,8 +60,9 @@ def league(match_id: str) -> dict:
 
 @app.get("/matches/{match_id}/stream")
 async def stream(match_id: str, speed: float | None = Query(None, gt=0),
-                 live: bool = False, chaos: bool = False,
-                 chaos_seed: int = 0) -> EventSourceResponse:
+                 live: bool = False, chaos: bool = False, chaos_seed: int = 0,
+                 until: str | None = Query(None, pattern=r"^\d{1,3}:\d{2}$")
+                 ) -> EventSourceResponse:
     """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode).
 
     Default: replays the feed together with the precomputed overlays
@@ -69,13 +70,25 @@ async def stream(match_id: str, speed: float | None = Query(None, gt=0),
     the replay instead. `chaos=true` replays the feed through the chaos injector
     (duplicates, reordering, late messages, injected corrections) and implies live, so
     the cards follow the chaotic feed's own corrections. The stream ends with
-    `{"kind": "end"}`.
+    `{"kind": "end"}`. `until=mm:ss` stops the replay at that match time (for screenshots
+    and recording a moment); minutes above 45 mean the second half.
     """
     path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
     if not path.exists():
         raise HTTPException(404, f"Unknown match {match_id}")
     feed = read_feed(path)
     pace = speed or settings.sim_speed
+    stop = None
+    if until:
+        minutes, seconds = (int(x) for x in until.split(":"))
+        stop_ms = (minutes * 60 + seconds) * 1000
+        stop = (2 if stop_ms > 45 * 60_000 else 1, stop_ms)
+
+    def past_stop(payload: dict) -> bool:
+        if stop is None or payload.get("kind") != "event":
+            return False
+        e = payload["event"]
+        return (e["period"], e["match_clock_ms"]) > stop
 
     def sse(payload: dict) -> dict:
         return {"data": json.dumps(payload, ensure_ascii=False)}
@@ -87,6 +100,8 @@ async def stream(match_id: str, speed: float | None = Query(None, gt=0),
             messages = inject(feed, ChaosConfig(seed=chaos_seed)).messages if chaos else feed
             async for msg in replay(messages, pace):
                 if (payload := to_stream_message(msg)) is not None:
+                    if past_stop(payload):
+                        break
                     yield sse(payload)
                 for overlay in await orch.process(msg):
                     yield sse(overlay_message(overlay))
@@ -96,6 +111,8 @@ async def stream(match_id: str, speed: float | None = Query(None, gt=0),
             cached = overlays_path(settings.data_dir, match_id)
             overlays = read_overlays(cached) if cached.exists() else []
             async for payload in replay_items(merge_stream(feed, overlays), pace):
+                if past_stop(payload):
+                    break
                 yield sse(payload)
         yield sse(END_MESSAGE)
 

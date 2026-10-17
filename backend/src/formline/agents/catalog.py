@@ -73,14 +73,15 @@ LABELS = {
         "this_finish": "This finish", "his_typical": "His typical",
         "baseline": "Baseline (shrunk)", "sample": "Sample · weight",
         "comparison": "Comparison", "percentile": "Percentile (est.)",
-        "xg": "xG · PSxG", "placement": "Placement score", "psxg": "Post-shot xG",
+        "xg": "xG · PSxG", "xg_only": "xG", "placement": "Placement score",
+        "psxg": "Post-shot xG",
     },
     "ja": {
         "this_shot": "今回", "his_norm": "本人の平均",
         "this_finish": "今回", "his_typical": "本人の平均",
         "baseline": "基準値（縮小推定）", "sample": "サンプル数・重み",
         "comparison": "比較グループ", "percentile": "パーセンタイル（推定）",
-        "xg": "xG・PSxG", "placement": "コーススコア", "psxg": "シュート後xG",
+        "xg": "xG・PSxG", "xg_only": "xG", "placement": "コーススコア", "psxg": "シュート後xG",
     },
 }
 
@@ -143,7 +144,7 @@ def rows(template_id: str, facts: dict, lang: str) -> list[Row]:
             Row(label=lab["sample"], value=sample),
             Row(label=lab["comparison"], value=comparison),
             Row(label=lab["percentile"], value=pct),
-            Row(label=lab["xg"], value=xg)]
+            Row(label=lab["xg"] if psxg is not None else lab["xg_only"], value=xg)]
 
 
 def structured_slots(template_id: str, mode: str, facts: dict, lang: str) -> dict:

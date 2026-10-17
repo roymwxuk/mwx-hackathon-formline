@@ -1,6 +1,6 @@
 # Frontend gaps: from mock data to real backend data
 
-**Updated:** 2026-10-17 · **Branch:** `feat/engine`
+**Updated:** 2026-10-17 · **Branch:** `feat/agents`
 
 The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in mock data**
 (`frontend/src/mock/demo-match.ts`). This list tracks what remains for it to work on
@@ -10,17 +10,22 @@ The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in m
 
 | # | Gap | Status | Blocked on | Commit |
 |---|---|---|---|---|
-| 1 | No overlay cards in live mode | ⬜ Open | Milestone 3 (agents emit overlays) | |
+| 1 | No overlay cards in live mode | ✅ Fixed | | milestone 3 tasks 9–10 |
 | 2 | Clubs and players hard-coded from the mock | ✅ Fixed | | `7ac4ec1` |
 | 3 | Half-time ordering and live clock | ✅ Fixed | | `c4db013` |
-| 4 | Live mode: no pause, seek, slow-down or end-of-stream | ⬜ Open | Small backend and UI task; do before recording the video | |
-| 5 | Favorites don't take priority for the overlay slot | ⬜ Open | Decide now, implement with milestone 3 | |
-| 6 | Not checked manually in a browser against the backend | 🟡 Partly | Covered by the live-mode render for gap 2; full check after gap 1 | |
+| 4 | Live mode: no pause, seek, slow-down or end-of-stream | 🟡 Partly | End of stream and `until=mm:ss` done; slow-down and seek in milestone 4 task 7 | milestone 3 task 10 |
+| 5 | Favorites don't take priority for the overlay slot | ✅ Fixed | | milestone 3 task 10 |
+| 6 | Not checked in a browser against the backend | ✅ Done | Three key moments rendered from backend data (`docs/ui/live/`) | milestone 3 task 10 |
 | 7 | Optional half-time or full-time recap card | ⬜ Open | Milestone 3 | |
 
 ---
 
-## 1. No overlay cards in live mode ⬜
+## 1. No overlay cards in live mode ✅ Fixed (milestone 3, tasks 9–10)
+
+- **Now:** the backend streams overlays with the events (cached by `formline-gen overlays`, or
+  live with `?live=true`); the viewer renders them in live mode with no mock data.
+
+**Original problem:**
 
 - **Problem:** the backend streams raw match events only, so in live mode the card slot
   shows "Waiting for the first insight…" all match.
@@ -56,7 +61,13 @@ The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in m
   `advanceTime()` resets the live clock at a new period and ignores late messages from an
   earlier period. Covered by 2 tests.
 
-## 4. Live mode: no pause, seek, slow-down or end-of-stream ⬜
+## 4. Live mode: no pause, seek, slow-down or end-of-stream 🟡 Partly
+
+- **Done (milestone 3, task 10):** the stream ends with `{kind: 'end'}`; the viewer closes it and
+  shows "Full time" (no reconnect loop). `until=mm:ss` stops the replay at a moment.
+- **Still to do (milestone 4, task 7):** slow-down around cards, start time, speed control.
+
+**Original problem:**
 
 - **Problem:**
   - The mock replay has play/pause, a speed selector, `?t=mm:ss` and automatic slow-down
@@ -72,7 +83,12 @@ The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in m
   - The viewer passes its speed and start time to the stream URL.
 - **When:** just before recording the demo video (Oct 23–25).
 
-## 5. Favorites don't take priority for the overlay slot ⬜
+## 5. Favorites don't take priority for the overlay slot ✅ Fixed (milestone 3, task 10)
+
+- **Now:** `pickCard()` shows, among cards within their display window, favorites first, then
+  priority, then the newest; with no active card the most recent one stays up. 2 tests.
+
+**Original problem and options:**
 
 - **Problem:** `CLAUDE.md` says "favorite players get priority for overlay slots". The UI
   shows the newest card, and casual mode simply filters to favorites. Nothing actually
@@ -85,7 +101,13 @@ The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in m
 - **Recommendation:** (b) for the slot, because it's cheap and visible in the two-viewer demo,
   plus favorites as an input to the selector's `priority` in milestone 3.
 
-## 6. Manual browser check against the backend 🟡 Partly
+## 6. Browser check against the backend ✅ Done (milestone 3, task 10)
+
+- Three key moments rendered from backend data with `until=mm:ss`: the 40:14 card, the VAR
+  correction at 65:24 (corrected card, banner, withdrawn card in the log), and the two-viewer
+  page (`?view=two`). Screenshots in `docs/ui/live/`.
+
+**Earlier notes:**
 
 - Headless Chrome hangs on an open SSE stream, so automated screenshots are unreliable.
 - A render with a fast, finishing stream worked for gap 2 (real squads, focus strip, score).

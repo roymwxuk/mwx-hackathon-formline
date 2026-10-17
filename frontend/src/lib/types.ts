@@ -91,7 +91,8 @@ export interface OverlaySlots {
 /** One message on the live stream (SSE `data:` payload). */
 export type StreamMessage =
   | { kind: 'event'; event: MatchEvent }
-  | { kind: 'overlay'; overlay: Overlay };
+  | { kind: 'overlay'; overlay: Overlay }
+  | { kind: 'end' }; // the match feed is over
 
 export interface ViewerSettings {
   lang: Lang;
