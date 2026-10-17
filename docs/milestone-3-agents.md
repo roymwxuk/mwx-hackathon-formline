@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–2 done (2026-10-17)
+**Status:** In progress. Tasks 1–3 done (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -56,7 +56,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 |---|---|---|---|---|
 | 1 | ✅ Overlay contract and template catalog (backend) | MUST | 1 h | — |
 | 2 | ✅ Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
-| 3 | Verifier (deterministic checks) | MUST | 1.5 h | 2 |
+| 3 | ✅ Verifier (deterministic checks) | MUST | 1.5 h | 2 |
 | 4 | Verifier catch-rate harness | SHOULD | 1 h | 3 |
 | 5 | LLM client setup and fake client | MUST | 1 h | D1 |
 | 6 | Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
@@ -151,7 +151,7 @@ after verifier failures, and the offline mode.
   insight's player named, every number derivable from facts, estimate markers present,
   "this spot" only at zone level, thin samples flagged, banner wording.
 
-### Task 3: verifier, deterministic checks (MUST)
+### Task 3: verifier, deterministic checks (MUST) ✅ Done
 
 **Goal:** reject any narration that states something the engine didn't compute. No LLM here, so
 it can be measured.
@@ -170,6 +170,20 @@ it can be measured.
   so they can be fed back to the Narrator as retry instructions.
 - **Done when:** template outputs (task 2) always pass, and hand-written bad examples fail
   with the right reason.
+
+**Result** (`formline/agents/verifier.py`, tests in `tests/test_verifier.py`):
+- `verify(slots, VerifyContext(template, lang, mode, facts, player_id), league)` →
+  `Verdict(failures)`; `Verdict.feedback()` gives retry instructions for the narrator.
+- Six checks: numbers, entities, estimates, certainty, language, structure.
+- **Unit-aware numbers.** A first version accepted "about **18** km/h below" because 18 *is* a
+  fact (the 17.7 m shot distance, rounded). Numbers are now matched by kind: before `km/h` only speed
+  facts, before `%` only percentage facts, after `n=` only sample sizes, before `/100` only
+  the placement score; bare numbers may use any fact. Full-width digits and the Unicode minus
+  are normalised first.
+- **Entities:** other players' surnames (EN, word-bounded) or JA names, and other clubs, are
+  rejected; surnames shared with the insight's player (two Inglebys) don't raise false alarms.
+- **19 tests:** all 22 live insights × 4 template variants and all banners pass; each check
+  catches its own hand-written error, in EN and JA.
 
 ### Task 4: verifier catch-rate harness (SHOULD; depth lever 4)
 
