@@ -27,7 +27,7 @@ from agent_framework import Agent, BaseChatClient, ChatResponse, Message
 
 from formline.config import settings
 
-PROMPT_VERSION = "v2"  # v2: viewer-ready card facts, examples, name in headline  # bump when prompts change, so cached answers are not reused
+PROMPT_VERSION = "v3"  # v3: comparison vs shot details kept apart, shorter casual subs  # bump when prompts change, so cached answers are not reused
 
 
 # ---------- fake client ----------

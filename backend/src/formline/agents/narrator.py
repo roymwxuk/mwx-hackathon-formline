@@ -57,7 +57,12 @@ Rules:
 - Percentiles, percentages and chances are model estimates: say so ("estimate", "est.", "about";
   in Japanese "推定" or "約").
 - No certainty claims (no "will score", "definitely", 必ず, 確実).
-- Describe the comparison with COMPARED_WITH, as given.
+- COMPARED_WITH is what this shot is compared against; describe it exactly as given. SHOT
+  describes only this shot (body part, pressure, distance, result): never mix SHOT details
+  into the comparison (e.g. don't say "his shots under pressure" unless COMPARED_WITH says so).
+- Casual cards: the sub is one short sentence (aim for under 100 characters in English,
+  50 in Japanese); include SHOT details only if they explain the story.
+- Japanese: natural sentences, e.g. 「…と比べて推定14パーセンタイル」.
 - Keep within LIMITS (characters). Write in the requested language.
 Reply with JSON only: {"tag": "...", "headline": "...", "sub": "..."}"""
 
