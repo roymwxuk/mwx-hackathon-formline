@@ -72,7 +72,7 @@ def test_cache_key_depends_on_agent_instructions_and_input():
 def test_prompt_version_invalidates_the_cache(monkeypatch):
     runner = make_runner(LLMConfig(), fake_responder=lambda t: "x")
     run(runner.complete("narrator", "Be brief.", "ping"))
-    monkeypatch.setattr(llm, "PROMPT_VERSION", "v2")
+    monkeypatch.setattr(llm, "PROMPT_VERSION", "v-test")
     run(runner.complete("narrator", "Be brief.", "ping"))
     assert len(runner.client.calls) == 2
 

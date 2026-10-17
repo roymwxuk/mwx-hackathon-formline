@@ -66,9 +66,9 @@ def test_var_overturn_corrects_the_shown_card(clean_run, live_feed):
     assert len(corrected) == 4 and orch.summary.corrected_cards == 4
     assert all(o.source_event_ids[0] == shot for o in corrected)
     en = next(o for o in corrected if o.lang == "en" and o.audience_mode == "casual")
-    assert en.slots.headline == "Reyner's fastest shot of the season"
+    assert en.slots.headline == "Reyner: 118 km/h, missed the target"  # re-narrated
     original = next(o for o in overlays if o.overlay_id == en.supersedes_overlay_id)
-    assert "goal" in original.slots.headline
+    assert original.slots.headline == "Reyner: 118 km/h, goal"
 
 
 def test_banner_cites_the_shot_and_the_var_events(clean_run, live_feed):

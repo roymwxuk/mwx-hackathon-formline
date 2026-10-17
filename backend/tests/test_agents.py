@@ -116,14 +116,27 @@ def test_selector_uses_rules_when_the_model_is_unusable(world):
 
 # ---------- narrator ----------
 
-def test_payload_carries_facts_limits_and_mode(world):
+def test_payload_is_viewer_ready(world):
     insights, names, _ = world
     ins = slow_shot(insights)
     p = request_payload(ins, "ja", "analyst", names[ins.player_id], feedback="- [numbers] x")
-    assert p["player"] == "レイナー" and p["audience_mode"] == "analyst"
-    assert p["FACTS"]["value"] == 84.1 and p["LIMITS"]["headline"] == 30
-    assert p["COMPARISON"] == ins.facts["comparison_level"]
-    assert p["FIX_THESE_PROBLEMS"] == "- [numbers] x"
+    c = p["CARD_FACTS"]
+    assert p["PLAYER"] == "レイナー" and p["audience_mode"] == "analyst"
+    assert c["THIS_SHOT"] == "84 km/h" and c["HIS_NORM"].endswith("km/h")
+    assert c["COMPARED_WITH"] == "エリア外からのシュートの平均"
+    assert c["SHOT"]["body"] == "利き足" and c["PERCENTILE"].startswith("推定")
+    assert p["LIMITS"]["headline"] == 30 and p["FIX_THESE_PROBLEMS"] == "- [numbers] x"
+    flat = json.dumps(p, ensure_ascii=False)
+    for code in ("strong_foot", "outside_central", "zone_body", "comparison_level", "area_body"):
+        assert code not in flat  # no internal labels reach the model
+
+
+def test_payload_never_sends_raw_fractions(world):
+    insights, names, _ = world
+    placement = next(i for i in insights if i.type == "placement_vs_norm")
+    c = request_payload(placement, "en", "casual", names[placement.player_id])["CARD_FACTS"]
+    assert c["THIS_SHOT"].endswith("/100") and c["HIS_NORM"].endswith("/100")
+    assert "0." not in c["THIS_SHOT"] + c["HIS_NORM"] + c["GAP"]
 
 
 def test_parse_slots():
@@ -188,4 +201,4 @@ def test_one_insight_becomes_four_verified_overlays(world):
     assert {c.overlay.overlay_id for c in cards} == {
         overlay_id(ins.insight_id, lang, mode) for lang, mode in VARIANTS}
     ja = next(c for c in cards if c.overlay.lang == "ja" and c.overlay.audience_mode == "casual")
-    assert ja.overlay.slots.headline == "レイナー、いつもの威力がない"
+    assert ja.overlay.slots.headline == "レイナー、84 km/h（セーブされた）"

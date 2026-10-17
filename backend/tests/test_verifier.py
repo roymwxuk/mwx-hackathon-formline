@@ -200,3 +200,31 @@ def test_percentiles_and_samples_are_bound_to_their_role(slow):
     assert "numbers" in checks(verify(analyst | {"sub": "Est. 100th percentile (n=5). Model "
                                                         "estimates."}, ctx(ins, mode="analyst"),
                                       league))
+
+
+
+def test_internal_labels_are_rejected(slow):
+    ins, league = slow
+    v = verify(good(sub="84 km/h from outside_central, body group strong foot (estimate)."),
+               ctx(ins), league)
+    assert "jargon" in checks(v)
+    ja = {"tag": "本人比", "headline": "レイナー、強足のシュート",
+          "sub": "84 km/h。平均より約8 km/h遅い（推定）"}
+    assert "jargon" in checks(verify(ja, ctx(ins, "ja"), league))
+
+
+def test_raw_placement_fraction_is_rejected(world):
+    changes, _, league = world
+    placement = next(c.insight for c in changes if isinstance(c, InsightCreated)
+                     and c.insight.type == "placement_vs_norm")
+    f = placement.facts
+    bad = {"tag": "T", "headline": f"{league.players[placement.player_id][0].split()[-1]} "
+                                   "placement", "sub": f"Placement {f['value']} (estimate)."}
+    v = verify(bad, ctx(placement), league)
+    assert "jargon" in checks(v) and "out of 100" in v.feedback()
+
+
+def test_headline_must_name_the_player(slow):
+    ins, league = slow
+    v = verify(good(headline="Not his usual strike"), ctx(ins), league)
+    assert "the headline must name the player (Reyner)" in v.feedback()

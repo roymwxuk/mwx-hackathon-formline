@@ -10,7 +10,10 @@ Checks:
 3. estimates  percentages, percentiles and chances must carry an estimate marker
 4. certainty  no certainty claims ("will score", "definitely", 必ず, 確実)
 5. language   JA text is Japanese; EN text has no kana
-6. structure  required slots present, within length limits, no unexpected keys
+6. structure  required slots present, within length limits, no unexpected keys; the headline
+              names the insight's player
+7. jargon     no internal labels (snake_case codes, "body group", 強足 …), and no raw 0–1
+              fractions where viewers expect a score or a percentage
 
 Failure details are written to be fed back to the narrator as retry instructions.
 """
@@ -34,6 +37,14 @@ ESTIMATE_MARKERS = {
     "en": ("estimate", "est.", "model", "about", "around", "roughly", "~"),
     "ja": ("推定", "約", "モデル"),
 }
+JARGON = {
+    "en": ("body group", "zone body", "area body", "box central", "outside central",
+           "open pressure", "pressure bucket", "comparison level", "est percentile"),
+    "ja": ("強足", "強い足", "頭部", "体の向き", "ボディグループ", "ゾーンボディ"),
+}
+SNAKE_CASE = re.compile(r"\b[a-z]+_[a-z_]+\b")
+FRACTION = re.compile(r"(?<![\d.])0\.\d+")
+
 CERTAINTY = {
     "en": ("will score", "definitely", "certainly", "guaranteed", "100% chance", "no doubt",
            "always scores", "sure to"),
@@ -117,7 +128,7 @@ def number_kinds(facts: dict) -> dict[str, set[str]]:
     speed = _union(facts, ("shot_speed_kmh",))
     if speed_metric:
         speed |= _union(facts, ("value", "norm", "delta", "group_prior"))
-    fraction = ("value", "norm", "group_prior") if not speed_metric else ()
+    fraction = ("value", "norm", "group_prior", "delta") if not speed_metric else ()
     percent = _union(facts, (*fraction, "xg", "psxg"), 100)
     pct = _num(facts, "est_percentile")
     if pct is not None:
@@ -249,6 +260,41 @@ def _check_certainty(text: str, ctx: VerifyContext) -> list[Failure]:
     return []
 
 
+def _check_jargon(text: str, ctx: VerifyContext) -> list[Failure]:
+    out = []
+    low = text.lower()
+    terms = [t for t in JARGON[ctx.lang] if t in low] + SNAKE_CASE.findall(text)
+    if terms:
+        out.append(Failure("jargon", f"internal labels shown to viewers ({', '.join(terms)}); "
+                                     "use plain football words from CARD_FACTS"))
+    metric = ctx.facts.get("metric")
+    # Only the metric's own values shown as 0–1 fractions are wrong; other decimals (the
+    # sample weight, xG on analyst cards) are fine.
+    as_fraction = set()
+    for key in ("value", "norm", "delta", "group_prior"):
+        v = ctx.facts.get(key)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            as_fraction |= {s for s in _forms(v) if s.startswith("0.")}
+    raw = [r for r in FRACTION.findall(text) if r in as_fraction]
+    if raw and (metric == "placement" or (metric == "psxg" and ctx.mode == "casual")):
+        unit = "a score out of 100 (e.g. 44/100)" if metric == "placement" else "a percentage"
+        out.append(Failure("jargon", f"raw fraction(s) {', '.join(raw)}; show it as {unit}"))
+    return out
+
+
+def _check_headline_names_player(slots: dict, ctx: VerifyContext,
+                                 league: LeagueNames) -> list[Failure]:
+    own = league.players.get(ctx.player_id) if ctx.player_id else None
+    headline = slots.get("headline")
+    if not own or not isinstance(headline, str) or not headline:
+        return []
+    forms = {own[0], _surname(own[0])} if ctx.lang == "en" else {own[1], _ja_short(own[1])}
+    if not any(form in headline for form in forms):
+        name = _surname(own[0]) if ctx.lang == "en" else _ja_short(own[1])
+        return [Failure("structure", f"the headline must name the player ({name})")]
+    return []
+
+
 def _check_language(slots: dict, ctx: VerifyContext) -> list[Failure]:
     text = " ".join(v for k, v in slots.items() if k in ("headline", "sub") and isinstance(v, str))
     if ctx.lang == "ja" and not JAPANESE.search(text):
@@ -267,6 +313,8 @@ def verify(slots: dict, ctx: VerifyContext, league: LeagueNames) -> Verdict:
     failures += _check_estimates(text, ctx)
     failures += _check_certainty(text, ctx)
     failures += _check_language(slots, ctx)
+    failures += _check_jargon(text, ctx)
+    failures += _check_headline_names_player(slots, ctx, league)
     return Verdict(tuple(failures))
 
 
