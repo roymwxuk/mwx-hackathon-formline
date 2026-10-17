@@ -1,6 +1,7 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** Planned (2026-10-17). Not started.
+**Status:** In progress. T0 (ADR-010), T1 (schema) and T2 (team shape, preview in
+`docs/tracking/t2-shape-preview.png`) done on 2026-10-17.
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.
