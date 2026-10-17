@@ -25,7 +25,7 @@ export interface MatchStream {
 }
 
 const SSE_URL: string | undefined = process.env.NEXT_PUBLIC_STREAM_URL;
-const LIVE_SPEEDS = [10, 20, 60, 120];
+const LIVE_SPEEDS = [1, 5, 10, 20, 60, 120];
 const MOCK_SPEEDS = [30, 60, 120];
 const HALF_MS = 45 * 60_000;
 

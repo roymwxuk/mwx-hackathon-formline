@@ -64,6 +64,7 @@ TICK_SECONDS = 0.25  # during a gap, send the match time this often (real second
 PERIOD_ENDS = {"half_end"}  # the match clock stops here: no clock messages until play resumes
 
 SLOW_FACTOR = 6.0  # around shots and cards, pacing is this many times slower (20x -> ~3x)
+MIN_SLOW_PACE = 3.0  # ...but never slower than 3x (unless the viewer chose a slower speed)
 SLOW_BEFORE = timedelta(seconds=4)  # feed time before a key moment
 SLOW_AFTER = timedelta(seconds=14)  # and after it
 
@@ -168,12 +169,17 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
         if not catching_up and prev is not None:
             gap = (at - prev).total_seconds()
             if gap > 0:
-                pace = speed / SLOW_FACTOR if slow and _near_key(keys, at) else speed
+                pace = _slow_pace(speed) if slow and _near_key(keys, at) else speed
                 async for tick in _wait(gap / pace, pace, clock, prev, mt, phase):
                     yield None, tick
         prev = at if prev is None else max(prev, at)
         clock = _clock_after(payload, at, clock)
         yield idx, payload
+
+
+def _slow_pace(speed: float) -> float:
+    """Pace near a key moment: 20x -> 3.3x, 10x and 5x -> 3x, 1x stays 1x."""
+    return min(speed, max(speed / SLOW_FACTOR, MIN_SLOW_PACE))
 
 
 def _near_key(keys: list[datetime], at: datetime) -> bool:

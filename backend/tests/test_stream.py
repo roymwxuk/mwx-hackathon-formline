@@ -186,11 +186,11 @@ def test_pacing_slows_down_around_key_moments(monkeypatch):
     got = asyncio.run(run())
     assert [i for i, _ in got] == [1, 2, 3, 4, 5, 6]
     assert [w for _, w in got[1:4]] == [1.0, 1.0, 1.0]  # 10 s of feed at 10x
-    assert got[-1][1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))  # near the shot: slower
+    assert got[-1][1] == pytest.approx(10 / rp.MIN_SLOW_PACE)  # near the shot: slower (3x)
     assert [w for _, w in asyncio.run(run(slow=False))[1:]] == [1.0] * 5
     got = asyncio.run(run(start=(1, 30_000)))
     assert [w for _, w in got][:5] == [0, 0, 0, 0, 1.0]  # the past arrived at once
-    assert got[-1][1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))
+    assert got[-1][1] == pytest.approx(10 / rp.MIN_SLOW_PACE)
 
 
 def test_gaps_carry_clock_messages_with_the_running_match_time(monkeypatch):
@@ -308,4 +308,13 @@ def test_tracking_can_be_turned_off(client, tracked, monkeypatch):
     blocks = _stream_blocks(client, "speed=20&until=01:00&slow=false&tracking=false")
     assert any('"kind": "clock"' in b for b in blocks)
     assert not any('"kind":"frame"' in b for b in blocks)
+
+
+def test_slow_down_never_drops_below_3x_or_above_the_chosen_speed():
+    from formline import replay as rp
+
+    assert rp._slow_pace(20) == pytest.approx(20 / 6)
+    assert rp._slow_pace(10) == rp._slow_pace(5) == 3.0
+    assert rp._slow_pace(1) == 1.0
+    assert rp._slow_pace(1e9) == pytest.approx(1e9 / 6)  # tests' instant replays stay instant
 
