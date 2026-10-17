@@ -15,7 +15,9 @@ MODEL=${MODEL:-gpt-4.1-mini}
 MODEL_VERSION=${MODEL_VERSION:-2025-04-14}
 DEPLOYMENT=${DEPLOYMENT:-$MODEL}
 CAPACITY=${CAPACITY:-50}             # thousands of tokens per minute (a rate limit, not a charge)
-ROLES=("Cognitive Services OpenAI User" "Azure AI Developer")
+# Foundry project endpoints (what FoundryChatClient calls) need "Foundry User"; the
+# narrower "Foundry Project Runtime User" and the classic OpenAI roles returned 403.
+ROLES=("Foundry User")
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 echo "subscription: $(az account show --query name -o tsv)"
