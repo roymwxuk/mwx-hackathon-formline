@@ -18,6 +18,12 @@ for studio and streaming use.
 | d. Render | overlay contract (`docs/contracts/overlay.schema.json`), timed overlays over SSE, viewer in `frontend/` | ✅ |
 | e. Personalize | EN/JA, casual/analyst, favorite clubs and players (card priority), player focus, "my metric" | ✅ (client-side) |
 
+![Formline architecture](docs/architecture/architecture.svg)
+
+Green boxes are deterministic (no LLM), purple are LLM agents on a Foundry model; the dashed
+gold arrows are the recovery path. Source: [`docs/architecture/build_diagram.py`](docs/architecture/build_diagram.py)
+(PNG for slides: `docs/architecture/architecture.png`).
+
 ![Two viewers at the VAR correction](docs/ui/live/3-two-viewers-65m.png)
 
 ## Agents
