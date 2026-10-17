@@ -7,6 +7,9 @@
   `Agent(client, instructions).run(...)`. The cache makes reruns free (and the demo
   reproducible); the budget caps cost per run.
 
+Auth is identity-based (`DefaultAzureCredential`): your `az login` locally, the app's
+managed identity in Azure Container Apps. No API keys anywhere.
+
 Manual smoke test against Foundry (needs the deployment and `az login`):
     uv run python -m formline.agents.llm --smoke
 """
@@ -24,7 +27,7 @@ from agent_framework import Agent, BaseChatClient, ChatResponse, Message
 
 from formline.config import settings
 
-PROMPT_VERSION = "v1"  # bump when prompts change, so cached answers are not reused
+PROMPT_VERSION = "v3"  # v3: comparison vs shot details kept apart, shorter casual subs  # bump when prompts change, so cached answers are not reused
 
 
 # ---------- fake client ----------
@@ -85,10 +88,11 @@ def make_chat_client(config: LLMConfig, fake_responder: Responder = echo_respond
     """Foundry when configured, otherwise the fake. Returns (client, kind)."""
     if config.uses_foundry:
         from agent_framework.foundry import FoundryChatClient
-        from azure.identity import AzureCliCredential
+        from azure.identity import DefaultAzureCredential
 
+        # az login locally, managed identity in Azure: the same code, no keys.
         client = FoundryChatClient(project_endpoint=config.endpoint, model=config.deployment,
-                                   credential=AzureCliCredential())
+                                   credential=DefaultAzureCredential())
         return client, "foundry"
     return FakeChatClient(fake_responder), "fake"
 

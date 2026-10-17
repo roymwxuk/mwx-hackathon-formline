@@ -1,6 +1,6 @@
 # Milestone 4: Azure deployment and production readiness
 
-**Status:** Planned, not started (2026-10-17)
+**Status:** In progress. Tasks 1–2 done (2026-10-17)
 **Branch:** `feat/deploy`, to be built after milestone 3 (`feat/agents`)
 **Planned:** Oct 20–22 in `CLAUDE.md` ("Azure deployment and the live viewer UI"). The viewer UI
 is already done (see `docs/frontend-gaps.md`), so this milestone focuses on deployment and on
@@ -39,8 +39,8 @@ deploy, record the video against Azure, then scale to zero.
 
 | # | Task | Priority | Estimate |
 |---|---|---|---|
-| 1 | Dockerfiles (backend, viewer) and local `docker compose` | MUST | 1 h |
-| 2 | GitHub Actions CI: lint, typecheck, tests on every push | MUST | 0.5 h |
+| 1 | ✅ Dockerfiles (backend, viewer) and local `docker compose` | MUST | 1 h |
+| 2 | ✅ GitHub Actions CI: lint, typecheck, tests on every push | MUST | 0.5 h |
 | 3 | Deploy to Azure Container Apps (manual `az` steps, scripted) | MUST | 1.5 h |
 | 4 | Managed identity for Foundry (no API keys) | SHOULD | 0.5 h |
 | 5 | Observability: logs to Log Analytics, optional Application Insights traces | SHOULD | 0.5 h |
@@ -48,7 +48,7 @@ deploy, record the video against Azure, then scale to zero.
 | 7 | Live replay controls and end of stream (frontend gap 4) | SHOULD | 1 h |
 | 8 | Docs: README "Deploy" and "Production readiness" sections, ADR-009 | MUST | 0.5 h |
 
-### Task 1: containers (MUST)
+### Task 1: containers (MUST) ✅ Done
 
 - `backend/Dockerfile`: Python 3.12 slim, `uv sync --frozen --no-dev`, runs `formline-gen generate`
   at build time (the data is deterministic and about 28 MB), serves `uvicorn`, health check on
@@ -59,12 +59,44 @@ deploy, record the video against Azure, then scale to zero.
   locally.
 - **Done when:** `docker compose up` shows the viewer playing the live match with cards.
 
-### Task 2: CI (MUST)
+**Result:**
+- `backend/Dockerfile`: Python 3.12 slim, uv 0.10.9, dependencies in their own layer, the season
+  and the live match's overlays generated at build time, non-root user `formline`, health check on
+  `/health`, `scripts/start.sh` entrypoint (swaps in Foundry-precomputed overlays from
+  `backend/demo/overlays/` when present).
+- `frontend/Dockerfile`: multi-stage Next.js `output: "standalone"` build on Node 22 Alpine; the
+  stream URL is a build argument. `tsconfig.build.json` keeps test files out of the production
+  type-check (a contract test reads a backend file that isn't in the image). pnpm pinned
+  (`packageManager: pnpm@12.4.1`).
+- `docker-compose.yml`: both services; validated with `docker-compose config`.
+- **Image size:** the first backend build was **3.38 GB**. Two fixes brought it to **639 MB**:
+  depending on `agent-framework-core` + `agent-framework-foundry` (+ `azure-identity`) instead of
+  the `agent-framework` meta package, which pulls in every integration; and re-owning only the
+  data dir instead of `chown -R /app`, which duplicated every file into a new layer. Viewer image:
+  **325 MB**.
+- **Verified:** both containers run together; backend healthy, running as non-root; viewer plays
+  the live match from the containers up to the VAR correction (corrected card and banner).
+- **Environment note:** the first build attempt hit Docker I/O errors because the Mac's disk was
+  full (121 MB free), which made the Colima VM's writes fail. After freeing space Docker recovered
+  without a reset.
+
+### Task 2: CI (MUST) ✅ Done (pending first run on GitHub)
 
 - `.github/workflows/ci.yml`: backend (`uv sync`, `ruff`, `pytest`) and frontend (`pnpm install`,
   `lint`, `typecheck`, `test`, `build`) on every push and pull request. Tests never need Azure (the
   fake LLM client).
 - **Done when:** the workflow is green on GitHub.
+
+**Result:** `.github/workflows/ci.yml` runs on pushes to `main`, on pull requests and manually:
+- **backend:** uv 0.10.9 + Python 3.12 (cached), `uv sync --frozen`, `ruff`, `pytest` (tests
+  generate their own data and use the fake LLM client, so no Azure secrets are needed);
+- **frontend:** pnpm (version from `packageManager`), Node 22 (cached), frozen install, lint,
+  typecheck, tests, build;
+- **images:** after both pass, builds the backend and viewer images with Buildx (GitHub Actions
+  layer cache, no push).
+- Read-only `contents` permission; concurrent runs on the same ref are cancelled.
+- Validated locally: YAML parses and `actionlint` reports no problems. The first real run happens
+  when the branch is pushed. README has a CI badge.
 
 ### Task 3: deploy to Azure Container Apps (MUST)
 

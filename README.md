@@ -1,5 +1,7 @@
 # mwx-hackathon-formline
 
+[![CI](https://github.com/roymwxuk/mwx-hackathon-formline/actions/workflows/ci.yml/badge.svg)](https://github.com/roymwxuk/mwx-hackathon-formline/actions/workflows/ci.yml)
+
 **Formline** — a Synthetic Match Insights Engine for the *Inside the Game* Developer Hackathon
 (Microsoft × Premier League). Submissions close **Oct 27, 2026**. Full brief: [HACKATHON_BRIEF.md](HACKATHON_BRIEF.md).
 
@@ -83,6 +85,17 @@ pnpm dev
 # or against the backend feed:
 NEXT_PUBLIC_STREAM_URL="http://localhost:8000/matches/mtc_s26_md11_har_nor/stream?speed=20" pnpm dev
 ```
+
+### With Docker
+
+```bash
+docker compose up --build        # or docker-compose; then open http://localhost:3000
+```
+
+The backend image (~640 MB) builds the synthetic season and the live match's overlays at build
+time and runs as a non-root user with a health check; the viewer image (~325 MB) is a Next.js
+standalone server. Overlays precomputed with Microsoft Foundry can be shipped in
+`backend/demo/overlays/` (see `backend/demo/README.md`).
 
 ## Personal baselines: does shrinkage help?
 

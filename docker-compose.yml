@@ -1,0 +1,17 @@
+# Run the whole demo locally: `docker compose up --build`, then open http://localhost:3000
+# The backend image ships the live match's precomputed overlays, so no model access is needed.
+# (Live Foundry narration inside a container needs Azure credentials; see milestone 4 task 4.)
+services:
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment:
+      CORS_ORIGINS: '["http://localhost:3000"]'
+      SIM_SPEED: "20"
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_STREAM_URL: "http://localhost:8000/matches/mtc_s26_md11_har_nor/stream?speed=20"
+    ports: ["3000:3000"]
+    depends_on: [backend]
