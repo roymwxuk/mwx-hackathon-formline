@@ -45,6 +45,8 @@ class LiveSummary:
     corrected_cards: int = 0
     retracted_cards: int = 0
     banners: int = 0
+    llm_texts: int = 0
+    template_texts: int = 0
 
 
 @dataclass
@@ -106,11 +108,17 @@ class LiveOrchestrator:
     async def _show(self, candidates) -> None:
         out = await run_moment(self.workflow, candidates, self.deps.selector_state)
         self.summary.moments += 1
+        self._count_sources(out.cards)
         if out.cards:
             overlays = [c.overlay for c in out.cards]
             self.shown[out.selection.insight.insight_id] = overlays
             self.overlays += overlays
             self.summary.cards += len(overlays)
+
+    def _count_sources(self, cards) -> None:
+        for card in cards:
+            self.summary.llm_texts += card.narration.source == "llm"
+            self.summary.template_texts += card.narration.source == "template"
 
     # ---------- corrections ----------
 
@@ -143,6 +151,7 @@ class LiveOrchestrator:
                               priority_of(c.after), f"correction: {c.reason}", "correction")
         out = await run_moment(self.workflow, [c.after], self.deps.selector_state,
                                forced=selection)
+        self._count_sources(out.cards)
         by_variant = {(o.lang, o.audience_mode): o for o in old}
         corrected = []
         for card in out.cards:

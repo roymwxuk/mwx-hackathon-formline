@@ -35,6 +35,7 @@ cd backend
 uv sync
 uv run formline-gen generate     # writes backend/data/ (seed 2026, ~3 s, ~28 MB)
 uv run formline-gen report       # writes docs/realism-report.md
+uv run formline-gen overlays     # runs the agents over the live match, caches its overlays
 uv run uvicorn formline.api:app --reload
 uv run pytest
 
@@ -122,8 +123,11 @@ properties run as `hypothesis` tests in CI (`backend/tests/test_convergence.py`)
 
 API: `GET /matches`; `GET /matches/{match_id}/league` (both squads with each player's
 shrunk season shot-speed norm); and `GET /matches/{match_id}/stream?speed=N`, where each SSE
-`data:` line is one viewer `StreamMessage`. In live mode the viewer loads the league endpoint
-next to the stream URL, so its settings list the real squads.
+`data:` line is one viewer `StreamMessage` (`event`, `overlay`, then a final `end`). By default
+the stream replays the feed with the overlays cached by `formline-gen overlays`;
+`live=true` runs the engine and the agents during the replay; `chaos=true&chaos_seed=N`
+replays a chaotic feed (and implies live). The agents use Microsoft Foundry when
+`AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
 ## Planned Azure stack
 

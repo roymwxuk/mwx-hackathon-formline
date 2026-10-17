@@ -8,12 +8,19 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
+from formline.agents.precompute import (
+    default_runner,
+    make_orchestrator,
+    overlays_path,
+    read_overlays,
+)
 from formline.chaos import ChaosConfig, inject
 from formline.config import settings
 from formline.engine.bootstrap import bootstrap_history
 from formline.engine.engine import BaselineEngine
 from formline.generator.output import read_feed
-from formline.replay import replay, to_stream_message
+from formline.replay import END_MESSAGE, merge_stream, replay, replay_items, to_stream_message
+from formline.schema.overlay import overlay_message
 from formline.viewer import UnknownMatch, match_league
 
 app = FastAPI(title="Formline")
@@ -53,22 +60,43 @@ def league(match_id: str) -> dict:
 
 @app.get("/matches/{match_id}/stream")
 async def stream(match_id: str, speed: float | None = Query(None, gt=0),
-                 chaos: bool = False, chaos_seed: int = 0) -> EventSourceResponse:
+                 live: bool = False, chaos: bool = False,
+                 chaos_seed: int = 0) -> EventSourceResponse:
     """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode).
 
-    `chaos=true` replays the feed through the chaos injector (duplicates, reordering,
-    late messages, injected corrections) to show the pipeline coping live.
+    Default: replays the feed together with the precomputed overlays
+    (`formline-gen overlays`). `live=true` runs the engine and the agent workflow during
+    the replay instead. `chaos=true` replays the feed through the chaos injector
+    (duplicates, reordering, late messages, injected corrections) and implies live, so
+    the cards follow the chaotic feed's own corrections. The stream ends with
+    `{"kind": "end"}`.
     """
     path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
     if not path.exists():
         raise HTTPException(404, f"Unknown match {match_id}")
     feed = read_feed(path)
+    pace = speed or settings.sim_speed
+
+    def sse(payload: dict) -> dict:
+        return {"data": json.dumps(payload, ensure_ascii=False)}
 
     async def gen():
-        transform = (lambda f: inject(f, ChaosConfig(seed=chaos_seed)).messages) if chaos else None
-        async for msg in replay(feed, speed or settings.sim_speed, transform=transform):
-            payload = to_stream_message(msg)
-            if payload:
-                yield {"data": json.dumps(payload, ensure_ascii=False)}
+        if live or chaos:
+            orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
+                                     default_runner(settings.data_dir))
+            messages = inject(feed, ChaosConfig(seed=chaos_seed)).messages if chaos else feed
+            async for msg in replay(messages, pace):
+                if (payload := to_stream_message(msg)) is not None:
+                    yield sse(payload)
+                for overlay in await orch.process(msg):
+                    yield sse(overlay_message(overlay))
+            for overlay in await orch.flush():
+                yield sse(overlay_message(overlay))
+        else:
+            cached = overlays_path(settings.data_dir, match_id)
+            overlays = read_overlays(cached) if cached.exists() else []
+            async for payload in replay_items(merge_stream(feed, overlays), pace):
+                yield sse(payload)
+        yield sse(END_MESSAGE)
 
     return EventSourceResponse(gen())

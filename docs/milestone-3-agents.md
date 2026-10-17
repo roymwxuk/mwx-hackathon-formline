@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4 and 6–8 done; task 5 done except the Azure steps (2026-10-17)
+**Status:** In progress. Tasks 1–4 and 6–9 done; task 5 done except the Azure steps (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -62,7 +62,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 6 | ✅ Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
 | 7 | ✅ Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
 | 8 | ✅ Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
-| 9 | Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
+| 9 | ✅ Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
 | 10 | Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
 | 11 | Foundry evaluations | COULD | 1 h | 6 |
 | 12 | Half-time or full-time recap card (gap 7) | COULD | 1 h | 7 |
@@ -401,7 +401,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
   always unique, every correction superseding a shown card.
 - 7 tests: VAR correction, banner lineage, timing, retract via delete, 3 chaos seeds.
 
-### Task 9: live integration, overlay cache and SSE (MUST; D3)
+### Task 9: live integration, overlay cache and SSE (MUST; D3) ✅ Done
 
 - **9.1 Precompute:** `uv run formline-gen overlays` runs bootstrap → live pipeline → workflow
   over the live match and writes `data/overlays/<match_id>.jsonl` (timed overlays). The result
@@ -413,6 +413,19 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 - **9.4 End of stream** (frontend gap 4, partial): send `{kind: 'end'}` so the viewer stops
   reconnecting.
 - **Done when:** the viewer in live mode shows cards at the right moments without any mock data.
+
+**Result** (`agents/precompute.py`, `replay.py`, `api.py`; tests `tests/test_stream.py`):
+- `uv run formline-gen overlays` bootstraps the engine from the generated history, runs the
+  `LiveOrchestrator` over the live feed and writes `data/overlays/<match_id>.jsonl` (each
+  overlay with the emission time of the message that triggered it). Model answers are
+  cached in `data/llm_cache.jsonl`: the first run made 65 model calls; **a rerun makes 0**.
+- `/matches/{id}/stream`: by default merges events and cached overlays by time (an overlay
+  right after its trigger); `live=true` runs engine and agents during the replay;
+  `chaos=true` replays a chaotic feed and implies live, so cards follow that feed's own
+  corrections. Every stream ends with `{"kind": "end"}`.
+- Live match: 64 overlays (56 cards, 4 corrections, 4 banners).
+- 6 tests: precompute file, cache rerun, overlay placement, default stream, live mode,
+  chaos mode (ids unique, every correction supersedes a shown card).
 
 ### Task 10: frontend wiring (MUST; gaps 1 and 5)
 
