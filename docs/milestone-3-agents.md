@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4 done (2026-10-17)
+**Status:** In progress. Tasks 1–4 done; task 5 done except the Azure steps (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -58,7 +58,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 2 | ✅ Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
 | 3 | ✅ Verifier (deterministic checks) | MUST | 1.5 h | 2 |
 | 4 | ✅ Verifier catch-rate harness | SHOULD | 1 h | 3 |
-| 5 | LLM client setup and fake client | MUST | 1 h | D1 |
+| 5 | 🟡 LLM client setup and fake client (Azure steps pending) | MUST | 1 h | D1 |
 | 6 | Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
 | 7 | Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
 | 8 | Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
@@ -227,10 +227,10 @@ end of the milestone, when the owner has the deployment ready.
 | Sub-task | Needs Azure? | When |
 |---|---|---|
 | 5.1 Foundry project and model deployment | **Yes** (owner, in the Azure portal) | Before the real narration run |
-| 5.2 Client factory and fake client | No | Now |
+| 5.2 Client factory and fake client ✅ | No | Done |
 | 5.3 Smoke test with one real call | **Yes** (deployment plus `az login`) | After 5.1 |
-| 5.4 Cost guard (budget, temperature, cache) | No | Now |
-| Settings wiring and tests | No | Now |
+| 5.4 Cost guard (budget, temperature, cache) ✅ | No | Done |
+| Settings wiring and tests ✅ | No | Done |
 
 - **5.1 Azure:** create (or reuse) a Microsoft Foundry project with a small model deployment.
   Record the endpoint and deployment in `.env` (`AZURE_AI_PROJECT_ENDPOINT`,
@@ -243,6 +243,20 @@ end of the milestone, when the owner has the deployment ready.
 - **5.4 Cost guard:** a token budget per run, temperature 0–0.3, short prompts (facts JSON only),
   and a response cache keyed by (insight id, facts hash, lang, mode, prompt version).
 - **Done when:** the same code path runs against Foundry and against the fake client.
+
+**Result so far** (`formline/agents/llm.py`, tests `tests/test_llm.py`):
+- `FakeChatClient` subclasses Agent Framework's `BaseChatClient`, so the fake runs through the
+  same `Agent(client, instructions).run(...)` path as Foundry. It answers from a Python
+  function and records every call.
+- `make_chat_client(config)`: `FoundryChatClient(project_endpoint, model, AzureCliCredential())`
+  when `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise the fake. Constructing the Foundry client
+  needs no network, so it's unit-tested.
+- `LLMRunner.complete(agent, instructions, input)`: response cache (keyed by prompt version,
+  model, agent, instructions and input; optionally persisted) → call budget (600 per run by
+  default) → `Agent.run` with temperature 0.2 and max 400 tokens. Retries bypass the cache.
+- Manual smoke test: `uv run python -m formline.agents.llm --smoke`.
+- `backend/.env.example` documents both modes.
+- 9 tests. **Pending (Azure):** 5.1 deployment and 5.3 real smoke test.
 
 ### Task 6: agents (MUST; D2, D6)
 
