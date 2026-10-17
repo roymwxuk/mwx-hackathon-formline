@@ -1,5 +1,7 @@
 # mwx-hackathon-formline
 
+[![CI](https://github.com/roymwxuk/mwx-hackathon-formline/actions/workflows/ci.yml/badge.svg)](https://github.com/roymwxuk/mwx-hackathon-formline/actions/workflows/ci.yml)
+
 **Formline** — a Synthetic Match Insights Engine for the *Inside the Game* Developer Hackathon
 (Microsoft × Premier League). Submissions close **Oct 27, 2026**. Full brief: [HACKATHON_BRIEF.md](HACKATHON_BRIEF.md).
 

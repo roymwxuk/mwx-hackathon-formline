@@ -1,6 +1,6 @@
 # Milestone 4: Azure deployment and production readiness
 
-**Status:** In progress. Task 1 done (2026-10-17)
+**Status:** In progress. Tasks 1–2 done (2026-10-17)
 **Branch:** `feat/deploy`, to be built after milestone 3 (`feat/agents`)
 **Planned:** Oct 20–22 in `CLAUDE.md` ("Azure deployment and the live viewer UI"). The viewer UI
 is already done (see `docs/frontend-gaps.md`), so this milestone focuses on deployment and on
@@ -40,7 +40,7 @@ deploy, record the video against Azure, then scale to zero.
 | # | Task | Priority | Estimate |
 |---|---|---|---|
 | 1 | ✅ Dockerfiles (backend, viewer) and local `docker compose` | MUST | 1 h |
-| 2 | GitHub Actions CI: lint, typecheck, tests on every push | MUST | 0.5 h |
+| 2 | ✅ GitHub Actions CI: lint, typecheck, tests on every push | MUST | 0.5 h |
 | 3 | Deploy to Azure Container Apps (manual `az` steps, scripted) | MUST | 1.5 h |
 | 4 | Managed identity for Foundry (no API keys) | SHOULD | 0.5 h |
 | 5 | Observability: logs to Log Analytics, optional Application Insights traces | SHOULD | 0.5 h |
@@ -80,12 +80,23 @@ deploy, record the video against Azure, then scale to zero.
   full (121 MB free), which made the Colima VM's writes fail. After freeing space Docker recovered
   without a reset.
 
-### Task 2: CI (MUST)
+### Task 2: CI (MUST) ✅ Done (pending first run on GitHub)
 
 - `.github/workflows/ci.yml`: backend (`uv sync`, `ruff`, `pytest`) and frontend (`pnpm install`,
   `lint`, `typecheck`, `test`, `build`) on every push and pull request. Tests never need Azure (the
   fake LLM client).
 - **Done when:** the workflow is green on GitHub.
+
+**Result:** `.github/workflows/ci.yml` runs on pushes to `main`, on pull requests and manually:
+- **backend:** uv 0.10.9 + Python 3.12 (cached), `uv sync --frozen`, `ruff`, `pytest` (tests
+  generate their own data and use the fake LLM client, so no Azure secrets are needed);
+- **frontend:** pnpm (version from `packageManager`), Node 22 (cached), frozen install, lint,
+  typecheck, tests, build;
+- **images:** after both pass, builds the backend and viewer images with Buildx (GitHub Actions
+  layer cache, no push).
+- Read-only `contents` permission; concurrent runs on the same ref are cancelled.
+- Validated locally: YAML parses and `actionlint` reports no problems. The first real run happens
+  when the branch is pushed. README has a CI badge.
 
 ### Task 3: deploy to Azure Container Apps (MUST)
 
