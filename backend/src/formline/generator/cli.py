@@ -12,6 +12,8 @@ DEFAULT_SEED = 2026
 BACKEND = Path(__file__).resolve().parents[3]
 DEFAULT_DATA = BACKEND / "data"
 DEFAULT_REPORT = BACKEND.parent / "docs" / "realism-report.md"
+DEFAULT_SCHEMA = BACKEND.parent / "docs" / "contracts" / "overlay.schema.json"
+DEFAULT_EXAMPLES = BACKEND / "data" / "sample" / "overlays.example.json"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,7 +26,15 @@ def main(argv: list[str] | None = None) -> int:
     rep.add_argument("--data", type=Path, default=DEFAULT_DATA)
     rep.add_argument("--out", type=Path, default=DEFAULT_REPORT)
     rep.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    con = sub.add_parser("contracts", help="write the overlay JSON Schema and example overlays")
+    con.add_argument("--seed", type=int, default=DEFAULT_SEED)
     args = parser.parse_args(argv)
+
+    if args.command == "contracts":
+        from formline.agents.examples import write_contracts
+        write_contracts(DEFAULT_SCHEMA, DEFAULT_EXAMPLES, args.seed)
+        print(f"wrote {DEFAULT_SCHEMA} and {DEFAULT_EXAMPLES}")
+        return 0
 
     if args.command == "generate":
         season = generate_season(args.seed)

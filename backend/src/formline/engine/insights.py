@@ -91,6 +91,7 @@ def _facts(c: ShotComparison, m: MetricComparison) -> dict:
         "est_percentile": round(m.est_percentile),
         "sample_n": m.n,
         "comparison": m.level_label,
+        "comparison_level": m.level,
         "weight_on_own_shots": round(m.weight, 2),
         "group_prior": round(m.prior_mean, scale),
         "thin_sample": m.thin,

@@ -1,0 +1,256 @@
+{
+  "$defs": {
+    "Bar": {
+      "description": "One bar of a casual card: this value vs the player's own norm.",
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "display": {
+          "title": "Display",
+          "type": "string"
+        },
+        "highlight": {
+          "title": "Highlight",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "label",
+        "value",
+        "display",
+        "highlight"
+      ],
+      "title": "Bar",
+      "type": "object"
+    },
+    "OverlaySlots": {
+      "properties": {
+        "tag": {
+          "title": "Tag",
+          "type": "string"
+        },
+        "headline": {
+          "title": "Headline",
+          "type": "string"
+        },
+        "stat": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stat"
+        },
+        "sub": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sub"
+        },
+        "bars": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Bar"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bars"
+        },
+        "rows": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Row"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rows"
+        }
+      },
+      "required": [
+        "tag",
+        "headline"
+      ],
+      "title": "OverlaySlots",
+      "type": "object"
+    },
+    "Row": {
+      "description": "One label/value row of an analyst card.",
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "title": "Row",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "overlay_id": {
+      "title": "Overlay Id",
+      "type": "string"
+    },
+    "op": {
+      "enum": [
+        "show",
+        "correct",
+        "retract"
+      ],
+      "title": "Op",
+      "type": "string"
+    },
+    "supersedes_overlay_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Supersedes Overlay Id"
+    },
+    "match_clock_ms": {
+      "minimum": 0,
+      "title": "Match Clock Ms",
+      "type": "integer"
+    },
+    "ttl_ms": {
+      "minimum": 0,
+      "title": "Ttl Ms",
+      "type": "integer"
+    },
+    "template_id": {
+      "enum": [
+        "shot_speed_card",
+        "placement_card",
+        "finish_quality_card",
+        "correction_banner"
+      ],
+      "title": "Template Id",
+      "type": "string"
+    },
+    "priority": {
+      "description": "1 = most important",
+      "minimum": 1,
+      "title": "Priority",
+      "type": "integer"
+    },
+    "audience_mode": {
+      "enum": [
+        "casual",
+        "analyst"
+      ],
+      "title": "Audience Mode",
+      "type": "string"
+    },
+    "lang": {
+      "enum": [
+        "en",
+        "ja"
+      ],
+      "title": "Lang",
+      "type": "string"
+    },
+    "slots": {
+      "$ref": "#/$defs/OverlaySlots"
+    },
+    "insight_id": {
+      "title": "Insight Id",
+      "type": "string"
+    },
+    "player_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Player Id"
+    },
+    "metric": {
+      "anyOf": [
+        {
+          "enum": [
+            "shot_speed",
+            "finishing"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Metric"
+    },
+    "source_event_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Source Event Ids",
+      "type": "array"
+    },
+    "verified": {
+      "title": "Verified",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "overlay_id",
+    "op",
+    "supersedes_overlay_id",
+    "match_clock_ms",
+    "ttl_ms",
+    "template_id",
+    "priority",
+    "audience_mode",
+    "lang",
+    "slots",
+    "insight_id",
+    "player_id",
+    "metric",
+    "source_event_ids",
+    "verified"
+  ],
+  "title": "Overlay",
+  "type": "object"
+}

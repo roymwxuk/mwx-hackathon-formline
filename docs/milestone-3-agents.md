@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** Planned, not started (2026-10-17)
+**Status:** In progress. Task 1 done (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -54,7 +54,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 
 | # | Task | Priority | Estimate | Depends on |
 |---|---|---|---|---|
-| 1 | Overlay contract and template catalog (backend) | MUST | 1 h | — |
+| 1 | ✅ Overlay contract and template catalog (backend) | MUST | 1 h | — |
 | 2 | Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
 | 3 | Verifier (deterministic checks) | MUST | 1.5 h | 2 |
 | 4 | Verifier catch-rate harness | SHOULD | 1 h | 3 |
@@ -70,7 +70,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 
 ---
 
-### Task 1: overlay contract and template catalog (MUST)
+### Task 1: overlay contract and template catalog (MUST) ✅ Done
 
 **Goal:** the backend speaks exactly the overlay format the viewer already renders.
 
@@ -95,6 +95,22 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
   - Backend test: the examples validate. Frontend test: the same file loads as `Overlay[]`
     and renders through `applyOverlays` and `personalize`.
 - **Done when:** a hand-built overlay from a real insight validates and renders in the viewer.
+
+**Result:**
+- `formline/schema/overlay.py`: `Overlay`, `OverlaySlots`, `Bar`, `Row`, with op rules
+  (correct and retract must name what they supersede; show must not), at least one source
+  event, and `overlay_message()` for the stream. Top-level nulls stay in the JSON because
+  the TS type expects the keys; empty optional slots are omitted.
+- `formline/agents/catalog.py`: insight type → template, insight metric → overlay metric,
+  per-language length limits (headline 60 EN / 30 JA), and deterministic `bars` (casual)
+  and `rows` (analyst) built from facts in EN and JA, so card numbers are correct by
+  construction. Insight facts gained `comparison_level`, so the comparison can be translated.
+- Contract artefacts, written by `uv run formline-gen contracts`:
+  `docs/contracts/overlay.schema.json` (JSON Schema) and
+  `backend/data/sample/overlays.example.json` (6 overlays from real live-match insights:
+  show, retract, correct, correction banner; EN and JA).
+- Tests: 16 backend (schema drift guard, examples, op rules, catalog), 4 frontend (the
+  viewer loads the backend examples and its retract and personalization logic works on them).
 
 ### Task 2: template narrator, the deterministic fallback (MUST)
 
