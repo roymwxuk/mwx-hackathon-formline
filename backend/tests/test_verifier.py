@@ -184,3 +184,19 @@ def test_numbers_are_checked_by_unit(slow):
     assert "km/h does not match FACTS" in v.feedback()
     assert not verify(good(sub="84 km/h vs his norm of 92 km/h (estimate)."), ctx(ins),
                       league).failures
+
+
+def test_percentiles_and_samples_are_bound_to_their_role(slow):
+    ins, league = slow  # est. 21st percentile, n=5, season sample 20
+    analyst = {"tag": "T", "headline": "Reyner 84.1 km/h · Δ −8.2 vs baseline",
+               "sub": "Est. 21st percentile (n=5). Model estimates."}
+    assert verify(analyst, ctx(ins, mode="analyst"), league).ok
+    assert "numbers" in checks(verify(analyst | {"sub": "Est. 20th percentile (n=5). Model "
+                                                        "estimates."}, ctx(ins, mode="analyst"),
+                                      league))
+    assert "numbers" in checks(verify(analyst | {"sub": "Est. 21st percentile (n=20). Model "
+                                                        "estimates."}, ctx(ins, mode="analyst"),
+                                      league))
+    assert "numbers" in checks(verify(analyst | {"sub": "Est. 100th percentile (n=5). Model "
+                                                        "estimates."}, ctx(ins, mode="analyst"),
+                                      league))

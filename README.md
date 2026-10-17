@@ -66,6 +66,26 @@ Known limitation: 30 matches slightly underestimate the shrinkage strength (k 2.
 3.9 implied for forwards), so the tiniest samples are under-shrunk a little. Details:
 [docs/shrinkage-accuracy.md](docs/shrinkage-accuracy.md).
 
+## Verifier: measured catch rate
+
+Every card's text is checked against the engine's facts by a deterministic verifier
+(numbers by kind, player and club names, estimate wording, certainty claims, language,
+structure). `uv run python -m formline.agents.verifier_eval` injects one error at a time into
+the template narrations of all 22 live-match insights × 4 variants (88 cards):
+
+| Error family | Injected | Caught |
+|---|---|---|
+| Numbers (off by one, ±10%, swapped digits, from another insight) | 313 | 99% |
+| Entities (teammate, opponent, other club) | 264 | 100% |
+| Missing estimate wording | 58 | 100% |
+| Certainty claims | 88 | 100% |
+| Structure (too long, missing slot, extra slot) | 264 | 100% |
+| Wrong language | 88 | 100% |
+| **Overall** | **1,075** | **99.6%**, with 0 false positives on 88 clean cards |
+
+The misses are role confusions: a real fact in the wrong place (his norm shown as this
+shot's speed). Details: [docs/verifier-catch-rate.md](docs/verifier-catch-rate.md).
+
 ## Feed robustness: convergence under chaos
 
 Real feeds deliver duplicates, late and out-of-order messages, and corrections. The

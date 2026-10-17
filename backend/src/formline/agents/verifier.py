@@ -111,7 +111,7 @@ def number_kinds(facts: dict) -> dict[str, set[str]]:
     """Allowed display forms per kind of number, so "18 km/h" can't borrow the 18 m distance.
 
     kinds: speed (before km/h), percent (before %), sample (after n=), score (before /100),
-    and any (bare numbers: every fact).
+    percentile (before st/nd/rd/th or パーセンタイル), and any (bare numbers: every fact).
     """
     speed_metric = facts.get("metric") == "shot_speed_kmh"
     speed = _union(facts, ("shot_speed_kmh",))
@@ -122,15 +122,15 @@ def number_kinds(facts: dict) -> dict[str, set[str]]:
     pct = _num(facts, "est_percentile")
     if pct is not None:
         percent |= {str(round(pct)), str(round(100 - pct))}
-    sample = _union(facts, ("sample_n", "season_sample_n"))
+    sample = _union(facts, ("sample_n",))  # "n=" always means the comparison sample
     score = _union(facts, fraction, 100) if facts.get("metric") == "placement" else set()
-    general = (speed | percent | sample | score
-               | _union(facts, ("value", "norm", "delta", "weight_on_own_shots", "xg", "psxg",
-                                "distance_m", "group_prior")))
-    if pct is not None:
-        general |= {str(round(pct))}
-    return {"speed": speed, "percent": percent, "sample": sample, "score": score | {"100"},
-            "any": general | {"100"}}
+    percentile = {str(round(pct))} if pct is not None else set()
+    general = (speed | percent | sample | score | percentile
+               | _union(facts, ("value", "norm", "delta", "season_sample_n",
+                                "weight_on_own_shots", "xg", "psxg", "distance_m",
+                                "group_prior")))
+    return {"speed": speed, "percent": percent, "sample": sample, "score": score,
+            "percentile": percentile, "any": general}
 
 
 def allowed_numbers(facts: dict) -> set[str]:
@@ -142,8 +142,11 @@ UNIT_PATTERNS = (
     ("speed", re.compile(r"(\d+(?:\.\d+)?)\s*km/h")),
     ("percent", re.compile(r"(\d+(?:\.\d+)?)\s*%")),
     ("sample", re.compile(r"n\s*=\s*(\d+)")),
-    ("score", re.compile(r"(\d+)\s*/\s*100")),
+    ("score", re.compile(r"(\d+)\s*/\s*100\b")),
+    ("percentile", re.compile(r"(\d+)\s*(?:st|nd|rd|th)\b")),
+    ("percentile", re.compile(r"(\d+)\s*パーセンタイル")),
 )
+SCALE_SUFFIX = re.compile(r"/\s*100\b")  # the "/100" of a placement score is not a claim
 
 
 def _surname(name: str) -> str:
@@ -187,14 +190,15 @@ def _check_numbers(text: str, ctx: VerifyContext) -> list[Failure]:
         for m in pattern.finditer(text):
             claimed.append(m.span(1))
             if m.group(1) not in kinds[kind] | extra:
-                allowed = ", ".join(sorted(kinds[kind] - {"100"}, key=float)[:12]) or "none"
+                allowed = ", ".join(sorted(kinds[kind], key=float)[:12]) or "none"
                 out.append(Failure("numbers", f"{m.group(0).strip()} does not match FACTS; "
                                               f"allowed {kind} values: {allowed}"))
+    claimed += [(m.start(), m.end()) for m in SCALE_SUFFIX.finditer(text)]
     for m in NUMBER.finditer(text):
         if any(a <= m.start() < b for a, b in claimed):
             continue
         if m.group(0) not in kinds["any"] | extra:
-            allowed = ", ".join(sorted(kinds["any"] - {"100"}, key=float)[:20])
+            allowed = ", ".join(sorted(kinds["any"], key=float)[:20])
             out.append(Failure("numbers", f"number {m.group(0)} is not in FACTS; use only these "
                                           f"values (rounded as shown): {allowed}"))
     return out

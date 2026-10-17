@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–3 done (2026-10-17)
+**Status:** In progress. Tasks 1–4 done (2026-10-17)
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -57,7 +57,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 1 | ✅ Overlay contract and template catalog (backend) | MUST | 1 h | — |
 | 2 | ✅ Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
 | 3 | ✅ Verifier (deterministic checks) | MUST | 1.5 h | 2 |
-| 4 | Verifier catch-rate harness | SHOULD | 1 h | 3 |
+| 4 | ✅ Verifier catch-rate harness | SHOULD | 1 h | 3 |
 | 5 | LLM client setup and fake client | MUST | 1 h | D1 |
 | 6 | Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
 | 7 | Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
@@ -185,7 +185,7 @@ it can be measured.
 - **19 tests:** all 22 live insights × 4 template variants and all banners pass; each check
   catches its own hand-written error, in EN and JA.
 
-### Task 4: verifier catch-rate harness (SHOULD; depth lever 4)
+### Task 4: verifier catch-rate harness (SHOULD; depth lever 4) ✅ Done
 
 **Goal:** a measured number for the README: "the verifier caught X% of injected errors".
 
@@ -200,6 +200,22 @@ it can be measured.
 - **4.3 CLI and report:** `uv run python -m formline.agents.verifier_eval` writes
   `docs/verifier-catch-rate.md`; a test keeps the catch rate above a floor.
 - **Done when:** a README table exists. Any missed category is either fixed or explained.
+
+**Result** (`formline/agents/verifier_eval.py`, report `docs/verifier-catch-rate.md`, tests
+`tests/test_verifier_eval.py`):
+- 13 mutators in 6 families, applied to all 88 template cards (22 insights × 4 variants).
+- **First run:** 97.2% caught. Fixes it led to:
+  - the verifier now binds percentiles (`21st`, `21パーセンタイル`), `n=` (comparison sample
+    only) and the `/100` scale to their roles, so "Est. 100th pct." and "n=7" (season count)
+    no longer pass (numbers 97% → 99%);
+  - my estimate-removal mutator was incomplete in Japanese (it left "モデルによる", a valid
+    marker). Fixing the **mutator** took that family from 62% to 100%; the verifier did not
+    change for it.
+- **Final: 1,071 / 1,075 caught (99.6%), 0 false positives on 88 clean cards.**
+- **Remaining misses** are role confusions (a real speed fact shown in the norm's place).
+  Documented as a known limit, along with English-only club-name checks.
+- Tests keep the rate from regressing: no false positives, ≥ 98% overall, 100% for the
+  non-numeric families, ≥ 97% for numbers.
 
 ### Task 5: LLM client setup and fake client (MUST; D1)
 
