@@ -13,7 +13,7 @@ is the tracked, up-to-date view: milestones, status, decisions and open actions.
 | 1 | Data schema, synthetic generator, history and live match, replay, realism report | Oct 9–11 | ✅ Done | ADR-005, `docs/realism-report.md` |
 | 2 | Event log, stats engine, personal baselines with shrinkage, chaos injector, convergence tests | Oct 12–15 | ✅ Done | `docs/milestone-2-engine.md`, ADR-006, ADR-007 |
 | 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | ✅ Code complete; Azure steps 5.1/5.3 wait on the owner; optional 11–12 not started | `docs/milestone-3-agents.md`, ADR-008 |
-| 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 UI done early; deployment and readiness not started | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
+| 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 UI done early; task 1 (containers) done; CI and Azure deployment next | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
 
@@ -62,7 +62,8 @@ production. Signals and status:
 | Config via environment, no secrets in code | 🟡 managed identity in milestone 4 |
 | Cost controls: LLM call budget, response cache, scale to zero | 🟡 scale to zero in milestone 4 |
 | Observability: JSON-line traces → Log Analytics / App Insights | 🟡 milestone 4 |
-| Containers, Azure deployment, CI | ❌ milestone 4 (MUST) |
+| Containers | ✅ backend 639 MB (non-root, health check), viewer 325 MB |
+| Azure deployment, CI | ❌ milestone 4 (MUST) |
 | Infrastructure as code (Bicep + `azd`, or Terraform) | ❌ milestone 4 task 6 (**optional**) |
 
 ## Open decisions

@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Synthetic Match Insights Engine — ingest, interpret, explain, render, personalize"
 requires-python = ">=3.12"
 dependencies = [
-    "agent-framework>=1.19.0",
+    "agent-framework-core>=1.19.0",
+    "agent-framework-foundry>=1.13.1",
+    "azure-identity>=1.26.0",
     "fastapi>=0.143.1",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.0",
