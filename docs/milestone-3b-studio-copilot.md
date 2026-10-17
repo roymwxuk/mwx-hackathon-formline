@@ -1,9 +1,10 @@
 # Milestone 3b: studio graphics producer copilot
 
-**Status:** Planned, not started (2026-10-17)
+**Status:** ⭐ Optional plus, not started (2026-10-17). Do it only if time allows after milestone 4's MUST tasks.
 **Branch:** `feat/studio-copilot`, built on `main` (milestone 3 merged)
-**Order:** before the Azure deployment (milestone 4 tasks 3+), so the deployed demo includes it.
-Milestone 4 task 1 (containers) is already done on `feat/deploy`.
+**Order:** optional. The main path is the current product, milestone 4 (CI, Azure deployment) and
+milestone 5 (README, video, pitch). If 3b is done, it should land before the final deployment and
+the video recording, so the demo can show it.
 **Estimate:** MVP about 6 h; full scope about 8 h (see "Cut line").
 
 ## Why
@@ -26,6 +27,36 @@ broadcaster's production gallery.
   **audience feeds**: e.g. a Japanese casual feed and an English analyst feed from the same
   engine. The two-viewer page is "one engine, two broadcast feeds".
 - Still to confirm: the official Rules page.
+
+## Why optional
+
+The product already meets the brief without it: all five pipeline stages, an agentic workflow
+on Microsoft Agent Framework, a verifier, audience personalization and the VAR correction path.
+The copilot is a **plus** that strengthens agentic design (a real agent with autonomy) and the
+Enterprise angle (human control, audit). It costs about 6–8 h on top of milestones 4–5, so it
+waits until the must-haves are safe.
+
+## Two UIs: producer console and audience viewer
+
+Studio mode has two screens, and only one is new:
+
+```
+engine ─► insights ─► Copilot ─► proposal + reason
+                                    │
+                        Producer console (new, /studio): approve / edit / reject
+                                    │ approved only
+                                    ▼
+              Narrator → Verifier → Composer, per audience feed (EN analyst, JA casual, …)
+                                    │
+                        Audience viewer (existing viewer UI): shows the card on the match feed
+```
+
+- **The viewer barely changes:** in studio mode the stream sends only **approved** cards
+  (rejected ones never reach it); the overlay format, rendering and viewer personalization
+  (favorites, "my metric", focus mode) stay the same and apply to the approved cards.
+- **Demo shot:** the console and the viewers side by side: the producer approves, and the card
+  appears on the JA and EN feeds; the producer rejects one with a reason, and nothing airs; later
+  the copilot adapts.
 
 ## What the copilot does
 
