@@ -10,21 +10,58 @@ for studio and streaming use.
 
 | Stage | Where | Status |
 |---|---|---|
-| a. Ingest | `backend/src/formline/generator/` (synthetic feed), `replay.py` (live replay) | Generator done; event log next |
-| b. Interpret | deterministic stats engine: shot geometry, xG, personal baselines | Next |
-| c. Explain | agents: Insight Selector, Narrator, Verifier, Overlay Composer | Planned |
-| d. Render | overlay contract (`DATA_SCHEMA.md` §6.5), viewer UI in `frontend/` | UI done on mock data |
-| e. Personalize | language, casual/analyst, favorites, player focus, "my metric" | UI done; backend planned |
+| a. Ingest | `generator/` (synthetic feed), `engine/log.py` + `engine/ingest.py` (append-only log, dedupe, reorder window, corrections), `replay.py` | ✅ |
+| b. Interpret | `engine/`: shot features (xG, PSxG, placement), like-for-like baselines with empirical Bayes shrinkage | ✅ |
+| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework) | ✅ (Foundry deployment pending) |
+| d. Render | overlay contract (`docs/contracts/overlay.schema.json`), timed overlays over SSE, viewer in `frontend/` | ✅ |
+| e. Personalize | EN/JA, casual/analyst, favorite clubs and players (card priority), player focus, "my metric" | ✅ (client-side) |
+
+![Two viewers at the VAR correction](docs/ui/live/3-two-viewers-65m.png)
+
+## Agents
+
+The engine decides *what* is notable; agents decide *which* card to show and *how* to word
+it, and a deterministic verifier checks every word against the engine's facts. Built as a
+`WorkflowBuilder` graph on Microsoft Agent Framework (`backend/src/formline/agents/workflow.py`):
+
+```
+Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
+                              Narrator[en·analyst] ├─► Verifier ─switch─┬─ ok ───► Composer ─► Collector ─► overlays
+                              Narrator[ja·casual]  │                    ├─ retry ► same Narrator (with feedback)
+                              Narrator[ja·analyst] ┘                    └─ else ─► TemplateFallback ─► Composer
+```
+
+| Agent | Kind | Job |
+|---|---|---|
+| Insight Selector | Rules + LLM | Rules shortlist (salience, cooldowns, rate limit); the LLM picks one card and says why (JSON); falls back to the top candidate |
+| Narrator ×4 | LLM | Writes `{tag, headline, sub}` from facts only, per language and audience; retries with the verifier's feedback |
+| Verifier | Deterministic | Numbers by kind, names, estimate wording, certainty, language, structure ([catch rate](docs/verifier-catch-rate.md)) |
+| Overlay Composer | Deterministic | Fills the fixed template catalog; bars and rows come from facts, so numbers are correct by construction |
+| TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
+
+- **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
+  (retry, then template); a run always completes.
+- **Corrections:** when VAR overturns a goal, the corrected insight goes back through the
+  same workflow and is re-issued as `op: correct`, with a banner citing the shot and the VAR
+  events ([screenshot](docs/ui/live/2-var-correction-65m.png)).
+- **Cost:** response cache, per-run call budget, precomputed demo overlays (a rerun makes no
+  model calls).
+- **With or without Azure:** Microsoft Foundry (`FoundryChatClient`) when
+  `AZURE_AI_PROJECT_ENDPOINT` is set (see `backend/.env.example`), otherwise a fake model on
+  the same Agent Framework path. Tests and CI never need Azure.
+- Design rationale: [ADR-008](docs/decisions.md).
 
 ## Layout
 
 ```
-backend/    Python 3.12 · FastAPI · Pydantic (uv)
-  src/formline/schema/      DATA_SCHEMA.md as Pydantic models
+backend/    Python 3.12 · FastAPI · Pydantic · Microsoft Agent Framework (uv)
+  src/formline/schema/      DATA_SCHEMA.md and the overlay contract as Pydantic models
   src/formline/generator/   synthetic league, match simulator, realism report
-  data/sample/              committed excerpt of the generated data
+  src/formline/engine/      event log, ingestion, shot features, baselines, insights
+  src/formline/agents/      catalog, narrators, verifier, selector, workflow, live orchestration
+  data/sample/              committed excerpt of the generated data and example overlays
 frontend/   Next.js · React · TypeScript (pnpm): live viewer UI
-docs/       decisions.md (ADRs), realism-report.md, ui/ reference images
+docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI screenshots
 ```
 
 ## Run locally
@@ -129,7 +166,13 @@ the stream replays the feed with the overlays cached by `formline-gen overlays`;
 replays a chaotic feed (and implies live). The agents use Microsoft Foundry when
 `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
-## Planned Azure stack
+## Microsoft and Azure technologies
 
-Azure AI Foundry (models + agents), Microsoft Agent Framework (multi-agent orchestration),
-Azure Container Apps (hosting).
+| Technology | Use | Status |
+|---|---|---|
+| Microsoft Agent Framework | Multi-agent workflow (`WorkflowBuilder`, executors, fan-out, switch-case retry cycle), `Agent`, chat clients | ✅ In use |
+| Microsoft Foundry | Model deployment for the Selector and Narrators (`FoundryChatClient`) | Code ready; deployment pending |
+| Azure Container Apps | Hosting backend and viewer, scale to zero | Milestone 4 |
+| GitHub Actions | CI: lint, typecheck, tests | Milestone 4 |
+
+Status and plan: [docs/roadmap.md](docs/roadmap.md).

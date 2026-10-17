@@ -12,7 +12,7 @@ is the tracked, up-to-date view: milestones, status, decisions and open actions.
 |---|---|---|---|---|
 | 1 | Data schema, synthetic generator, history and live match, replay, realism report | Oct 9–11 | ✅ Done | ADR-005, `docs/realism-report.md` |
 | 2 | Event log, stats engine, personal baselines with shrinkage, chaos injector, convergence tests | Oct 12–15 | ✅ Done | `docs/milestone-2-engine.md`, ADR-006, ADR-007 |
-| 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | 🟡 In progress: tasks 1–10 done; 13 (docs) left (≈ 0.5 h); Azure steps 5.1/5.3 wait on the owner | `docs/milestone-3-agents.md` |
+| 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | ✅ Code complete; Azure steps 5.1/5.3 wait on the owner; optional 11–12 not started | `docs/milestone-3-agents.md`, ADR-008 |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 UI done early; deployment and readiness not started | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
@@ -25,7 +25,7 @@ is the tracked, up-to-date view: milestones, status, decisions and open actions.
 | `scaffold/initial-setup` | Scaffold, viewer UI (milestone 4 UI) | Yes |
 | `feat/generator` | Milestone 1 | No |
 | `feat/engine` | Milestone 2, frontend gaps 2–3 | No |
-| `feat/agents` | Milestone 3 so far, milestone 4 plan | No |
+| `feat/agents` | Milestone 3, milestone 4 plan | No |
 
 Each branch builds on the previous one. Nothing is merged into `main` yet.
 
@@ -58,7 +58,7 @@ production. Signals and status:
 |---|---|
 | Reliability: failure recovery, retries, fallbacks, deterministic replays | ✅ |
 | Correctness controls: verifier (99.6% catch rate), lineage, corrections | ✅ |
-| Tests and docs: 174 backend + 15 frontend tests, ADR-001 to ADR-007 | ✅ |
+| Tests and docs: 182 backend + 17 frontend tests, ADR-001 to ADR-008 | ✅ |
 | Config via environment, no secrets in code | 🟡 managed identity in milestone 4 |
 | Cost controls: LLM call budget, response cache, scale to zero | 🟡 scale to zero in milestone 4 |
 | Observability: JSON-line traces → Log Analytics / App Insights | 🟡 milestone 4 |

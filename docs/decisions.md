@@ -276,3 +276,67 @@ rebuild from the log in 300/300 chaotic replays, equal the clean run in 107/107 
 without injected corrections or deletes, and insights equal the clean run in 57/57 runs
 that also had no beyond-window late messages. Property-based tests (`hypothesis`, 140
 random configurations per test run) check the same three properties.
+
+---
+
+## ADR-008: Multi-agent architecture for narration
+
+**Status:** Accepted (2026-10-17)
+
+**Context.** Engine insights (deterministic, ADR-006) must become timed overlay cards in
+EN/JA × casual/analyst. LLM text is the most fluent option and the target category is Best
+Multi-Agent Orchestration, but an LLM can misstate numbers, name the wrong player or claim
+certainty. Every number on screen must be traceable to the engine.
+
+**Options.**
+- (a) One LLM call per card that does everything (choose, write, format).
+- (b) Templates only, no LLM.
+- (c) Several agents with narrow jobs on Microsoft Agent Framework, with deterministic
+  guardrails between them.
+
+**Decision.** (c), as a `WorkflowBuilder` graph (`backend/src/formline/agents/workflow.py`):
+
+```
+Moment ─► Selector ─fan-out─► 4 × Narrator (EN/JA × casual/analyst) ─► Verifier ─switch─┬─ ok ─────► Composer ─► Collector
+                                                                                         ├─ retry ──► same Narrator, with feedback
+                                                                                         └─ give up ► TemplateFallback ─► Composer
+```
+
+**Why each role is what it is.**
+1. **Insight Selector: hybrid.** Rules build a shortlist (salience, one card per shot,
+   per-player cooldown, rate limit); the LLM picks one id and gives a reason through a
+   JSON contract; invalid output falls back to the top candidate. The decision is a real
+   agent choice, but it can never surface something the rules didn't allow.
+2. **Narrator: LLM, one call per variant.** It sees only the facts, the player's name, the
+   comparison level and the length limits, and returns `{tag, headline, sub}`. Writing JA
+   directly from facts (not translating EN) keeps both languages checkable.
+3. **Verifier: deterministic.** Numbers by kind, entities, estimate wording, certainty
+   claims, language, structure. Being deterministic makes it measurable (99.6% catch rate,
+   0 false positives) and its failure details double as retry feedback.
+4. **Overlay Composer: deterministic.** `bars` and `rows` are built from facts by the
+   catalog, so card numbers are correct by construction; the LLM never produces them.
+5. **TemplateFallback.** After 3 failed attempts the deterministic template narration is
+   used; it always verifies. A card is never blocked and never wrong.
+
+**Failure recovery.** Bad JSON, timeouts, network errors and an exhausted call budget become
+verifier failures (retry, then template); a selector failure falls back to rules. Tested
+with fake models that are wrong on the first attempt, return garbage, or always time out.
+
+**Corrections reuse the graph.** When an insight is corrected (the VAR overturn), the new
+insight is sent through the same workflow as a forced selection and re-issued as
+`op: correct`; retracted insights get `op: retract`; a banner cites the shot and the VAR
+events (`agents/live.py`).
+
+**Cost and reproducibility.** A response cache keyed by prompt version, model, agent,
+instructions and input; a per-run call budget; temperature 0.2. The live match's overlays
+are precomputed once (`formline-gen overlays`, decision D3) and replayed with the feed;
+`?live=true` runs the workflow during the replay to show it working. A rerun makes no
+model calls.
+
+**One code path, with or without Azure.** `FoundryChatClient` when a Foundry project is
+configured, otherwise a fake client built on Agent Framework's `BaseChatClient`, so tests,
+CI and offline demos exercise exactly the same `Agent.run` path.
+
+**Known tuning item.** At 40:12 the Selector picks a placement insight (salience 0.55)
+over the flagship speed insight (0.49): correct by salience, but the demo story is speed.
+To revisit once the real model is connected.

@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** In progress. Tasks 1–4 and 6–10 done; task 5 done except the Azure steps; task 13 left (2026-10-17)
+**Status:** ✅ Code complete (2026-10-17). Tasks 1–4, 6–10 and 13 done; task 5 done except the Azure steps (5.1 deployment, 5.3 smoke test), which wait on the owner. Optional tasks 11–12 not started.
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -66,7 +66,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 10 | ✅ Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
 | 11 | Foundry evaluations | COULD | 1 h | 6 |
 | 12 | Half-time or full-time recap card (gap 7) | COULD | 1 h | 7 |
-| 13 | Docs: ADR-008, README, milestone log | MUST | 0.5 h | all |
+| 13 | ✅ Docs: ADR-008, README, milestone log | MUST | 0.5 h | all |
 
 ---
 
@@ -460,7 +460,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 - At half time and full time: "his three most unusual shots tonight", built only from tonight's
   insights. A new `recap_card` template, plus narrator and verifier support.
 
-### Task 13: docs (MUST)
+### Task 13: docs (MUST) ✅ Done
 
 - **ADR-008** agent architecture: roles, why the Selector is a hybrid, why the Composer and
   Verifier are deterministic, retries and fallback, the precompute cache, the cost guard.
