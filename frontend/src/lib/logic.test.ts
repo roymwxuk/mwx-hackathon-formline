@@ -121,3 +121,17 @@ describe('card slot priority', () => {
     expect(pickCard([], s, players, 0)).toBeUndefined();
   });
 });
+
+describe('live stream controls', () => {
+  it('builds the stream URL for a speed and a resume point', async () => {
+    const { liveStreamUrl, initialLiveSpeed } = await import('@/lib/useMatchStream');
+    const base = 'http://localhost:8000/matches/m/stream?speed=20';
+    expect(initialLiveSpeed(base)).toBe(20);
+    expect(initialLiveSpeed('http://x/stream')).toBe(20);
+    expect(liveStreamUrl(base, 60, null)).toBe('http://localhost:8000/matches/m/stream?speed=60');
+    expect(liveStreamUrl(base, 20, { period: 1, clockMs: 40 * 60_000 + 12_000 })).toContain('start=40%3A12');
+    // first-half stoppage time is capped at 45:00; the second half stays above it
+    expect(liveStreamUrl(base, 20, { period: 1, clockMs: 46 * 60_000 })).toContain('start=45%3A00');
+    expect(liveStreamUrl(base, 20, { period: 2, clockMs: 45 * 60_000 })).toContain('start=45%3A01');
+  });
+});

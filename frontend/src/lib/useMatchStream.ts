@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
-import { advanceTime, type MatchTime } from '@/lib/logic';
+import { advanceTime, formatClock, type MatchTime } from '@/lib/logic';
 import type { MatchEvent, Overlay, StreamMessage } from '@/lib/types';
 
 export type StreamSource = 'mock' | 'sse';
@@ -12,6 +12,8 @@ export interface MatchStream {
   overlays: Overlay[];
   playing: boolean;
   speed: number;
+  /** Speed choices for the header (live and mock replay differ). */
+  speedOptions: number[];
   connected: boolean;
   /** Live mode: the backend sent its final message (full time). */
   ended: boolean;
@@ -21,6 +23,39 @@ export interface MatchStream {
 }
 
 const SSE_URL: string | undefined = process.env.NEXT_PUBLIC_STREAM_URL;
+const LIVE_SPEEDS = [10, 20, 60, 120];
+const MOCK_SPEEDS = [30, 60, 120];
+const HALF_MS = 45 * 60_000;
+
+/**
+ * The backend stream URL for a speed and a resume point. `start` asks the backend to send
+ * everything before that match time at once and play on from there. The backend reads
+ * minutes above 45 as the second half, so first-half stoppage time is capped at 45:00 and
+ * second-half times are kept above it.
+ */
+export function liveStreamUrl(base: string, speed: number, start: MatchTime | null): string {
+  const url = new URL(base);
+  url.searchParams.set('speed', String(speed));
+  url.searchParams.delete('start');
+  if (start && (start.period > 1 || start.clockMs > 0)) {
+    const ms = start.period === 1 ? Math.min(start.clockMs, HALF_MS) : Math.max(start.clockMs, HALF_MS + 1000);
+    url.searchParams.set('start', formatClock(ms));
+  }
+  return url.toString();
+}
+
+/** Default live speed: the stream URL's own `speed`, else 20. */
+export function initialLiveSpeed(base: string): number {
+  const speed = Number(new URL(base).searchParams.get('speed'));
+  return Number.isFinite(speed) && speed > 0 ? speed : 20;
+}
+
+/** Identity of a message, to ignore what a reconnect sends again. */
+function messageKey(msg: StreamMessage): string {
+  if (msg.kind === 'event') return `e:${msg.event.event_id}:${msg.event.version}`;
+  if (msg.kind === 'overlay') return `o:${msg.overlay.overlay_id}`;
+  return 'end';
+}
 const TICK_MS = 100;
 const SLOW_SPEED = 2;
 
@@ -39,8 +74,12 @@ export function useMatchStream(): MatchStream {
   );
 
   const [clockMs, setClockMs] = useState(0);
-  const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState(60);
+  const [playing, setPlayingState] = useState(true);
+  const [speed, setSpeedState] = useState(() => (SSE_URL ? initialLiveSpeed(SSE_URL) : 60));
+  const [connectKey, setConnectKey] = useState(0);
+  const timeRef = useRef<MatchTime>({ period: 1, clockMs: 0 });
+  const startRef = useRef<MatchTime | null>(null);
+  const seenRef = useRef<Set<string>>(new Set());
   const [received, setReceived] = useState<StreamMessage[]>([]);
   const [connected, setConnected] = useState(source === 'mock');
   const [ended, setEnded] = useState(false);
@@ -63,37 +102,53 @@ export function useMatchStream(): MatchStream {
       }
       if (batch.length) setReceived((r) => [...r, ...batch]);
       setClockMs(next);
-      if (next >= MATCH_END_MS) setPlaying(false);
+      if (next >= MATCH_END_MS) setPlayingState(false);
     }, TICK_MS);
     return () => window.clearInterval(id);
   }, [source, playing, speed, demo, keyClocks]);
 
   // ----- Live SSE -----
+  // Speed, pause/play and restart reconnect with `speed=` and `start=` (the current match
+  // time). Messages already received are ignored, so a reconnect never duplicates cards.
   useEffect(() => {
-    if (source !== 'sse' || !SSE_URL) return;
-    let time: MatchTime = { period: 1, clockMs: 0 };
-    const es = new EventSource(SSE_URL);
+    if (source !== 'sse' || !SSE_URL || !playing) return;
+    const es = new EventSource(liveStreamUrl(SSE_URL, speed, startRef.current));
     es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false); // EventSource reconnects by itself
+    es.onerror = () => setConnected(false); // EventSource reconnects and resumes after its last id
     es.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as StreamMessage;
         if (msg.kind === 'end') {
           es.close(); // full time: don't let EventSource reconnect and replay the match
           setEnded(true);
+          setPlayingState(false);
           return;
         }
+        const key = messageKey(msg);
+        if (seenRef.current.has(key)) return;
+        seenRef.current.add(key);
         setReceived((r) => [...r, msg]);
-        time = msg.kind === 'event'
-          ? advanceTime(time, msg.event.period, msg.event.match_clock_ms)
-          : advanceTime(time, undefined, msg.overlay.match_clock_ms);
-        setClockMs(time.clockMs);
+        timeRef.current = msg.kind === 'event'
+          ? advanceTime(timeRef.current, msg.event.period, msg.event.match_clock_ms)
+          : advanceTime(timeRef.current, undefined, msg.overlay.match_clock_ms);
+        setClockMs(timeRef.current.clockMs);
       } catch {
         // Ignore malformed messages rather than breaking the viewer.
       }
     };
     return () => es.close();
-  }, [source]);
+  }, [source, playing, speed, connectKey]);
+
+  const liveRestart = useCallback(() => {
+    timeRef.current = { period: 1, clockMs: 0 };
+    startRef.current = null;
+    seenRef.current = new Set();
+    setReceived([]);
+    setClockMs(0);
+    setEnded(false);
+    setPlayingState(true);
+    setConnectKey((k) => k + 1);
+  }, []);
 
   /** Mock only: jump to a match time, delivering everything up to it at once. */
   const seek = useCallback(
@@ -104,12 +159,25 @@ export function useMatchStream(): MatchStream {
       clockRef.current = ms;
       setReceived(demo.slice(0, i).map((d) => d.msg));
       setClockMs(ms);
-      setPlaying(true);
+      setPlayingState(true);
     },
     [demo],
   );
 
-  const restart = useCallback(() => seek(0), [seek]);
+  const restart = useCallback(() => (source === 'sse' ? liveRestart() : seek(0)), [source, liveRestart, seek]);
+
+  const setSpeed = useCallback((value: number) => {
+    if (source === 'sse') startRef.current = timeRef.current; // resume from here at the new speed
+    setSpeedState(value);
+  }, [source]);
+
+  const setPlaying = useCallback((value: boolean) => {
+    if (source === 'sse' && value) {
+      if (ended) return liveRestart(); // after full time, Play starts the match again
+      startRef.current = timeRef.current; // resume where we paused
+    }
+    setPlayingState(value);
+  }, [source, ended, liveRestart]);
 
   // `?t=mm:ss` opens the mock replay at that moment, for screenshots and the demo video.
   useEffect(() => {
@@ -127,5 +195,7 @@ export function useMatchStream(): MatchStream {
     [received],
   );
 
-  return { source, clockMs, events, overlays, playing, speed, connected, ended, setPlaying, setSpeed, restart };
+  const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
+
+  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, setPlaying, setSpeed, restart };
 }

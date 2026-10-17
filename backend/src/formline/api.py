@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
@@ -19,9 +19,18 @@ from formline.config import settings
 from formline.engine.bootstrap import bootstrap_history
 from formline.engine.engine import BaselineEngine
 from formline.generator.output import read_feed
-from formline.replay import END_MESSAGE, merge_stream, replay, replay_items, to_stream_message
+from formline.replay import (
+    END_MESSAGE,
+    match_time,
+    merge_stream,
+    paced,
+    parse_clock,
+    to_stream_message,
+)
 from formline.schema.overlay import overlay_message
 from formline.viewer import UnknownMatch, match_league
+
+CLOCK = r"^\d{1,3}:\d{2}$"  # mm:ss
 
 app = FastAPI(title="Formline")
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
@@ -59,10 +68,11 @@ def league(match_id: str) -> dict:
 
 
 @app.get("/matches/{match_id}/stream")
-async def stream(match_id: str, speed: float | None = Query(None, gt=0),
+async def stream(request: Request, match_id: str, speed: float | None = Query(None, gt=0),
                  live: bool = False, chaos: bool = False, chaos_seed: int = 0,
-                 until: str | None = Query(None, pattern=r"^\d{1,3}:\d{2}$")
-                 ) -> EventSourceResponse:
+                 start: str | None = Query(None, pattern=CLOCK),
+                 until: str | None = Query(None, pattern=CLOCK),
+                 slow: bool = True) -> EventSourceResponse:
     """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode).
 
     Default: replays the feed together with the precomputed overlays
@@ -70,50 +80,56 @@ async def stream(match_id: str, speed: float | None = Query(None, gt=0),
     the replay instead. `chaos=true` replays the feed through the chaos injector
     (duplicates, reordering, late messages, injected corrections) and implies live, so
     the cards follow the chaotic feed's own corrections. The stream ends with
-    `{"kind": "end"}`. `until=mm:ss` stops the replay at that match time (for screenshots
-    and recording a moment); minutes above 45 mean the second half.
+    `{"kind": "end"}`.
+
+    Playback controls: `speed` (feed seconds per real second); `start=mm:ss` delivers
+    everything before that match time at once, then plays on; `until=mm:ss` stops there;
+    `slow=true` (default) plays about 6x slower around shots and cards. Minutes above 45 mean the
+    second half. Every message has an SSE id, and a reconnecting client resumes after its
+    `Last-Event-ID` instead of restarting the match (proxies may cut long streams).
     """
     path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
     if not path.exists():
         raise HTTPException(404, f"Unknown match {match_id}")
     feed = read_feed(path)
     pace = speed or settings.sim_speed
-    stop = None
-    if until:
-        minutes, seconds = (int(x) for x in until.split(":"))
-        stop_ms = (minutes * 60 + seconds) * 1000
-        stop = (2 if stop_ms > 45 * 60_000 else 1, stop_ms)
+    stop = parse_clock(until)
+    last_id = request.headers.get("last-event-id", "")
+    resume_after = int(last_id) if last_id.isdigit() else 0
+    key_times = [m.emitted_at for m in feed if m.event is not None and m.event.type == "shot"]
 
-    def past_stop(payload: dict) -> bool:
-        if stop is None or payload.get("kind") != "event":
-            return False
-        e = payload["event"]
-        return (e["period"], e["match_clock_ms"]) > stop
+    def sse(idx: int, payload: dict) -> dict:
+        return {"id": str(idx), "data": json.dumps(payload, ensure_ascii=False)}
 
-    def sse(payload: dict) -> dict:
-        return {"data": json.dumps(payload, ensure_ascii=False)}
+    async def live_items(messages):
+        orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
+                                 default_runner(settings.data_dir))
+        for msg in messages:
+            if (payload := to_stream_message(msg)) is not None:
+                yield msg.emitted_at, payload
+            for overlay in await orch.process(msg):
+                yield msg.emitted_at, overlay_message(overlay)
+        last = messages[-1].emitted_at if messages else None
+        for overlay in await orch.flush():
+            yield last, overlay_message(overlay)
 
     async def gen():
         if live or chaos:
-            orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
-                                     default_runner(settings.data_dir))
             messages = inject(feed, ChaosConfig(seed=chaos_seed)).messages if chaos else feed
-            async for msg in replay(messages, pace):
-                if (payload := to_stream_message(msg)) is not None:
-                    if past_stop(payload):
-                        break
-                    yield sse(payload)
-                for overlay in await orch.process(msg):
-                    yield sse(overlay_message(overlay))
-            for overlay in await orch.flush():
-                yield sse(overlay_message(overlay))
+            items = live_items(messages)
         else:
             cached = overlays_path(settings.data_dir, match_id)
             overlays = read_overlays(cached) if cached.exists() else []
-            async for payload in replay_items(merge_stream(feed, overlays), pace):
-                if past_stop(payload):
-                    break
-                yield sse(payload)
-        yield sse(END_MESSAGE)
+            items = merge_stream(feed, overlays)
+            key_times.extend(at for at, _ in overlays)
+        sent = resume_after
+        async for idx, payload in paced(items, pace, start=parse_clock(start),
+                                        resume_after=resume_after, key_times=key_times,
+                                        slow=slow):
+            if stop is not None and (mt := match_time(payload)) is not None and mt > stop:
+                break
+            yield sse(idx, payload)
+            sent = idx
+        yield sse(sent + 1, END_MESSAGE)
 
     return EventSourceResponse(gen())
