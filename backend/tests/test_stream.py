@@ -1,5 +1,6 @@
 import asyncio
 import json
+from itertools import pairwise
 
 import pytest
 from fastapi.testclient import TestClient
@@ -205,10 +206,28 @@ def test_gaps_carry_clock_messages_with_the_running_match_time(monkeypatch):
     assert ids == [1, 2, 3]  # clock messages take no id
     assert all(p["kind"] == "clock" and p["period"] == 1 for p in ticks)
     times = [p["match_clock_ms"] for p in ticks]
-    assert len(times) == 5  # every 0.25 s within the 1.35 s gap (3 s gap: none)
-    assert times == sorted(times) and times[0] == 5_000 and times[-1] <= 27_000
+    assert len(times) == 6  # every 0.25 s of real time: 5 in the 1.35 s gap, 1 in the next
+    assert times == sorted(times) and times[0] == 5_000 and times[-1] <= 30_000
     first_after_gap = next(n for n, (i, _) in enumerate(out) if i == 2)
-    assert all(i is None for i, _ in out[1:first_after_gap])  # ticks sit inside the gap
+    gap_ticks = [p["match_clock_ms"] for i, p in out[1:first_after_gap]]
+    assert len(gap_ticks) == 5 and max(gap_ticks) <= 27_000  # never past the next event
+
+
+def test_ticks_keep_a_steady_rate_when_events_are_frequent(monkeypatch):
+    rp, state = _fake_clock(monkeypatch)
+    items = _events([2 * i for i in range(51)])  # every 2 s of feed: 0.1 s apart at 20x
+
+    async def run():
+        out = []
+        async for i, p in rp.paced(items, 20.0, slow=False):
+            out.append((i, p, state["now"]))
+        return out
+
+    out = asyncio.run(run())
+    ticks = [now for i, _, now in out if i is None]
+    assert len(ticks) == 20  # 5 s of real time, one tick every 0.25 s
+    gaps = [b - a for a, b in pairwise(ticks)]
+    assert all(abs(g - 0.25) < 1e-6 for g in gaps)
 
 
 def test_no_clock_messages_while_the_clock_is_stopped(monkeypatch):
@@ -241,3 +260,52 @@ def test_clock_messages_carry_no_sse_id(client, monkeypatch):
     ids = [int(line[3:].strip()) for b in blocks for line in b.splitlines()
            if line.startswith("id:")]
     assert ids == list(range(1, len(ids) + 1))
+
+
+@pytest.fixture(scope="module")
+def tracked(data_dir):
+    """Tracking for the first 4 minutes of each half, written into the test data."""
+    from formline.engine.log import current_events
+    from formline.schema.tracking import tracking_path, write_tracking
+    from formline.tracking.motion import build_frames
+
+    season = generate_season(2026)
+    gm = next(g for g in season.matches if g.match.is_live_demo)
+    players = {p.player_id: p for p in season.league.players}
+    frames = build_frames(current_events(gm.feed), gm.match.home_club_id, players,
+                          season.league.starters, limit_ms=4 * 60_000)
+    path = tracking_path(data_dir, LIVE)
+    write_tracking(path, frames)
+    yield path
+    path.unlink()
+
+
+def _stream_blocks(client, query):
+    with client.stream("GET", f"/matches/{LIVE}/stream?{query}") as r:
+        raw = r.read().decode()
+    return [b for b in raw.split("\r\n\r\n") if "data:" in b]
+
+
+def _data(block):
+    return json.loads(next(line[5:] for line in block.splitlines() if line.startswith("data:")))
+
+
+def test_ticks_become_tracking_frames_when_the_match_has_tracking(client, tracked, monkeypatch):
+    _fake_clock(monkeypatch)
+    blocks = _stream_blocks(client, "speed=20&until=03:00&slow=false")
+    frames = [(b, _data(b)) for b in blocks if '"kind":"frame"' in b]
+    assert frames and not any('"kind": "clock"' in b for b in blocks)
+    assert all("id:" not in b for b, _ in frames)  # resume ids stay on real messages
+    times = [d["t"] for _, d in frames]
+    assert times == sorted(times) and times[-1] <= 180_000
+    first = frames[0][1]
+    assert set(first) == {"kind", "p", "t", "b", "h", "a"}
+    assert len(first["h"]) == 11 and len(first["a"]) == 11 and len(first["b"]) == 3
+
+
+def test_tracking_can_be_turned_off(client, tracked, monkeypatch):
+    _fake_clock(monkeypatch)
+    blocks = _stream_blocks(client, "speed=20&until=01:00&slow=false&tracking=false")
+    assert any('"kind": "clock"' in b for b in blocks)
+    assert not any('"kind":"frame"' in b for b in blocks)
+

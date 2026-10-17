@@ -124,7 +124,7 @@ export function useMatchStream(): MatchStream {
           setPlayingState(false);
           return;
         }
-        if (msg.kind !== 'clock') {  // clock messages only move the time; nothing to store
+        if (msg.kind !== 'clock' && msg.kind !== 'frame') {  // these only move the time here
           const key = messageKey(msg);
           if (seenRef.current.has(key)) return;
           seenRef.current.add(key);

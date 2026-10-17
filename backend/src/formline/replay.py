@@ -88,26 +88,34 @@ def _clock_after(payload: dict, at: datetime, clock):
 
 
 async def _wait(seconds: float, pace: float, clock, prev: datetime,
-                nxt: tuple[int, int] | None) -> AsyncIterator[dict]:
-    """Sleep `seconds`; meanwhile yield a clock message every TICK_SECONDS with the match
-    time reached at `pace`, never past the next event. No ticks while the clock is stopped
-    or when the next event is in another period."""
-    if clock is None or (nxt is not None and nxt[0] != clock[0]):
-        await asyncio.sleep(seconds)
-        return
-    period, base_ms, anchor = clock
-    offset = (prev - anchor).total_seconds()
+                nxt: tuple[int, int] | None, phase: list[float]) -> AsyncIterator[dict]:
+    """Sleep `seconds`; meanwhile yield a clock message every TICK_SECONDS of real time with
+    the match time reached at `pace`, never past the next event. `phase` carries the time
+    since the last tick across waits, so ticks keep a steady rate even when events arrive
+    faster than TICK_SECONDS apart (tracking frames need that). No ticks while the clock
+    is stopped or when the next event is in another period."""
+    stopped = clock is None or (nxt is not None and nxt[0] != clock[0])
+    if not stopped:
+        period, base_ms, anchor = clock
+        offset = (prev - anchor).total_seconds()
     waited, last = 0.0, None
-    while seconds - waited > TICK_SECONDS:
-        await asyncio.sleep(TICK_SECONDS)
-        waited += TICK_SECONDS
+    while seconds - waited >= TICK_SECONDS - phase[0] - 1e-9:
+        step = TICK_SECONDS - phase[0]
+        await asyncio.sleep(step)
+        waited += step
+        phase[0] = 0.0
+        if stopped:
+            continue
         ms = base_ms + int((offset + waited * pace) * 1000)
         if nxt is not None:
             ms = min(ms, nxt[1])
         if ms != last:
             last = ms
             yield {"kind": "clock", "period": period, "match_clock_ms": ms}
-    await asyncio.sleep(seconds - waited)
+    rest = seconds - waited
+    if rest > 0:
+        await asyncio.sleep(rest)
+        phase[0] += rest
 
 
 def parse_clock(text: str | None) -> tuple[int, int] | None:
@@ -134,8 +142,8 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
     """Yield (id, StreamMessage) from timed items, paced like a live broadcast.
 
     - ids number the items 1, 2, 3, … in order, so a client can resume;
-    - during a gap, `{"kind": "clock"}` messages (id None) carry the running match time
-      every TICK_SECONDS, so the viewer's clock keeps moving between events;
+    - `{"kind": "clock"}` messages (id None) carry the running match time every
+      TICK_SECONDS of real time, so the viewer's clock (and tracking) keeps moving;
     - items with id <= `resume_after` (the client's Last-Event-ID) are skipped;
     - everything before `start` (match time) is delivered at once, then pacing begins;
     - within SLOW_BEFORE/SLOW_AFTER of a key moment (shots, cards), pacing is SLOW_FACTOR
@@ -145,6 +153,7 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
     catching_up = start is not None
     prev: datetime | None = None
     clock = None  # (period, ms, emitted_at) of the last event while the clock runs
+    phase = [0.0]  # real seconds since the last clock message
     idx = 0
     async for at, payload in _aiter(items):
         idx += 1
@@ -160,7 +169,7 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
             gap = (at - prev).total_seconds()
             if gap > 0:
                 pace = speed / SLOW_FACTOR if slow and _near_key(keys, at) else speed
-                async for tick in _wait(gap / pace, pace, clock, prev, mt):
+                async for tick in _wait(gap / pace, pace, clock, prev, mt, phase):
                     yield None, tick
         prev = at if prev is None else max(prev, at)
         clock = _clock_after(payload, at, clock)

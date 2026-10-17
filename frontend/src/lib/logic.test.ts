@@ -155,5 +155,7 @@ describe('clock messages', () => {
     t = timeAfter(t, { kind: 'clock', period: 2, match_clock_ms: 2_705_000 });
     expect(t).toEqual({ period: 2, clockMs: 2_705_000 });
     expect(timeAfter(t, { kind: 'end' })).toBe(t);
+    const frame = { kind: 'frame' as const, p: 2, t: 2_710_000, b: [50, 50, 0] as [number, number, number], h: [], a: [] };
+    expect(timeAfter(t, frame)).toEqual({ period: 2, clockMs: 2_710_000 });
   });
 });
