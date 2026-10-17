@@ -34,7 +34,8 @@ class Selection:
     insight: Insight
     priority: int  # 1 = most important
     reason: str
-    decided_by: str  # "llm" or "rules"
+    decided_by: str  # "llm", "rules", "correction" or "secondary"
+    secondary: bool = False  # runner-up shown only to viewers whose "my metric" matches
 
 
 @dataclass

@@ -87,7 +87,8 @@ export function applyOverlays(received: Overlay[]): OverlayState[] {
 /**
  * Personalization changes WHICH overlays appear, not only their wording:
  * - language and mode pick the variant;
- * - "my metric" keeps only that metric (corrections always pass);
+ * - "my metric" keeps only that metric (corrections always pass), and reveals the
+ *   secondary cards of that metric, which no other viewer sees;
  * - casual viewers with favorites see only their favorites (players or clubs);
  * - analysts see everything, with favorites ranked first.
  */
@@ -102,6 +103,7 @@ export function personalize(states: OverlayState[], s: ViewerSettings, players: 
     if (o.lang !== s.lang || o.audience_mode !== s.mode) return false;
     if (o.template_id === 'correction_banner') return true;
     if (s.metric !== 'all' && o.metric !== s.metric) return false;
+    if (o.secondary && s.metric === 'all') return false;
     if (s.mode === 'casual' && hasFavorites && !isFavorite(o)) return false;
     return true;
   });

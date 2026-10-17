@@ -8,6 +8,11 @@ corrections and retractions go through the corrections path:
   workflow (Narrator → Verifier → Composer) and re-issued as `op: correct`,
   superseding every variant of the old card;
 - a shown card whose insight was **retracted** gets `op: retract` for every variant;
+- **secondary cards**: for each shown card, the best insight of every *other* overlay
+  metric for the same shot is narrated too and marked `secondary`. Only viewers whose
+  "my metric" is that metric see it, so the setting changes which insight appears,
+  not just which cards are hidden. Secondaries skip cooldowns and rate limits (they
+  never add to what a default viewer sees) and are corrected like any shown card;
 - one **correction banner** (all four variants) per corrected event, when a shown
   card was affected or a goal was overturned. Its lineage cites the shot and the VAR
   events that reviewed it.
@@ -19,7 +24,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from formline.agents.cards import VARIANTS
-from formline.agents.selector import Selection, priority_of
+from formline.agents.catalog import OVERLAY_METRIC
+from formline.agents.selector import MIN_SALIENCE, Selection, priority_of
 from formline.agents.template_narrator import narrate_correction
 from formline.agents.verifier import VerifyContext, verify
 from formline.agents.workflow import Deps, build_workflow, run_moment
@@ -38,10 +44,22 @@ CORRECTION_DELAY_MS = 1_000
 BANNER_TTL_MS = 4 * 60_000
 
 
+def secondary_insights(candidates, primary) -> list:
+    """The best insight of each overlay metric other than the shown one's, for one shot."""
+    best: dict[str, object] = {}
+    for ins in sorted(candidates, key=lambda i: (-i.salience, i.insight_id)):
+        metric = OVERLAY_METRIC[ins.metric]
+        if metric == OVERLAY_METRIC[primary.metric] or metric in best or ins.salience < MIN_SALIENCE:
+            continue
+        best[metric] = ins
+    return list(best.values())
+
+
 @dataclass
 class LiveSummary:
     moments: int = 0
     cards: int = 0
+    secondary_cards: int = 0
     corrected_cards: int = 0
     retracted_cards: int = 0
     banners: int = 0
@@ -114,6 +132,22 @@ class LiveOrchestrator:
             self.shown[out.selection.insight.insight_id] = overlays
             self.overlays += overlays
             self.summary.cards += len(overlays)
+            for insight in secondary_insights(candidates, out.selection.insight):
+                await self._show_secondary(insight)
+
+    async def _show_secondary(self, insight) -> None:
+        metric = OVERLAY_METRIC[insight.metric]
+        selection = Selection(insight, priority_of(insight), f"secondary: for '{metric}' viewers",
+                              "secondary", secondary=True)
+        out = await run_moment(self.workflow, [insight], self.deps.selector_state,
+                               forced=selection)
+        self._count_sources(out.cards)
+        if out.cards:
+            overlays = [c.overlay for c in out.cards]
+            self.shown[insight.insight_id] = overlays
+            self.overlays += overlays
+            self.summary.cards += len(overlays)
+            self.summary.secondary_cards += len(overlays)
 
     def _count_sources(self, cards) -> None:
         for card in cards:
@@ -148,7 +182,8 @@ class LiveOrchestrator:
     async def _reissue(self, c: InsightCorrected) -> None:
         old = self.shown.pop(c.before.insight_id)
         selection = Selection(c.after, min(o.priority for o in old) if old else
-                              priority_of(c.after), f"correction: {c.reason}", "correction")
+                              priority_of(c.after), f"correction: {c.reason}", "correction",
+                              secondary=bool(old) and old[0].secondary)
         out = await run_moment(self.workflow, [c.after], self.deps.selector_state,
                                forced=selection)
         self._count_sources(out.cards)
@@ -167,7 +202,7 @@ class LiveOrchestrator:
     async def _reshow(self, insight) -> None:
         old = self.withdrawn.pop(insight.insight_id)
         selection = Selection(insight, min(o.priority for o in old), "notable again after a "
-                              "correction", "correction")
+                              "correction", "correction", secondary=old[0].secondary)
         out = await run_moment(self.workflow, [insight], self.deps.selector_state,
                                forced=selection)
         shown = [Overlay.model_validate(c.overlay.model_dump() | {"match_clock_ms": self._at()})

@@ -58,6 +58,15 @@ describe('overlays', () => {
     expect(vis.every((v) => v.overlay.metric === 'shot_speed' || v.overlay.template_id === 'correction_banner')).toBe(true);
     expect(vis.some((v) => v.overlay.template_id === 'correction_banner')).toBe(true);
   });
+  it('secondary cards appear only for viewers whose "my metric" matches', () => {
+    const speed = overlays.find((o) => o.metric === 'shot_speed' && o.lang === 'en' && o.audience_mode === 'analyst')!;
+    const runnerUp: Overlay = { ...speed, overlay_id: 'ovl_secondary', insight_id: 'ins_secondary', secondary: true };
+    const states = applyOverlays([...overlays, runnerUp]);
+    const ids = (s: ViewerSettings) => personalize(states, s, PLAYERS).map((v) => v.overlay.overlay_id);
+    expect(ids(base)).not.toContain('ovl_secondary');
+    expect(ids({ ...base, metric: 'finishing' })).not.toContain('ovl_secondary');
+    expect(ids({ ...base, metric: 'shot_speed' })).toContain('ovl_secondary');
+  });
 });
 
 describe('league URL', () => {

@@ -62,6 +62,9 @@ class Overlay(BaseModel):
     metric: OverlayMetric | None
     source_event_ids: list[str] = Field(min_length=1)
     verified: bool
+    secondary: bool = Field(default=False, description=(
+        "A runner-up insight of another metric for the same shot, shown only to viewers "
+        "whose 'my metric' is this overlay's metric"))
 
     @model_validator(mode="after")
     def _op_rules(self) -> "Overlay":

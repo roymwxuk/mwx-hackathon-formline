@@ -75,6 +75,8 @@ export interface Overlay {
   metric: Metric | null;
   source_event_ids: string[];
   verified: boolean;
+  /** Runner-up insight of another metric: shown only when the viewer's "my metric" matches. */
+  secondary?: boolean;
 }
 
 export interface OverlaySlots {

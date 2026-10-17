@@ -35,7 +35,8 @@
       "evt_3100558",
       "evt_3100557"
     ],
-    "verified": false
+    "verified": false,
+    "secondary": false
   },
   {
     "overlay_id": "ovl_evt_3100558_shot_speed_vs_norm_ja_analyst",
@@ -81,7 +82,8 @@
       "evt_3100558",
       "evt_3100557"
     ],
-    "verified": false
+    "verified": false,
+    "secondary": false
   },
   {
     "overlay_id": "ovl_evt_3100937_placement_vs_norm_en_analyst",
@@ -127,7 +129,8 @@
       "evt_3100937",
       "evt_3100936"
     ],
-    "verified": false
+    "verified": false,
+    "secondary": false
   },
   {
     "overlay_id": "ovl_evt_3100937_placement_vs_norm_en_analyst_retract",
@@ -150,7 +153,8 @@
       "evt_3100937",
       "evt_3100936"
     ],
-    "verified": true
+    "verified": true,
+    "secondary": false
   },
   {
     "overlay_id": "ovl_evt_3100937_season_best_en_casual_v2",
@@ -188,7 +192,8 @@
       "evt_3100937",
       "evt_3100936"
     ],
-    "verified": false
+    "verified": false,
+    "secondary": false
   },
   {
     "overlay_id": "ovl_banner_evt_3100937_en_casual",
@@ -212,6 +217,7 @@
       "evt_3100937",
       "evt_3100936"
     ],
-    "verified": true
+    "verified": true,
+    "secondary": false
   }
 ]
