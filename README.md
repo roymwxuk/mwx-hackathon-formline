@@ -46,6 +46,26 @@ pnpm dev
 NEXT_PUBLIC_STREAM_URL="http://localhost:8000/matches/mtc_s26_md11_har_nor/stream?speed=20" pnpm dev
 ```
 
+## Personal baselines: does shrinkage help?
+
+Each shot is compared with the shooter's own comparable shots, blended with his position
+group's average by sample size (empirical Bayes, ADR-006). Checked against the generator's
+hidden truth (each player's population mean from 300 extra simulated matches),
+`uv run python -m formline.evaluation`:
+
+| Shots in history | Raw average error | Shrunk error | Error cut |
+|---|---|---|---|
+| All players (39) | 4.11 km/h | 2.87 km/h | **30%** |
+| 1–4 shots | 6.26 | 3.45 | **45%** |
+| 5–9 shots | 5.41 | 3.91 | 28% |
+| 10–19 shots | 2.14 | 1.84 | 14% |
+| 20+ shots | 2.20 | 2.05 | 7% |
+
+The group average alone is worse than both (5.03 km/h), so baselines must be personal.
+Known limitation: 30 matches slightly underestimate the shrinkage strength (k 2.2 fitted vs
+3.9 implied for forwards), so the tiniest samples are under-shrunk a little. Details:
+[docs/shrinkage-accuracy.md](docs/shrinkage-accuracy.md).
+
 ## Feed robustness: convergence under chaos
 
 Real feeds deliver duplicates, late and out-of-order messages, and corrections. The

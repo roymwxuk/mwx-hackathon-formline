@@ -1,6 +1,6 @@
 # Milestone 2: engine core
 
-**Status:** In progress. Tasks 1–7 done, 8 to do (updated 2026-10-17)
+**Status:** ✅ Done. All 8 tasks complete (2026-10-17)
 **Branch:** `feat/engine`, built on `feat/generator`
 **Planned:** Oct 12–15 in `CLAUDE.md`, so running late. Estimate 7–9 h in total.
 
@@ -20,9 +20,9 @@ These are the "depth levers" in `CLAUDE.md`.
 | 5 | Insight detection and lineage | ✅ Done | `ccdd59c` | 8 |
 | 6 | Chaos injector | ✅ Done | `4d89316` | 9 |
 | 7 | Convergence tests (property-based) | ✅ Done | `bbb105a` | 4 (140 random cases) |
-| 8 | Shrinkage accuracy vs hidden truth | ⏳ Next | | |
+| 8 | Shrinkage accuracy vs hidden truth | ✅ Done | TASK8 | 5 |
 
-The backend suite is 80 tests in total (including generator and API tests).
+The backend suite is 85 tests in total (including generator and API tests).
 
 ---
 
@@ -239,11 +239,37 @@ quiet spells leave room.
 the reorder buffer releases in event-time order, and the integer buckets make add and
 remove exact and order-independent (ADR-006).
 
-## Task 8: shrinkage accuracy vs hidden truth ⬜
+## Task 8: shrinkage accuracy vs hidden truth ✅
 
-- Compare raw and shrunk baselines with the generator's hidden profiles
-  (`gen_only/latent_profiles.json`), especially for small samples. This gives a concrete
-  number for the README ("shrinkage cuts error by X% for players with fewer than N shots").
+**Files:** `backend/src/formline/evaluation.py` · **Tests:** `tests/test_evaluation.py` ·
+**Report:** `docs/shrinkage-accuracy.md`
+
+- **Truth** = each player's **population mean** strong-foot shot speed: the same league and
+  hidden profiles simulated for 300 extra matches (only seeds differ). The hidden profile's
+  `shot_power_mean_kmh` itself describes an idealised 16 m shot, not the shots a player
+  actually takes, so it can't be compared directly. Players need 30+ truth shots.
+- **Estimates** from the 30-match history, as the engine sees them: raw (his average),
+  group (his position group's average, leaving him out) and shrunk (the engine's blend).
+- **Run:** `uv run python -m formline.evaluation --truth-matches 300` (about 15 s).
+
+| Shots in history | Players | Raw | Group | Shrunk | Error cut |
+|---|---|---|---|---|---|
+| All | 39 | 4.11 | 5.03 | 2.87 | **30%** |
+| 1–4 | 6 | 6.26 | 3.05 | 3.45 | 45% |
+| 5–9 | 11 | 5.41 | 4.94 | 3.91 | 28% |
+| 10–19 | 15 | 2.14 | 5.91 | 1.84 | 14% |
+| 20+ | 7 | 2.20 | 4.45 | 2.05 | 7% |
+
+(RMSE in km/h vs truth; lower is better.)
+
+**Findings:**
+- Shrinkage helps most where samples are smallest, as intended.
+- The group average alone is the worst overall: baselines must be personal.
+- **Limitation:** 30 matches underestimate k (forwards 2.2 fitted vs 3.9 implied; midfielders
+  4.8 vs 6.4), so for 1–4 shots the plain group average (3.05) is slightly better than the
+  shrunk estimate (3.45). More history or a slightly stronger prior would fix it.
+- The tests use 180 extra matches (about 10 s) and check that shrunk beats both raw and group,
+  and that the gain is largest for small samples.
 
 ---
 

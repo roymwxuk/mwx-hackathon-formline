@@ -197,6 +197,12 @@ roll a shot back out of every bucket.
    1–99, shown next to the raw rank. Example: Okafor's pressured header ranks last
    of 5 raw shots, but is estimated at the 59th percentile after shrinkage.
 
+**Accuracy (task 8).** Against the generator's hidden truth (population means from 300
+extra simulated matches), shrunk baselines cut the RMSE of raw averages by 30% overall
+(4.11 → 2.87 km/h) and by 45% for players with 1–4 shots. The fitted k is somewhat low
+(forwards 2.2 vs 3.9 implied by the truth), so the smallest samples are slightly
+under-shrunk; see `docs/shrinkage-accuracy.md`.
+
 **Finding worth reporting.** PSxG gets the maximum k (50): players differ very
 little in finishing relative to shot-to-shot noise. That matches the public
 analytics view that finishing skill is hard to detect, and it is why finishing
