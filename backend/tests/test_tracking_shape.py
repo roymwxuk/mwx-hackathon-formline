@@ -77,3 +77,13 @@ def test_shared_frame_flips_the_away_side():
     assert to_shared((20, 30), home=True) == (20, 30)
     assert to_shared((20, 30), home=False) == (80, 70)
     assert to_shared(to_shared((12.5, 40), home=False), home=False) == (12.5, 40)
+
+
+def test_a_half_finished_transition_sits_between_the_two_shapes():
+    ball = (60, 50)
+    attack, defend = team_shape(SLOTS, ball, True), team_shape(SLOTS, ball, False)
+    mid = team_shape(SLOTS, ball, 0.5)
+    for shirt in (2, 9, 11):  # a full back and two forwards move most between shapes
+        lo, hi = sorted((attack[shirt][0], defend[shirt][0]))
+        assert lo < mid[shirt][0] < hi
+    assert team_shape(SLOTS, ball, 1.0) == attack and team_shape(SLOTS, ball, 0.0) == defend

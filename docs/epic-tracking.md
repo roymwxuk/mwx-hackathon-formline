@@ -110,6 +110,17 @@ in the buffer. Stretch task S1 starts only if everything above is done early.
   11.5 km; real football about 10–11 km); a median 37 s per player above 7 m/s (real high-speed
   running about 30–40 s); peak speed 9.5 m/s. A 4 s anchor ramp forced sprints and missed
   anchors (93%), and stronger personal drift inflated distance; 8 s and 0.5 m fixed both.
+- **Players went back and forth (T8 review):** at 1× players visibly ran out and straight back.
+  Measured as trips of more than 5 m out and back to within 2 m in 10 s. Three causes, found
+  by measuring rather than guessing: (1) at every turnover both teams switched instantly
+  between their attacking and defending shapes (about 20 m for a winger), and brief
+  turnovers then sent players out and back; (2) the shape followed every pass; (3) after an
+  event the pull back to formation took only 8 s. Now shapes ease over 4 s after a turnover,
+  follow the ball smoothed over 2 s, players near the ball are drawn toward it, and after an
+  event a player goes straight on to his next anchor (within 30 s) or drifts back slowly
+  (20 s). Result: trips of 12–20 m fell from 54 to 14 per half (20+ m from 4 to 2) with
+  99.5% of anchors still met. Trade-off: players now run less than in real football, about
+  8 km per match and about 12 s above 7 m/s (real: 10–11 km, 30–40 s).
 - **Generator quirk:** one pass (57:56) is credited to a player substituted off at 56:53. The
   anchors skip actions by players not on the pitch rather than fixing the generator, which
   would re-randomize the rest of the match and invalidate the Foundry-narrated overlays.

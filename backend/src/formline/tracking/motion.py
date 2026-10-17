@@ -8,7 +8,8 @@ For every frame (ADR-010):
    smoothed so the team reacts like people rather than jumping, with a little personal
    drift so nobody moves in lockstep;
 3. offsets bend each player's path through his anchors (anchors.py), exactly at the anchor
-   time and fading out a few seconds either side;
+   time: he heads there over a few seconds, goes straight on to his next anchor when it is
+   close, and otherwise drifts back to his shape spot slowly rather than snapping back;
 4. speed is capped at a sprint, which softens the rare anchors that are out of reach.
 """
 
@@ -17,7 +18,7 @@ from bisect import bisect_right
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from itertools import pairwise
-from math import pi, sin
+from math import exp, pi, sin
 
 from formline.pitch import PITCH_LENGTH_M, PITCH_WIDTH_M, clamp
 from formline.schema.tracking import FRAME_MS, Ball, TrackedPlayer, TrackingFrame
@@ -27,8 +28,12 @@ from formline.tracking.shape import team_shape, to_shared
 DT = FRAME_MS / 1000
 MAX_SPEED = 9.5  # m/s, a sprint
 BASE_SPEED = 6.0  # m/s, how fast players drift with the team shape
-REACTION_S = 1.2  # smoothing time constant for the team shape
-ANCHOR_WINDOW_S = 8.0  # an anchor bends the path this long before and after (4 s forced sprints)
+REACTION_S = 1.2  # smoothing time constant for each player's movement
+BALL_SMOOTH_S = 2.0  # the team shape follows the ball smoothed over this long (area of play)
+TRANSITION_S = 4.0  # after a turnover, a team eases from one shape to the other this slowly
+ANCHOR_WINDOW_S = 8.0  # a player starts heading for his anchor this long before it (4 s forced sprints)
+RETURN_S = 20.0  # after an anchor, the pull decays with this time constant (back to shape slowly)
+CHAIN_S = 30.0  # anchors closer than this: go straight from one to the next, no detour back
 DRIFT_M = 0.5  # personal drift amplitude (more inflates distance covered)
 KICKOFF_LEAD_MS = 4_000  # kick-off shape this long before a kick-off pass
 ON_BALL = {"pass", "shot", "duel", "interception", "ball_recovery"}
@@ -145,6 +150,8 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
         on_pitch: list[dict[tuple[bool, int], bool]] = []
         balls: list[Ball] = []
         smooth: dict[tuple[bool, int], tuple[float, float]] = {}
+        area: tuple[float, float] | None = None  # the smoothed ball the team shape follows
+        attack = {home_club_id: 0.5, away_club_id: 0.5}  # eased possession level per team
         for n, t in enumerate(ticks):
             for s in subs:
                 if (s.period, s.match_clock_ms) <= (period, t) and s.event_id not in applied:
@@ -152,17 +159,25 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
                     applied.add(s.event_id)
             ball = ball_at(keys, key_times, t)
             balls.append(ball)
+            if area is None or BALL_SMOOTH_S <= 0:
+                area = (ball.x, ball.y)
+            else:
+                k = DT / (BALL_SMOOTH_S + DT)
+                area = (area[0] + (ball.x - area[0]) * k, area[1] + (ball.y - area[1]) * k)
             owner = _possession_at(events, ev_times, period, t)
             kickoff = any(p == period and 0 <= kt - t <= KICKOFF_LEAD_MS for p, kt in kickoffs) \
                 or (keys and t < keys[0].t)
             present = {}
             for club, home in ((home_club_id, True), (away_club_id, False)):
-                own_ball = to_shared((ball.x, ball.y), home)
-                has = None if owner is None else owner == club
+                own_ball = to_shared(area, home)
+                target_level = 0.5 if owner is None else 1.0 if owner == club else 0.0
                 if kickoff:
-                    kicking = _kicking_team(events, ev_times, period, t, kickoffs) == club
-                    has = kicking
-                shape = team_shape(lineups[club].slots, own_ball, has, kickoff=kickoff)
+                    target_level = 1.0 if _kicking_team(events, ev_times, period, t,
+                                                        kickoffs) == club else 0.0
+                    attack[club] = target_level  # a restart: no easing
+                else:
+                    attack[club] += (target_level - attack[club]) * DT / (TRANSITION_S + DT)
+                shape = team_shape(lineups[club].slots, own_ball, attack[club], kickoff=kickoff)
                 for shirt, spot in shape.items():
                     key = (home, shirt)
                     target = to_shared(spot, home)
@@ -251,6 +266,8 @@ def _anchor_offsets(anchors: list[Anchor], period: int, ticks: list[int],
             else:
                 merged.append(d)
         offs: dict[int, tuple[float, float]] = {}
+        chain = int(CHAIN_S * 1000 / FRAME_MS)
+        decay = DT / RETURN_S
         first, last = merged[0], merged[-1]
         for n in range(max(0, first[0] - win), first[0]):
             k = _smoothstep(1 - (first[0] - n) / win)
@@ -258,15 +275,17 @@ def _anchor_offsets(anchors: list[Anchor], period: int, ticks: list[int],
         for (na, ax, ay), (nb, bx, by) in pairwise(merged):
             span = nb - na
             for n in range(na, nb):
-                if span <= 2 * win:
+                if span <= chain:  # straight on to the next anchor
                     u = _smoothstep((n - na) / span)
                     offs[n] = (ax + (bx - ax) * u, ay + (by - ay) * u)
-                else:
-                    ka = _smoothstep(1 - (n - na) / win) if n - na < win else 0.0
+                else:  # drift back slowly, then head for the next anchor
+                    fade = exp(-(n - na) * decay)
                     kb = _smoothstep(1 - (nb - n) / win) if nb - n < win else 0.0
-                    offs[n] = (ax * ka + bx * kb, ay * ka + by * kb)
-        for n in range(last[0], min(len(ticks), last[0] + win)):
-            k = _smoothstep(1 - (n - last[0]) / win)
-            offs[n] = (last[1] * k, last[2] * k)
+                    offs[n] = (ax * fade * (1 - kb) + bx * kb, ay * fade * (1 - kb) + by * kb)
+        for n in range(last[0], len(ticks)):
+            fade = exp(-(n - last[0]) * decay)
+            if fade < 0.02:
+                break
+            offs[n] = (last[1] * fade, last[2] * fade)
         out[key] = offs
     return out
