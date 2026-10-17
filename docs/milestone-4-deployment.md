@@ -1,7 +1,7 @@
 # Milestone 4: Azure deployment and production readiness
 
-**Status:** In progress. Tasks 1–2 done (2026-10-17)
-**Branch:** `feat/deploy`, to be built after milestone 3 (`feat/agents`)
+**Status:** In progress. Tasks 1–4, 7 and 8 done (2026-10-17); task 3 needs a redeploy with the resumable stream; task 5 partly done; task 6 optional, not started.
+**Branch:** `feat/deploy` (merged, PRs #5–#6), `docs/deploy`
 **Planned:** Oct 20–22 in `CLAUDE.md` ("Azure deployment and the live viewer UI"). The viewer UI
 is already done (see `docs/frontend-gaps.md`), so this milestone focuses on deployment and on
 the rubric's **"production deployment readiness"** (20%).
@@ -20,11 +20,11 @@ deploy, record the video against Azure, then scale to zero.
 |---|---|
 | Reliability: failure recovery, retries, fallbacks, deterministic replays | ✅ Workflow recovery, convergence 300/300, chaos stress runs |
 | Correctness controls: verifier, lineage, corrections | ✅ 99.6% verifier catch rate, VAR correction path |
-| Tests and docs | ✅ 174 backend + 15 frontend tests, ADR-001 to ADR-007 |
-| Config via environment, no secrets in code | 🟡 Done; managed identity not yet |
-| Cost controls | 🟡 LLM call budget and cache done; scale to zero comes with deployment |
-| Observability | 🟡 JSON-line logs and run traces; not wired to Azure |
-| Containers, deployment, CI | ❌ This milestone |
+| Tests and docs | ✅ 192 backend + 18 frontend tests, ADR-001 to ADR-009 |
+| Config via environment, no secrets in code | ✅ Managed identity for Foundry, no keys |
+| Cost controls | ✅ LLM call budget and cache, scale to zero, ingress off when unused, budget alert |
+| Observability | 🟡 Container logs reach Log Analytics; KQL query on agent traces not yet checked |
+| Containers, deployment, CI | ✅ Container Apps, GHCR images published by CI |
 | Infrastructure as code | ❌ Optional, this milestone |
 
 ## Decisions to make
@@ -41,12 +41,12 @@ deploy, record the video against Azure, then scale to zero.
 |---|---|---|---|
 | 1 | ✅ Dockerfiles (backend, viewer) and local `docker compose` | MUST | 1 h |
 | 2 | ✅ GitHub Actions CI: lint, typecheck, tests on every push | MUST | 0.5 h |
-| 3 | Deploy to Azure Container Apps (manual `az` steps, scripted) | MUST | 1.5 h |
-| 4 | Managed identity for Foundry (no API keys) | SHOULD | 0.5 h |
-| 5 | Observability: logs to Log Analytics, optional Application Insights traces | SHOULD | 0.5 h |
+| 3 | ✅ Deploy to Azure Container Apps (manual `az` steps, scripted); redeploy pending | MUST | 1.5 h |
+| 4 | ✅ Managed identity for Foundry (no API keys) | SHOULD | 0.5 h |
+| 5 | 🟡 Observability: logs to Log Analytics, optional Application Insights traces | SHOULD | 0.5 h |
 | 6 | **Optional: infrastructure as code** (Bicep + `azd`, or Terraform) | COULD | 2–3 h |
-| 7 | Live replay controls and end of stream (frontend gap 4) | SHOULD | 1 h |
-| 8 | Docs: README "Deploy" and "Production readiness" sections, ADR-009 | MUST | 0.5 h |
+| 7 | ✅ Live replay controls and end of stream (frontend gap 4) | SHOULD | 1 h |
+| 8 | ✅ Docs: README "Deploy" and "Production readiness" sections, ADR-009 | MUST | 0.5 h |
 
 ### Task 1: containers (MUST) ✅ Done
 
@@ -98,7 +98,7 @@ deploy, record the video against Azure, then scale to zero.
 - Validated locally: YAML parses and `actionlint` reports no problems. The first real run happens
   when the branch is pushed. README has a CI badge.
 
-### Task 3: deploy to Azure Container Apps (MUST)
+### Task 3: deploy to Azure Container Apps (MUST) ✅ Done (redeploy pending)
 
 - Resource group, Container Apps environment, Azure Container Registry (or GitHub Container
   Registry), two container apps (backend, viewer), min replicas 0 so they scale to zero.
@@ -106,19 +106,33 @@ deploy, record the video against Azure, then scale to zero.
 - A script (`scripts/deploy.sh`) with the `az` commands, so the deploy is repeatable even without IaC.
 - **Done when:** the viewer's Azure URL plays the live match with LLM-narrated cards from Foundry.
 
-### Task 4: managed identity for Foundry (SHOULD)
+**Result:** `scripts/azure/{provision,deploy,stop,start,teardown}.sh` (names in `common.sh`).
+Japan East; environment `formline-env`; `formline-api` (0.5 vCPU / 1 GiB) and `formline-web`
+(0.25 / 0.5 GiB), both 0–1 replicas; images from GHCR (public, published by CI on `main`, no
+registry). Verified on Azure: health, 31 matches, the stream with 64 Foundry-narrated overlays
+and `end`, CORS, and live narration via managed identity. Apps stopped afterwards (ingress off).
+**Open:** redeploy with the resumable stream (task 7), confirm long streams survive the suspected
+~4-minute ingress cutoff, measure the cold start.
+
+### Task 4: managed identity for Foundry (SHOULD) ✅ Done
 
 - The backend container app gets a system-assigned managed identity with the right role on the
   Foundry project. `llm.py` uses `DefaultAzureCredential` (managed identity in Azure,
   `az login` locally) instead of `AzureCliCredential`.
 - **Done when:** no API key or secret exists anywhere, and Azure narration still works.
 
-### Task 5: observability (SHOULD)
+**Result:** `DefaultAzureCredential`; the backend's identity and the owner get **"Foundry User"**
+(the only role that works on Foundry project endpoints; see ADR-009).
+
+### Task 5: observability (SHOULD) 🟡 Partly
 
 - Container logs flow to Log Analytics (the default for Container Apps). The workflow's JSON-line
   trace makes every handoff and verdict queryable.
 - Optional: Agent Framework's OpenTelemetry export to Application Insights for per-agent spans.
 - **Done when:** a KQL query shows the run's verifier rejections and template fallbacks.
+
+**Status:** container logs reach Log Analytics; the KQL query (and whether INFO-level traces are
+emitted in the container) is not checked yet.
 
 ### Task 6: optional infrastructure as code (COULD; E3)
 
@@ -135,13 +149,17 @@ Only if milestones 3–4 MUST items are done and time allows. Task 3's script re
 - **Done when:** a fresh resource group can be created and deployed with one command, and the README
   documents it.
 
-### Task 7: live replay controls (SHOULD; frontend gap 4)
+### Task 7: live replay controls (SHOULD; frontend gap 4) ✅ Done
 
 - Backend replay accepts a start time and slows down around overlays (as the mock does), and sends
   `{kind: 'end'}`. The viewer passes speed and start time, shows "Full time" and stops reconnecting.
 - **Done when:** the demo video can be recorded from the Azure deployment at a readable pace.
 
-### Task 8: docs (MUST)
+**Result:** stream ids with `Last-Event-ID` resume, `start=mm:ss`, slower pacing around shots
+(6× slower), and viewer controls for speed (10/20/60/120×), pause/play and restart in live mode
+(`63d8b66`). A live seek bar is not built.
+
+### Task 8: docs (MUST) ✅ Done
 
 - README: "Deploy to Azure" (script or `azd up`), "Production readiness" (the table above, updated),
   and the Azure services used, for the pitch.

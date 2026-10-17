@@ -10,11 +10,11 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 ## Remaining checklist
 
 **Must (needed to submit)**
-- [ ] Merge `feat/deploy` (ahead of `main`: deploy scripts, live playback controls, roadmap) so CI publishes new images
+- [x] Merge `feat/deploy` (PR #6) so CI publishes new images
 - [ ] Redeploy to Azure with the resumable stream; confirm the ~240 s ingress cutoff is handled; measure the cold start; stop the apps again
-- [ ] `scripts/azure/teardown.sh`
-- [ ] ADR-009: Container Apps + scale to zero, GHCR, managed identity, Japan East, JSONL instead of Postgres, the Foundry 403 / "Foundry User" finding, the ingress cutoff
-- [ ] README: "Deploy to Azure" and "Production readiness" sections (M4 task 8)
+- [x] `scripts/azure/teardown.sh`
+- [x] ADR-009: Container Apps + scale to zero, GHCR, managed identity, Japan East, JSONL instead of Postgres, the Foundry 403 / "Foundry User" finding, the ingress cutoff
+- [x] README: "Deploy to Azure" and "Production readiness" sections (M4 task 8)
 - [ ] Milestone 5: README polish (what it is, run locally, Azure services, data realism item (v), limitations, headline numbers)
 - [ ] Milestone 5: architecture diagram
 - [ ] Milestone 5: `docs/decisions.md` cleanup
@@ -49,7 +49,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 | 2 | Event log, stats engine, personal baselines with shrinkage, chaos injector, convergence tests | Oct 12–15 | ✅ Done | `docs/milestone-2-engine.md`, ADR-006, ADR-007 |
 | 3 | Agents (Selector, Narrator, Verifier, Composer), overlay contract, EN/JA | Oct 16–19 | ✅ Done (Foundry connected); optional 11–12 not started | `docs/milestone-3-agents.md`, ADR-008 |
 | 3b | ⭐ Optional plus: studio graphics producer copilot (a real agent with human approval, autonomy levels, audit log) | Only if time allows after milestone 4 MUST tasks | ⬜ Not started | `docs/milestone-3b-studio-copilot.md` |
-| 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 Tasks 1–4 and 7 done; deployed once and stopped; redeploy, task 5 (observability) and task 8 (docs) left; task 6 (IaC) optional | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
+| 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 Tasks 1–4, 7 and 8 done; deployed once and stopped; redeploy and task 5 (observability) left; task 6 (IaC) optional | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | ⬜ Not started | — |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
 
@@ -57,8 +57,8 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 
 | Branch | Contains | State |
 |---|---|---|
-| `main` | Milestones 1–3, containers, CI, Foundry, deploy groundwork (PRs #1–#5) | Pushed; CI green |
-| `feat/deploy` | Azure deploy/stop/start scripts, live playback controls, this roadmap | Ahead of `main` (these changes plus this roadmap); not pushed |
+| `main` | Milestones 1–3, milestone 4 deployment and playback controls (PRs #1–#6) | Pushed; CI publishes images |
+| `docs/deploy` | `teardown.sh`, ADR-009, README deploy and readiness sections, milestone docs | Not pushed |
 
 Feature branches are merged through pull requests; `main` is what CI publishes to GHCR.
 
@@ -105,7 +105,7 @@ production. Signals and status:
 |---|---|
 | Reliability: failure recovery, retries, fallbacks, deterministic replays | ✅ |
 | Correctness controls: verifier (99.6% catch rate), lineage, corrections | ✅ |
-| Tests and docs: 192 backend + 18 frontend tests, ADR-001 to ADR-008 | ✅ (ADR-009 pending) |
+| Tests and docs: 192 backend + 18 frontend tests, ADR-001 to ADR-009 | ✅ |
 | Config via environment, no secrets in code | ✅ managed identity for Foundry, no keys |
 | Cost controls: LLM call budget, response cache, scale to zero, budget alert | ✅ |
 | Observability: JSON-line traces → Log Analytics / App Insights | 🟡 logs reach Log Analytics; queries not checked |

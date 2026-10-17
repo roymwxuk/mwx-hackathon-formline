@@ -340,3 +340,69 @@ CI and offline demos exercise exactly the same `Agent.run` path.
 **Known tuning item.** At 40:12 the Selector picks a placement insight (salience 0.55)
 over the flagship speed insight (0.49): correct by salience, but the demo story is speed.
 To revisit once the real model is connected.
+
+## ADR-009: Deploy on Azure Container Apps with scale to zero and keyless Foundry access
+
+**Status:** Accepted (2026-10-17)
+
+**Context.** The brief asks for "an AI insights engine running on Azure", and the demo video
+must show it on its target platform. The deployment has to be cheap for a solo entrant
+(budget ¥3,000/month), secret-free in a public repo, repeatable from scripts, and able to
+hold one long-lived SSE stream per viewer for a 90-minute match replayed at 20×.
+
+**Options.**
+- Hosting: (a) Azure Container Apps (consumption); (b) App Service; (c) AKS; (d) Static Web
+  Apps for the viewer plus a separate API host.
+- Images: (a) GitHub Container Registry; (b) Azure Container Registry.
+- Model auth: (a) API keys in app settings or Key Vault; (b) managed identity with Entra ID roles.
+- Event log store: (a) the JSONL log baked into the image; (b) Azure Database for PostgreSQL
+  Flexible Server.
+
+**Decision.**
+- **Container Apps for both apps**, in one environment (`formline-env`), min 0 / max 1
+  replicas: backend 0.5 vCPU / 1 GiB, viewer 0.25 vCPU / 0.5 GiB. Idle apps cost nothing;
+  `stop.sh` disables ingress so not even bots can wake them; `start.sh` restores the same URLs.
+- **GHCR, public packages**, published by CI on `main` as `linux/amd64` images tagged with the
+  commit SHA (the dev Mac builds arm64, which Container Apps can't run). No registry
+  credentials anywhere, and ACR's daily charge is avoided.
+- **Managed identity, no keys.** `DefaultAzureCredential` uses `az login` locally and the
+  backend's system-assigned identity in Azure. The identity gets **"Foundry User"** on the
+  Foundry resource (`deploy.sh` assigns it).
+- **JSONL, not Postgres.** The season (~28 MB, deterministic) is generated at image build
+  time; precomputed Foundry overlays ship in `backend/demo/overlays/`. The event log
+  interface still allows Postgres later.
+- **Japan East** for everything: in the cheapest Container Apps price tier and closest to
+  the owner; Global Standard model deployments cost the same in every region.
+- **Model:** `gpt-4.1-mini` (Global Standard, 50k TPM rate limit). The agents' jobs are
+  short JSON-contract calls checked by a deterministic verifier, so a small model is enough;
+  a full narration run of the live match costs about ¥1.
+- **Scripts over IaC for now:** `provision.sh`, `deploy.sh <sha>`, `stop.sh`, `start.sh`,
+  `teardown.sh` are idempotent `az` scripts; Bicep + `azd` stays an optional task.
+
+**Why.** Container Apps gives containers, HTTPS ingress, revisions, logs to Log Analytics and
+true scale to zero with no cluster to run; AKS and App Service keep paying while idle. One
+platform for both apps keeps one deploy flow. Keyless auth means the public repo and the
+app settings contain nothing worth stealing.
+
+**Findings worth recording.**
+- **Foundry project endpoints need "Foundry User".** `FoundryChatClient` calls the project
+  endpoint (`https://<resource>.services.ai.azure.com/api/projects/<project>`). With
+  "Cognitive Services OpenAI User", "Azure AI Developer" or "Foundry Project Runtime User" it
+  returned 403 with an empty body, while the classic OpenAI endpoint worked. Diagnosed with a
+  direct `curl` using an Entra token; only "Foundry User" works. The other roles were removed.
+- **Long SSE streams through ingress.** One viewer stream stopped after about four minutes
+  ("Reconnecting…"); not yet confirmed as an ingress limit. Streams are now resumable: every
+  message carries an SSE id, and on reconnect the browser sends `Last-Event-ID` and the
+  backend continues after it, so a dropped connection costs nothing. The viewer's speed,
+  pause and restart controls use the same mechanism (`start=mm:ss`).
+- **Tests must never reach Azure.** `backend/.env` held the real endpoint, so the test suite
+  briefly called Foundry (all calls were rejected, 0 tokens billed). `tests/conftest.py` now
+  blanks the endpoint and a guard test asserts the fake client is used.
+
+**Costs.** Measured so far: about ¥21 in model tokens for all narration runs; Container Apps
+within the monthly free grant. A ¥3,000 budget alerts at 50% and 100%.
+
+**Trade-offs.** A cold start after scale to zero takes a few seconds (warm the app before a
+demo); max 1 replica means no high availability; JSONL baked into the image means data
+changes need a new image. All acceptable for a demo, and each has a clear upgrade path
+(min 1 replica, more replicas behind the same ingress, Postgres behind the event log interface).

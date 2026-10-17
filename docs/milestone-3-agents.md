@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** ✅ Code complete (2026-10-17). Tasks 1–4, 6–10 and 13 done; task 5 done except the Azure steps (5.1 deployment, 5.3 smoke test), which wait on the owner. Optional tasks 11–12 not started.
+**Status:** ✅ Done (2026-10-17). Tasks 1–10 and 13 done, including the Azure steps 5.1 and 5.3 (Foundry `gpt-4.1-mini`, smoke test passed, demo overlays narrated by Foundry). Optional tasks 11–12 not started.
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -58,7 +58,7 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 | 2 | ✅ Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
 | 3 | ✅ Verifier (deterministic checks) | MUST | 1.5 h | 2 |
 | 4 | ✅ Verifier catch-rate harness | SHOULD | 1 h | 3 |
-| 5 | 🟡 LLM client setup and fake client (Azure steps pending) | MUST | 1 h | D1 |
+| 5 | ✅ LLM client setup and fake client | MUST | 1 h | D1 |
 | 6 | ✅ Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
 | 7 | ✅ Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
 | 8 | ✅ Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
@@ -217,7 +217,7 @@ it can be measured.
 - Tests keep the rate from regressing: no false positives, ≥ 98% overall, 100% for the
   non-numeric families, ≥ 97% for numbers.
 
-### Task 5: LLM client setup and fake client (MUST; D1)
+### Task 5: LLM client setup and fake client (MUST; D1) ✅ Done
 
 **What needs Azure and what doesn't** (decided 2026-10-17): almost all of task 5, and tasks
 6–10, are built and tested against the fake client, with no Azure access. Only creating the
@@ -256,7 +256,12 @@ end of the milestone, when the owner has the deployment ready.
   default) → `Agent.run` with temperature 0.2 and max 400 tokens. Retries bypass the cache.
 - Manual smoke test: `uv run python -m formline.agents.llm --smoke`.
 - `backend/.env.example` documents both modes.
-- 9 tests. **Pending (Azure):** 5.1 deployment and 5.3 real smoke test.
+- 9 tests.
+- **Azure (done 2026-10-17):** 5.1 Foundry resource `formline-ai-mwx`, project `formline`,
+  `gpt-4.1-mini` (Global Standard), created by `scripts/azure/provision.sh`; 5.3 smoke test passed.
+  Auth is `DefaultAzureCredential` with the "Foundry User" role (ADR-009). The live match's
+  overlays were narrated by Foundry (prompt v3, 60/60 model texts verified) and ship in
+  `backend/demo/overlays/`.
 
 ### Task 6: agents (MUST; D2, D6) ✅ Done
 
