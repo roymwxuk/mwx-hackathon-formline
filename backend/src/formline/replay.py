@@ -6,6 +6,7 @@ corrections): it rewrites the message list before pacing starts.
 
 import asyncio
 from collections.abc import AsyncIterator, Callable
+from datetime import datetime
 
 from formline.schema.feed import FeedMessage
 
@@ -34,3 +35,40 @@ def to_stream_message(msg: FeedMessage) -> dict | None:
     event = msg.event.model_dump(mode="json")
     event["version"] = msg.version
     return {"kind": "event", "event": event}
+
+
+END_MESSAGE = {"kind": "end"}  # last StreamMessage: the match feed is over
+
+
+def merge_stream(feed: list[FeedMessage], overlays: list[tuple[datetime, object]]
+                 ) -> list[tuple[datetime, dict]]:
+    """Events and precomputed overlays as one timed list of StreamMessages.
+
+    An overlay is placed right after the message that triggered it (same emission time,
+    events first), which is where the live pipeline would have produced it.
+    """
+    from formline.schema.overlay import overlay_message
+
+    items: list[tuple[datetime, int, int, dict]] = []
+    for i, msg in enumerate(feed):
+        payload = to_stream_message(msg)
+        if payload is not None:
+            items.append((msg.emitted_at, 0, i, payload))
+    for i, (at, overlay) in enumerate(overlays):
+        items.append((at, 1, i, overlay_message(overlay)))
+    items.sort(key=lambda x: (x[0], x[1], x[2]))
+    return [(at, payload) for at, _, _, payload in items]
+
+
+async def replay_items(items: list[tuple[datetime, dict]],
+                       speed: float = 10.0) -> AsyncIterator[dict]:
+    """Yield pre-timed StreamMessages, paced by their timestamps."""
+    if not items:
+        return
+    prev = items[0][0]
+    for at, payload in items:
+        gap = (at - prev).total_seconds()
+        if gap > 0:
+            await asyncio.sleep(gap / speed)
+        prev = max(prev, at)
+        yield payload

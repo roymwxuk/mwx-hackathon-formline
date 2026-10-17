@@ -1,0 +1,217 @@
+[
+  {
+    "overlay_id": "ovl_evt_3100558_shot_speed_vs_norm_en_casual",
+    "op": "show",
+    "supersedes_overlay_id": null,
+    "match_clock_ms": 2414000,
+    "ttl_ms": 12000,
+    "template_id": "shot_speed_card",
+    "priority": 3,
+    "audience_mode": "casual",
+    "lang": "en",
+    "slots": {
+      "tag": "VS HIS OWN NORM",
+      "headline": "Tomas Reyner: 84.1",
+      "sub": "His norm is about 92.3 (model estimate).",
+      "bars": [
+        {
+          "label": "This shot",
+          "value": 84.1,
+          "display": "84 km/h",
+          "highlight": true
+        },
+        {
+          "label": "His norm",
+          "value": 92.3,
+          "display": "92 km/h",
+          "highlight": false
+        }
+      ]
+    },
+    "insight_id": "ins_evt_3100558_shot_speed_vs_norm",
+    "player_id": "ply_0107",
+    "metric": "shot_speed",
+    "source_event_ids": [
+      "evt_3100558",
+      "evt_3100557"
+    ],
+    "verified": false
+  },
+  {
+    "overlay_id": "ovl_evt_3100558_shot_speed_vs_norm_ja_analyst",
+    "op": "show",
+    "supersedes_overlay_id": null,
+    "match_clock_ms": 2414000,
+    "ttl_ms": 12000,
+    "template_id": "shot_speed_card",
+    "priority": 3,
+    "audience_mode": "analyst",
+    "lang": "ja",
+    "slots": {
+      "tag": "本人比",
+      "headline": "トマス・レイナー 84.1",
+      "sub": "本人の平均 92.3（推定）",
+      "rows": [
+        {
+          "label": "基準値（縮小推定）",
+          "value": "92 km/h"
+        },
+        {
+          "label": "サンプル数・重み",
+          "value": "n=5・0.69"
+        },
+        {
+          "label": "比較グループ",
+          "value": "同じエリア・部位"
+        },
+        {
+          "label": "パーセンタイル（推定）",
+          "value": "21パーセンタイル"
+        },
+        {
+          "label": "xG・PSxG",
+          "value": "0.04・0.17"
+        }
+      ]
+    },
+    "insight_id": "ins_evt_3100558_shot_speed_vs_norm",
+    "player_id": "ply_0107",
+    "metric": "shot_speed",
+    "source_event_ids": [
+      "evt_3100558",
+      "evt_3100557"
+    ],
+    "verified": false
+  },
+  {
+    "overlay_id": "ovl_evt_3100937_placement_vs_norm_en_analyst",
+    "op": "show",
+    "supersedes_overlay_id": null,
+    "match_clock_ms": 3824000,
+    "ttl_ms": 12000,
+    "template_id": "placement_card",
+    "priority": 2,
+    "audience_mode": "analyst",
+    "lang": "en",
+    "slots": {
+      "tag": "VS HIS OWN NORM",
+      "headline": "Tomas Reyner: 0.472",
+      "sub": "His norm is about 0.585 (model estimate).",
+      "rows": [
+        {
+          "label": "Placement score",
+          "value": "47/100 (His norm 58/100)"
+        },
+        {
+          "label": "Sample · weight",
+          "value": "n=7 · 0.55"
+        },
+        {
+          "label": "Comparison",
+          "value": "same body part, anywhere"
+        },
+        {
+          "label": "Percentile (est.)",
+          "value": "22nd"
+        },
+        {
+          "label": "xG · PSxG",
+          "value": "0.05 · 0.49"
+        }
+      ]
+    },
+    "insight_id": "ins_evt_3100937_placement_vs_norm",
+    "player_id": "ply_0107",
+    "metric": "finishing",
+    "source_event_ids": [
+      "evt_3100937",
+      "evt_3100936"
+    ],
+    "verified": false
+  },
+  {
+    "overlay_id": "ovl_evt_3100937_placement_vs_norm_en_analyst_retract",
+    "op": "retract",
+    "supersedes_overlay_id": "ovl_evt_3100937_placement_vs_norm_en_analyst",
+    "match_clock_ms": 3924000,
+    "ttl_ms": 0,
+    "template_id": "placement_card",
+    "priority": 1,
+    "audience_mode": "analyst",
+    "lang": "en",
+    "slots": {
+      "tag": "",
+      "headline": ""
+    },
+    "insight_id": "ins_evt_3100937_placement_vs_norm",
+    "player_id": "ply_0107",
+    "metric": "finishing",
+    "source_event_ids": [
+      "evt_3100937",
+      "evt_3100936"
+    ],
+    "verified": true
+  },
+  {
+    "overlay_id": "ovl_evt_3100937_season_best_en_casual_v2",
+    "op": "correct",
+    "supersedes_overlay_id": "ovl_evt_3100937_season_best_en_casual",
+    "match_clock_ms": 3824000,
+    "ttl_ms": 12000,
+    "template_id": "shot_speed_card",
+    "priority": 1,
+    "audience_mode": "casual",
+    "lang": "en",
+    "slots": {
+      "tag": "VS HIS OWN NORM",
+      "headline": "Tomas Reyner: 118.3",
+      "sub": "His norm is about 87.1 (model estimate).",
+      "bars": [
+        {
+          "label": "This shot",
+          "value": 118.3,
+          "display": "118 km/h",
+          "highlight": true
+        },
+        {
+          "label": "His norm",
+          "value": 87.1,
+          "display": "87 km/h",
+          "highlight": false
+        }
+      ]
+    },
+    "insight_id": "ins_evt_3100937_season_best",
+    "player_id": "ply_0107",
+    "metric": "shot_speed",
+    "source_event_ids": [
+      "evt_3100937",
+      "evt_3100936"
+    ],
+    "verified": false
+  },
+  {
+    "overlay_id": "ovl_banner_evt_3100937_en_casual",
+    "op": "show",
+    "supersedes_overlay_id": null,
+    "match_clock_ms": 3824000,
+    "ttl_ms": 240000,
+    "template_id": "correction_banner",
+    "priority": 1,
+    "audience_mode": "casual",
+    "lang": "en",
+    "slots": {
+      "tag": "CORRECTION · VAR",
+      "headline": "Goal disallowed",
+      "sub": "The earlier stat has been withdrawn."
+    },
+    "insight_id": "ins_evt_3100937_season_best",
+    "player_id": null,
+    "metric": null,
+    "source_event_ids": [
+      "evt_3100937",
+      "evt_3100936"
+    ],
+    "verified": true
+  }
+]

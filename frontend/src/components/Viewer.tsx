@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { t } from '@/lib/i18n';
-import { isFavoriteOverlay, orderedEvents, personalize, score, type OverlayState } from '@/lib/logic';
+import { isFavoriteOverlay, orderedEvents, personalize, pickCard, score, type OverlayState } from '@/lib/logic';
 import type { Club, MatchEvent, Player, ViewerSettings } from '@/lib/types';
 import { CorrectionBanner, OverlayCard } from './OverlayCard';
 import { FocusStrip, OverlayLog, ScoreBug } from './Panels';
@@ -27,7 +27,7 @@ export function Viewer(p: Props) {
   const events = useMemo(() => orderedEvents(p.store), [p.store]);
   const visible = useMemo(() => personalize(p.overlayStates, s, players), [p.overlayStates, s, players]);
   const cards = visible.filter((v) => v.overlay.template_id !== 'correction_banner');
-  const current = cards[cards.length - 1];
+  const current = pickCard(cards, s, players, p.clockMs);
   const correction = [...visible].reverse().find((v) => v.overlay.template_id === 'correction_banner');
   const showCorrection = correction && p.clockMs - correction.overlay.match_clock_ms < CORRECTION_HOLD_MS;
   const focus = players.find((pl) => pl.player_id === s.focusPlayer);

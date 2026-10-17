@@ -1,6 +1,6 @@
 # Milestone 3: agents and overlays
 
-**Status:** Planned, not started (2026-10-17)
+**Status:** ✅ Code complete (2026-10-17). Tasks 1–4, 6–10 and 13 done; task 5 done except the Azure steps (5.1 deployment, 5.3 smoke test), which wait on the owner. Optional tasks 11–12 not started.
 **Branch:** `feat/agents`, to be built on `feat/engine`
 **Planned:** Oct 16–19 in `CLAUDE.md`, so about a day late. Deadline: submit Oct 26 (JST).
 **Estimate:** about 11–14 h for MUST and SHOULD items. COULD items only if time allows.
@@ -54,23 +54,23 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
 
 | # | Task | Priority | Estimate | Depends on |
 |---|---|---|---|---|
-| 1 | Overlay contract and template catalog (backend) | MUST | 1 h | — |
-| 2 | Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
-| 3 | Verifier (deterministic checks) | MUST | 1.5 h | 2 |
-| 4 | Verifier catch-rate harness | SHOULD | 1 h | 3 |
-| 5 | LLM client setup and fake client | MUST | 1 h | D1 |
-| 6 | Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
-| 7 | Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
-| 8 | Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
-| 9 | Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
-| 10 | Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
+| 1 | ✅ Overlay contract and template catalog (backend) | MUST | 1 h | — |
+| 2 | ✅ Template narrator (deterministic EN/JA fallback) | MUST | 1.5 h | 1 |
+| 3 | ✅ Verifier (deterministic checks) | MUST | 1.5 h | 2 |
+| 4 | ✅ Verifier catch-rate harness | SHOULD | 1 h | 3 |
+| 5 | 🟡 LLM client setup and fake client (Azure steps pending) | MUST | 1 h | D1 |
+| 6 | ✅ Agents: Selector, Narrator, Composer | MUST | 2 h | 1–5 |
+| 7 | ✅ Workflow orchestration (Agent Framework) | MUST | 1.5 h | 6 |
+| 8 | ✅ Corrections path (retract/correct overlays, banner) | MUST | 1 h | 7 |
+| 9 | ✅ Live integration: overlay cache and SSE | MUST | 1 h | 7, 8 |
+| 10 | ✅ Frontend wiring (gaps 1 and 5) | MUST | 1 h | 9 |
 | 11 | Foundry evaluations | COULD | 1 h | 6 |
 | 12 | Half-time or full-time recap card (gap 7) | COULD | 1 h | 7 |
-| 13 | Docs: ADR-008, README, milestone log | MUST | 0.5 h | all |
+| 13 | ✅ Docs: ADR-008, README, milestone log | MUST | 0.5 h | all |
 
 ---
 
-### Task 1: overlay contract and template catalog (MUST)
+### Task 1: overlay contract and template catalog (MUST) ✅ Done
 
 **Goal:** the backend speaks exactly the overlay format the viewer already renders.
 
@@ -96,7 +96,23 @@ Priority: **MUST** (needed for the demo and category), **SHOULD** (strongly impr
     and renders through `applyOverlays` and `personalize`.
 - **Done when:** a hand-built overlay from a real insight validates and renders in the viewer.
 
-### Task 2: template narrator, the deterministic fallback (MUST)
+**Result:**
+- `formline/schema/overlay.py`: `Overlay`, `OverlaySlots`, `Bar`, `Row`, with op rules
+  (correct and retract must name what they supersede; show must not), at least one source
+  event, and `overlay_message()` for the stream. Top-level nulls stay in the JSON because
+  the TS type expects the keys; empty optional slots are omitted.
+- `formline/agents/catalog.py`: insight type → template, insight metric → overlay metric,
+  per-language length limits (headline 60 EN / 30 JA), and deterministic `bars` (casual)
+  and `rows` (analyst) built from facts in EN and JA, so card numbers are correct by
+  construction. Insight facts gained `comparison_level`, so the comparison can be translated.
+- Contract artefacts, written by `uv run formline-gen contracts`:
+  `docs/contracts/overlay.schema.json` (JSON Schema) and
+  `backend/data/sample/overlays.example.json` (6 overlays from real live-match insights:
+  show, retract, correct, correction banner; EN and JA).
+- Tests: 16 backend (schema drift guard, examples, op rules, catalog), 4 frontend (the
+  viewer loads the backend examples and its retract and personalization logic works on them).
+
+### Task 2: template narrator, the deterministic fallback (MUST) ✅ Done
 
 **Goal:** every insight can always be worded correctly without an LLM. This is the fallback
 after verifier failures, and the offline mode.
@@ -117,7 +133,25 @@ after verifier failures, and the offline mode.
 - **Done when:** all live-match insights produce 4 valid variants each, and the verifier (task 3)
   passes all of them.
 
-### Task 3: verifier, deterministic checks (MUST)
+**Result** (`formline/agents/template_narrator.py`, tests in `tests/test_template_narrator.py`):
+- `narrate(insight, lang, mode, names)` returns `TextSlots(tag, headline, sub)` for all 5
+  insight types × EN/JA × casual/analyst. `narrate_correction(changes, lang, mode)` words the
+  banner for all insight changes caused by one corrected event ("Goal disallowed after
+  review" / "ゴール取り消し（判定変更）").
+- **Honest comparisons:** the pool is named by the level actually used: "his typical shot from
+  this spot", "… from outside the box", "his typical strong-foot shot" (JA: "この位置からの
+  シュート", "エリア外からのシュート", "利き足シュート全体").
+- **Estimates always marked** ("(estimate)", "Est.", "Model estimates." / "（推定）", "推定");
+  thin samples flagged ("Small sample." / "（サンプル少）"). JA uses the katakana surname, or
+  the full kanji name (伊藤健二).
+- **Example (flagship 40:12 shot):** "Reyner — not his usual strike | 84 km/h, about 8 km/h
+  below his typical shot from outside the box (estimate)." · "レイナー、いつもの威力がない |
+  84 km/h。エリア外からのシュートの平均より約8 km/h遅い（推定）"
+- **8 tests** over all 22 live insights × 4 variants: lengths within catalog limits, only the
+  insight's player named, every number derivable from facts, estimate markers present,
+  "this spot" only at zone level, thin samples flagged, banner wording.
+
+### Task 3: verifier, deterministic checks (MUST) ✅ Done
 
 **Goal:** reject any narration that states something the engine didn't compute. No LLM here, so
 it can be measured.
@@ -137,7 +171,21 @@ it can be measured.
 - **Done when:** template outputs (task 2) always pass, and hand-written bad examples fail
   with the right reason.
 
-### Task 4: verifier catch-rate harness (SHOULD; depth lever 4)
+**Result** (`formline/agents/verifier.py`, tests in `tests/test_verifier.py`):
+- `verify(slots, VerifyContext(template, lang, mode, facts, player_id), league)` →
+  `Verdict(failures)`; `Verdict.feedback()` gives retry instructions for the narrator.
+- Six checks: numbers, entities, estimates, certainty, language, structure.
+- **Unit-aware numbers.** A first version accepted "about **18** km/h below" because 18 *is* a
+  fact (the 17.7 m shot distance, rounded). Numbers are now matched by kind: before `km/h` only speed
+  facts, before `%` only percentage facts, after `n=` only sample sizes, before `/100` only
+  the placement score; bare numbers may use any fact. Full-width digits and the Unicode minus
+  are normalised first.
+- **Entities:** other players' surnames (EN, word-bounded) or JA names, and other clubs, are
+  rejected; surnames shared with the insight's player (two Inglebys) don't raise false alarms.
+- **19 tests:** all 22 live insights × 4 template variants and all banners pass; each check
+  catches its own hand-written error, in EN and JA.
+
+### Task 4: verifier catch-rate harness (SHOULD; depth lever 4) ✅ Done
 
 **Goal:** a measured number for the README: "the verifier caught X% of injected errors".
 
@@ -153,7 +201,36 @@ it can be measured.
   `docs/verifier-catch-rate.md`; a test keeps the catch rate above a floor.
 - **Done when:** a README table exists. Any missed category is either fixed or explained.
 
+**Result** (`formline/agents/verifier_eval.py`, report `docs/verifier-catch-rate.md`, tests
+`tests/test_verifier_eval.py`):
+- 13 mutators in 6 families, applied to all 88 template cards (22 insights × 4 variants).
+- **First run:** 97.2% caught. Fixes it led to:
+  - the verifier now binds percentiles (`21st`, `21パーセンタイル`), `n=` (comparison sample
+    only) and the `/100` scale to their roles, so "Est. 100th pct." and "n=7" (season count)
+    no longer pass (numbers 97% → 99%);
+  - my estimate-removal mutator was incomplete in Japanese (it left "モデルによる", a valid
+    marker). Fixing the **mutator** took that family from 62% to 100%; the verifier did not
+    change for it.
+- **Final: 1,071 / 1,075 caught (99.6%), 0 false positives on 88 clean cards.**
+- **Remaining misses** are role confusions (a real speed fact shown in the norm's place).
+  Documented as a known limit, along with English-only club-name checks.
+- Tests keep the rate from regressing: no false positives, ≥ 98% overall, 100% for the
+  non-numeric families, ≥ 97% for numbers.
+
 ### Task 5: LLM client setup and fake client (MUST; D1)
+
+**What needs Azure and what doesn't** (decided 2026-10-17): almost all of task 5, and tasks
+6–10, are built and tested against the fake client, with no Azure access. Only creating the
+Foundry deployment (5.1) and the real smoke test (5.3) need Azure; they can be done at the
+end of the milestone, when the owner has the deployment ready.
+
+| Sub-task | Needs Azure? | When |
+|---|---|---|
+| 5.1 Foundry project and model deployment | **Yes** (owner, in the Azure portal) | Before the real narration run |
+| 5.2 Client factory and fake client ✅ | No | Done |
+| 5.3 Smoke test with one real call | **Yes** (deployment plus `az login`) | After 5.1 |
+| 5.4 Cost guard (budget, temperature, cache) ✅ | No | Done |
+| Settings wiring and tests ✅ | No | Done |
 
 - **5.1 Azure:** create (or reuse) a Microsoft Foundry project with a small model deployment.
   Record the endpoint and deployment in `.env` (`AZURE_AI_PROJECT_ENDPOINT`,
@@ -167,7 +244,21 @@ it can be measured.
   and a response cache keyed by (insight id, facts hash, lang, mode, prompt version).
 - **Done when:** the same code path runs against Foundry and against the fake client.
 
-### Task 6: agents (MUST; D2, D6)
+**Result so far** (`formline/agents/llm.py`, tests `tests/test_llm.py`):
+- `FakeChatClient` subclasses Agent Framework's `BaseChatClient`, so the fake runs through the
+  same `Agent(client, instructions).run(...)` path as Foundry. It answers from a Python
+  function and records every call.
+- `make_chat_client(config)`: `FoundryChatClient(project_endpoint, model, AzureCliCredential())`
+  when `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise the fake. Constructing the Foundry client
+  needs no network, so it's unit-tested.
+- `LLMRunner.complete(agent, instructions, input)`: response cache (keyed by prompt version,
+  model, agent, instructions and input; optionally persisted) → call budget (600 per run by
+  default) → `Agent.run` with temperature 0.2 and max 400 tokens. Retries bypass the cache.
+- Manual smoke test: `uv run python -m formline.agents.llm --smoke`.
+- `backend/.env.example` documents both modes.
+- 9 tests. **Pending (Azure):** 5.1 deployment and 5.3 real smoke test.
+
+### Task 6: agents (MUST; D2, D6) ✅ Done
 
 Each agent has one job, a typed input and output, and a fallback.
 
@@ -191,7 +282,32 @@ Each agent has one job, a typed input and output, and a fallback.
 - **Done when:** for one insight, the agents produce 4 verified overlays, against the fake client
   and the real one.
 
-### Task 7: workflow orchestration with Agent Framework (MUST)
+**Result** (`agents/selector.py`, `narrator.py`, `composer.py`, `cards.py`, `fakes.py`; tests
+`tests/test_agents.py`):
+- **Selector:** rules shortlist (salience ≥ 0.35, one card per shot, 3-minute per-player
+  cooldown, at most 3 cards per 10 minutes; salience ≥ 0.9 overrides cooldown and rate),
+  then the LLM picks one shortlist id with a reason (JSON). Bad JSON or an id off the
+  shortlist falls back to the top candidate (`decided_by="rules"`).
+- **Narrator:** one call per (language, mode); the payload carries facts, player name, the
+  comparison level, limits and the audience mode. `narrate_verified()`: verify → retry with
+  the verifier's feedback (bypassing the cache) → after 3 attempts the template narration,
+  which always verifies. Each result records source, attempts and failures.
+- **Composer:** deterministic overlay: catalog bars/rows, ids, show time = shot + 2 s,
+  TTL 12 s (15 s for season records), priority, metric and lineage.
+- **`build_cards()`:** one selection → 4 verified overlays, variants narrated concurrently.
+- **`FakeAgents`:** a well-behaved fake model that can also be wrong on the first n attempts or
+  return garbage, to test retries and fallback.
+- **Whole live match (fake model, wrong on every first attempt):** 22 insights on 16 shots →
+  **14 cards** (cooldowns, rate limit, one per shot); all 56 card texts fixed on retry;
+  117 model calls.
+- **Tuning item for the demo:** at 40:12 the Selector picks Reyner's placement insight
+  (salience 0.55) over the flagship speed insight (0.49). Correct by salience, but the video
+  story is speed. Revisit when the real model is connected (prompt preference or salience
+  weighting).
+- 11 tests: shortlist rules, LLM pick and fallbacks, payload, parsing, first-time pass,
+  retry with feedback, template fallback (wrong numbers and garbage), composer, full card set.
+
+### Task 7: workflow orchestration with Agent Framework (MUST) ✅ Done
 
 **Goal:** an explicit, inspectable multi-agent workflow: roles, shared state, handoffs, recovery.
 
@@ -211,7 +327,41 @@ Each agent has one job, a typed input and output, and a fallback.
 - **Done when:** running the workflow on the live match's insights produces all overlays, and the
   run summary shows the LLM, retry and fallback counts.
 
-### Task 8: corrections path (MUST)
+**Result** (`agents/workflow.py`, tests `tests/test_workflow.py`):
+
+```
+Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
+                              Narrator[en·analyst] ├─► Verifier ─switch─┬─ ok ───► Composer ─► Collector ─► output
+                              Narrator[ja·casual]  │                    ├─ retry ► same Narrator (with feedback)
+                              Narrator[ja·analyst] ┘                    └─ else ─► TemplateFallback ─► Composer
+```
+
+- Built with `WorkflowBuilder`: `add_fan_out_edges` (Selector → 4 narrators, run in
+  parallel), `add_edge`, and `add_switch_case_edge_group` on the Verifier (`Case` ok →
+  Composer; one `Case` per variant routes a retry back to its own Narrator, which makes the
+  retry loop an explicit cycle in the graph; `Default` → TemplateFallback).
+- **Typed handoffs:** `Moment` → `Selection` → `Draft` → `Checked` → `Card` → `MomentResult`.
+- **Shared state:** the workflow context holds the run trace (every handoff and verdict, also
+  logged as JSON lines via `formline.workflow`) and the collected cards.
+- **Failure recovery:** bad JSON, timeouts, network errors and an exhausted budget become
+  verifier failures (retry, then template); a selector failure falls back to rules. A run
+  always completes.
+- `run_match(insights, deps)` runs moment by moment in match order (the selector's cooldowns
+  carry over) and returns a `RunSummary`.
+
+**Live match (fake model):**
+
+| Model behaviour | Cards | From model | Template | Retried | Model calls |
+|---|---|---|---|---|---|
+| Well-behaved | 56 | 56 | 0 | 0 | 61 |
+| Wrong on first attempt | 56 | 56 | 0 | 56 | 117 |
+| Always garbage | 56 | 0 | 56 | 56 | 173 |
+
+- 8 tests: graph roles, the three behaviours, model exceptions (selector falls back to rules,
+  narration to templates), an exhausted budget (mix of model and template text),
+  determinism, a moment where nothing is selected.
+
+### Task 8: corrections path (MUST) ✅ Done
 
 **Goal:** the VAR moment works end to end, the flagship robustness demo.
 
@@ -226,7 +376,32 @@ Each agent has one job, a typed input and output, and a fallback.
 - **Done when:** the viewer shows the withdrawn card, the corrected card and the banner from
   backend data.
 
-### Task 9: live integration, overlay cache and SSE (MUST; D3)
+**Result** (`agents/live.py`, tests `tests/test_live.py`):
+- `LiveOrchestrator` drives the live path per feed message: engine pipeline → new insights per
+  shot → workflow → `show` overlays; insight changes → corrections path. It tracks the match
+  clock and VAR events, and which overlays are shown per insight.
+- **Corrected** (a shown card): the new insight goes through the same workflow as a *forced*
+  selection (the Selector passes it through, bypassing cooldowns) and is re-issued as
+  `op: correct` for every variant, superseding the old ids.
+- **Retracted** (a shown card): `op: retract` for every variant (empty slots, TTL 0).
+- **Notable again after a revert:** the engine now gives a re-created insight a new version
+  (it used to reuse version 1), and the orchestrator re-shows the withdrawn card with
+  versioned ids.
+- **Banner:** 4 variants per corrected event when a shown card was affected or a goal was
+  overturned; lineage = the shot plus the VAR events; a later correction of the same shot
+  replaces the banner (`op: correct`).
+- Corrections are timed at arrival (the VAR decision), not at the shot.
+- **Live match:** at 63:44 "Reyner's fastest goal of the season" is shown; at 65:24, after the
+  VAR decision, 4 `correct` overlays ("Reyner's fastest shot of the season" / 「レイナー、今季
+  最速のシュート」) and 4 banners ("Goal disallowed after review" / 「ゴール取り消し（判定変更）」).
+- **Bugs found by chaos tests and fixed:** a repeat banner for the same shot reused the id;
+  an insight re-created after a revert reused version 1 and produced a duplicate card.
+- **Stress run:** 40 heavy-chaos replays (80% of shots corrected, 60% reverted, deletes,
+  late messages): 0 failures, 1,616 corrected cards, 952 retractions, 2,904 banners, ids
+  always unique, every correction superseding a shown card.
+- 7 tests: VAR correction, banner lineage, timing, retract via delete, 3 chaos seeds.
+
+### Task 9: live integration, overlay cache and SSE (MUST; D3) ✅ Done
 
 - **9.1 Precompute:** `uv run formline-gen overlays` runs bootstrap → live pipeline → workflow
   over the live match and writes `data/overlays/<match_id>.jsonl` (timed overlays). The result
@@ -239,7 +414,20 @@ Each agent has one job, a typed input and output, and a fallback.
   reconnecting.
 - **Done when:** the viewer in live mode shows cards at the right moments without any mock data.
 
-### Task 10: frontend wiring (MUST; gaps 1 and 5)
+**Result** (`agents/precompute.py`, `replay.py`, `api.py`; tests `tests/test_stream.py`):
+- `uv run formline-gen overlays` bootstraps the engine from the generated history, runs the
+  `LiveOrchestrator` over the live feed and writes `data/overlays/<match_id>.jsonl` (each
+  overlay with the emission time of the message that triggered it). Model answers are
+  cached in `data/llm_cache.jsonl`: the first run made 65 model calls; **a rerun makes 0**.
+- `/matches/{id}/stream`: by default merges events and cached overlays by time (an overlay
+  right after its trigger); `live=true` runs engine and agents during the replay;
+  `chaos=true` replays a chaotic feed and implies live, so cards follow that feed's own
+  corrections. Every stream ends with `{"kind": "end"}`.
+- Live match: 64 overlays (56 cards, 4 corrections, 4 banners).
+- 6 tests: precompute file, cache rerun, overlay placement, default stream, live mode,
+  chaos mode (ids unique, every correction supersedes a shown card).
+
+### Task 10: frontend wiring (MUST; gaps 1 and 5) ✅ Done
 
 - **10.1** Remove the mock dependency in live mode: overlays come from the stream (gap 1).
 - **10.2** Card slot priority (D5): keep cards visible for `ttl_ms`; show the highest-priority
@@ -248,6 +436,19 @@ Each agent has one job, a typed input and output, and a fallback.
 - **10.4** Check the three key moments in a browser: a shot card, the two-viewer view (JA casual
   vs EN analyst) and the VAR retraction.
 - **Done when:** the demo runs from backend data only, and `docs/frontend-gaps.md` is updated.
+
+**Result:**
+- Live mode renders the backend's overlays (no mock data); the stream's `{kind: 'end'}` closes
+  the connection and the header shows "Full time" instead of reconnecting.
+- `pickCard()`: among cards within their display window, favorites first, then priority, then
+  newest; the last card stays up when none is active.
+- For screenshots and recording: `until=mm:ss` on the stream, `?view=two` in the viewer.
+- **Browser check** of the three key moments from backend data (`docs/ui/live/`): the 40:14 card
+  with catalog bars; the VAR correction at 65:24 (corrected card, banner, withdrawn card in the
+  log); the two-viewer page (JA casual with bars vs EN analyst with rows).
+- Fixed from the check: the analyst row said "xG · PSxG" for off-target shots that have no
+  PSxG; it now says "xG".
+- Tests: 2 frontend (`pickCard`), 1 backend (`until`), 1 backend (row label).
 
 ### Task 11: Foundry evaluations (COULD; D7)
 
@@ -259,7 +460,7 @@ Each agent has one job, a typed input and output, and a fallback.
 - At half time and full time: "his three most unusual shots tonight", built only from tonight's
   insights. A new `recap_card` template, plus narrator and verifier support.
 
-### Task 13: docs (MUST)
+### Task 13: docs (MUST) ✅ Done
 
 - **ADR-008** agent architecture: roles, why the Selector is a hybrid, why the Composer and
   Verifier are deterministic, retries and fallback, the precompute cache, the cost guard.

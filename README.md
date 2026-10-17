@@ -10,21 +10,58 @@ for studio and streaming use.
 
 | Stage | Where | Status |
 |---|---|---|
-| a. Ingest | `backend/src/formline/generator/` (synthetic feed), `replay.py` (live replay) | Generator done; event log next |
-| b. Interpret | deterministic stats engine: shot geometry, xG, personal baselines | Next |
-| c. Explain | agents: Insight Selector, Narrator, Verifier, Overlay Composer | Planned |
-| d. Render | overlay contract (`DATA_SCHEMA.md` §6.5), viewer UI in `frontend/` | UI done on mock data |
-| e. Personalize | language, casual/analyst, favorites, player focus, "my metric" | UI done; backend planned |
+| a. Ingest | `generator/` (synthetic feed), `engine/log.py` + `engine/ingest.py` (append-only log, dedupe, reorder window, corrections), `replay.py` | ✅ |
+| b. Interpret | `engine/`: shot features (xG, PSxG, placement), like-for-like baselines with empirical Bayes shrinkage | ✅ |
+| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework) | ✅ (Foundry deployment pending) |
+| d. Render | overlay contract (`docs/contracts/overlay.schema.json`), timed overlays over SSE, viewer in `frontend/` | ✅ |
+| e. Personalize | EN/JA, casual/analyst, favorite clubs and players (card priority), player focus, "my metric" | ✅ (client-side) |
+
+![Two viewers at the VAR correction](docs/ui/live/3-two-viewers-65m.png)
+
+## Agents
+
+The engine decides *what* is notable; agents decide *which* card to show and *how* to word
+it, and a deterministic verifier checks every word against the engine's facts. Built as a
+`WorkflowBuilder` graph on Microsoft Agent Framework (`backend/src/formline/agents/workflow.py`):
+
+```
+Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
+                              Narrator[en·analyst] ├─► Verifier ─switch─┬─ ok ───► Composer ─► Collector ─► overlays
+                              Narrator[ja·casual]  │                    ├─ retry ► same Narrator (with feedback)
+                              Narrator[ja·analyst] ┘                    └─ else ─► TemplateFallback ─► Composer
+```
+
+| Agent | Kind | Job |
+|---|---|---|
+| Insight Selector | Rules + LLM | Rules shortlist (salience, cooldowns, rate limit); the LLM picks one card and says why (JSON); falls back to the top candidate |
+| Narrator ×4 | LLM | Writes `{tag, headline, sub}` from facts only, per language and audience; retries with the verifier's feedback |
+| Verifier | Deterministic | Numbers by kind, names, estimate wording, certainty, language, structure ([catch rate](docs/verifier-catch-rate.md)) |
+| Overlay Composer | Deterministic | Fills the fixed template catalog; bars and rows come from facts, so numbers are correct by construction |
+| TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
+
+- **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
+  (retry, then template); a run always completes.
+- **Corrections:** when VAR overturns a goal, the corrected insight goes back through the
+  same workflow and is re-issued as `op: correct`, with a banner citing the shot and the VAR
+  events ([screenshot](docs/ui/live/2-var-correction-65m.png)).
+- **Cost:** response cache, per-run call budget, precomputed demo overlays (a rerun makes no
+  model calls).
+- **With or without Azure:** Microsoft Foundry (`FoundryChatClient`) when
+  `AZURE_AI_PROJECT_ENDPOINT` is set (see `backend/.env.example`), otherwise a fake model on
+  the same Agent Framework path. Tests and CI never need Azure.
+- Design rationale: [ADR-008](docs/decisions.md).
 
 ## Layout
 
 ```
-backend/    Python 3.12 · FastAPI · Pydantic (uv)
-  src/formline/schema/      DATA_SCHEMA.md as Pydantic models
+backend/    Python 3.12 · FastAPI · Pydantic · Microsoft Agent Framework (uv)
+  src/formline/schema/      DATA_SCHEMA.md and the overlay contract as Pydantic models
   src/formline/generator/   synthetic league, match simulator, realism report
-  data/sample/              committed excerpt of the generated data
+  src/formline/engine/      event log, ingestion, shot features, baselines, insights
+  src/formline/agents/      catalog, narrators, verifier, selector, workflow, live orchestration
+  data/sample/              committed excerpt of the generated data and example overlays
 frontend/   Next.js · React · TypeScript (pnpm): live viewer UI
-docs/       decisions.md (ADRs), realism-report.md, ui/ reference images
+docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI screenshots
 ```
 
 ## Run locally
@@ -35,6 +72,7 @@ cd backend
 uv sync
 uv run formline-gen generate     # writes backend/data/ (seed 2026, ~3 s, ~28 MB)
 uv run formline-gen report       # writes docs/realism-report.md
+uv run formline-gen overlays     # runs the agents over the live match, caches its overlays
 uv run uvicorn formline.api:app --reload
 uv run pytest
 
@@ -65,6 +103,26 @@ The group average alone is worse than both (5.03 km/h), so baselines must be per
 Known limitation: 30 matches slightly underestimate the shrinkage strength (k 2.2 fitted vs
 3.9 implied for forwards), so the tiniest samples are under-shrunk a little. Details:
 [docs/shrinkage-accuracy.md](docs/shrinkage-accuracy.md).
+
+## Verifier: measured catch rate
+
+Every card's text is checked against the engine's facts by a deterministic verifier
+(numbers by kind, player and club names, estimate wording, certainty claims, language,
+structure). `uv run python -m formline.agents.verifier_eval` injects one error at a time into
+the template narrations of all 22 live-match insights × 4 variants (88 cards):
+
+| Error family | Injected | Caught |
+|---|---|---|
+| Numbers (off by one, ±10%, swapped digits, from another insight) | 313 | 99% |
+| Entities (teammate, opponent, other club) | 264 | 100% |
+| Missing estimate wording | 58 | 100% |
+| Certainty claims | 88 | 100% |
+| Structure (too long, missing slot, extra slot) | 264 | 100% |
+| Wrong language | 88 | 100% |
+| **Overall** | **1,075** | **99.6%**, with 0 false positives on 88 clean cards |
+
+The misses are role confusions: a real fact in the wrong place (his norm shown as this
+shot's speed). Details: [docs/verifier-catch-rate.md](docs/verifier-catch-rate.md).
 
 ## Feed robustness: convergence under chaos
 
@@ -102,10 +160,19 @@ properties run as `hypothesis` tests in CI (`backend/tests/test_convergence.py`)
 
 API: `GET /matches`; `GET /matches/{match_id}/league` (both squads with each player's
 shrunk season shot-speed norm); and `GET /matches/{match_id}/stream?speed=N`, where each SSE
-`data:` line is one viewer `StreamMessage`. In live mode the viewer loads the league endpoint
-next to the stream URL, so its settings list the real squads.
+`data:` line is one viewer `StreamMessage` (`event`, `overlay`, then a final `end`). By default
+the stream replays the feed with the overlays cached by `formline-gen overlays`;
+`live=true` runs the engine and the agents during the replay; `chaos=true&chaos_seed=N`
+replays a chaotic feed (and implies live). The agents use Microsoft Foundry when
+`AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
-## Planned Azure stack
+## Microsoft and Azure technologies
 
-Azure AI Foundry (models + agents), Microsoft Agent Framework (multi-agent orchestration),
-Azure Container Apps (hosting).
+| Technology | Use | Status |
+|---|---|---|
+| Microsoft Agent Framework | Multi-agent workflow (`WorkflowBuilder`, executors, fan-out, switch-case retry cycle), `Agent`, chat clients | ✅ In use |
+| Microsoft Foundry | Model deployment for the Selector and Narrators (`FoundryChatClient`) | Code ready; deployment pending |
+| Azure Container Apps | Hosting backend and viewer, scale to zero | Milestone 4 |
+| GitHub Actions | CI: lint, typecheck, tests | Milestone 4 |
+
+Status and plan: [docs/roadmap.md](docs/roadmap.md).

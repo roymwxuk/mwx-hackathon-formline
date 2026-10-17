@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Viewer } from './Viewer';
 import { applyEvents, applyOverlays, formatClock } from '@/lib/logic';
 import { useLeague } from '@/lib/league';
@@ -40,6 +40,11 @@ export default function App() {
   const stream = useMatchStream();
   const league = useLeague();
   const [view, setView] = useState<View>('single');
+
+  // `?view=two` opens the two-viewer page directly (screenshots, demo recording).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('view') === 'two') setView('two');
+  }, []);
   const [single, setSingle] = useState(SINGLE_DEFAULT);
   const [a, setA] = useState(VIEWER_A);
   const [b, setB] = useState(VIEWER_B);
@@ -69,7 +74,7 @@ export default function App() {
             </span>
           )}
           <span className={`source ${stream.connected ? 'on' : 'off'}`}>
-            {stream.source === 'mock' ? 'Mock replay' : stream.connected ? 'Live feed' : 'Reconnecting…'}
+            {stream.source === 'mock' ? 'Mock replay' : stream.ended ? 'Full time' : stream.connected ? 'Live feed' : 'Reconnecting…'}
           </span>
           <span className="clock-big">{formatClock(stream.clockMs)}</span>
           {stream.source === 'mock' && (
