@@ -32,6 +32,22 @@ def test_factory_uses_foundry_when_configured():
     assert kind == "foundry" and type(client).__name__ == "FoundryChatClient"
 
 
+def test_foundry_auth_is_identity_based(monkeypatch):
+    """No keys: DefaultAzureCredential covers az login locally and managed identity in Azure."""
+    import azure.identity
+
+    used = []
+
+    class SpyCredential(azure.identity.DefaultAzureCredential):
+        def __init__(self, *args, **kwargs):
+            used.append(True)
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(azure.identity, "DefaultAzureCredential", SpyCredential)
+    make_chat_client(FOUNDRY)
+    assert used == [True]
+
+
 def test_runner_goes_through_agent_framework():
     runner = make_runner(LLMConfig(), fake_responder=lambda texts: f"reply to {texts[-1]}")
     assert run(runner.complete("narrator", "Be brief.", "ping")) == "reply to ping"
@@ -84,3 +100,11 @@ def test_smoke_cli_needs_an_endpoint(monkeypatch, capsys):
     monkeypatch.setattr(llm.settings, "azure_ai_project_endpoint", "")
     assert llm.main(["--smoke"]) == 1
     assert "AZURE_AI_PROJECT_ENDPOINT" in capsys.readouterr().out
+
+
+def test_tests_never_reach_azure():
+    """Guard: even with a real endpoint in backend/.env, tests run on the fake model."""
+    from formline.agents.llm import LLMConfig
+
+    assert not LLMConfig.from_settings().uses_foundry
+    assert make_runner().kind == "fake"
