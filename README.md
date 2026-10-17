@@ -14,7 +14,7 @@ for studio and streaming use.
 |---|---|---|
 | a. Ingest | `generator/` (synthetic feed), `engine/log.py` + `engine/ingest.py` (append-only log, dedupe, reorder window, corrections), `replay.py` | ✅ |
 | b. Interpret | `engine/`: shot features (xG, PSxG, placement), like-for-like baselines with empirical Bayes shrinkage | ✅ |
-| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework) | ✅ (Foundry deployment pending) |
+| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework, `gpt-4.1-mini` on Foundry) | ✅ |
 | d. Render | overlay contract (`docs/contracts/overlay.schema.json`), timed overlays over SSE, viewer in `frontend/` | ✅ |
 | e. Personalize | EN/JA, casual/analyst, favorite clubs and players (card priority), player focus, "my metric" | ✅ (client-side) |
 
@@ -96,6 +96,46 @@ The backend image (~640 MB) builds the synthetic season and the live match's ove
 time and runs as a non-root user with a health check; the viewer image (~325 MB) is a Next.js
 standalone server. Overlays precomputed with Microsoft Foundry can be shipped in
 `backend/demo/overlays/` (see `backend/demo/README.md`).
+
+## Deploy to Azure
+
+Both apps run on **Azure Container Apps** (Japan East) and scale to zero when idle. The backend
+calls a **Microsoft Foundry** model through its managed identity, with no API keys. CI publishes
+`linux/amd64` images to GHCR on every push to `main`. Details: ADR-009 in
+[docs/decisions.md](docs/decisions.md).
+
+```bash
+az login
+scripts/azure/provision.sh               # Foundry resource, project, gpt-4.1-mini deployment, your role; writes backend/.env
+az containerapp env create -n formline-env -g formline-rg -l japaneast   # once
+scripts/azure/deploy.sh <commit sha>     # create or update both apps from the GHCR images
+scripts/azure/stop.sh                    # disable ingress: nothing can wake the apps
+scripts/azure/start.sh                   # re-enable ingress, same URLs
+scripts/azure/teardown.sh                # delete everything (asks to confirm)
+```
+
+| Resource | Settings |
+|---|---|
+| `formline-api` | 0.5 vCPU / 1 GiB, 0–1 replicas, system-assigned identity with "Foundry User" |
+| `formline-web` | 0.25 vCPU / 0.5 GiB, 0–1 replicas |
+| `formline-ai-mwx` / project `formline` | AI Services S0, `gpt-4.1-mini` (Global Standard) |
+| Budget | ¥3,000/month, email alerts at 50% and 100% |
+
+**Cost so far:** about ¥21 in model tokens; Container Apps within the free grant. Names can be
+overridden through the variables in `scripts/azure/common.sh`.
+
+## Production readiness
+
+| Area | What is in place |
+|---|---|
+| Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.6% of injected errors with 0 false positives |
+| Reliability | Agent retries with feedback, template fallback after 3 failures, selector falls back to rules; idempotent, event-sourced ingestion that converges under chaos (300/300); resumable SSE streams |
+| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer |
+| Cost | Scale to zero, ingress off when not in use, LLM response cache and per-run call budget, budget alerts |
+| Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
+| Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
+| Tests | 192 backend + 18 frontend tests; tests never call Azure |
+| Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet |
 
 ## Personal baselines: does shrinkage help?
 
@@ -184,8 +224,9 @@ replays a chaotic feed (and implies live). The agents use Microsoft Foundry when
 | Technology | Use | Status |
 |---|---|---|
 | Microsoft Agent Framework | Multi-agent workflow (`WorkflowBuilder`, executors, fan-out, switch-case retry cycle), `Agent`, chat clients | ✅ In use |
-| Microsoft Foundry | Model deployment for the Selector and Narrators (`FoundryChatClient`) | Code ready; deployment pending |
-| Azure Container Apps | Hosting backend and viewer, scale to zero | Milestone 4 |
-| GitHub Actions | CI: lint, typecheck, tests | Milestone 4 |
+| Microsoft Foundry | `gpt-4.1-mini` deployment for the Selector and Narrators (`FoundryChatClient`), keyless via managed identity | ✅ In use |
+| Azure Container Apps | Hosting backend and viewer, scale to zero, logs to Log Analytics | ✅ Deployed |
+| Microsoft Entra ID | Managed identity and the "Foundry User" role, no API keys | ✅ In use |
+| GitHub Actions | CI: lint, typecheck, tests; publishes images to GHCR | ✅ In use |
 
 Status and plan: [docs/roadmap.md](docs/roadmap.md).

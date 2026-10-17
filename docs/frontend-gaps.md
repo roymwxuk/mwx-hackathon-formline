@@ -1,6 +1,6 @@
 # Frontend gaps: from mock data to real backend data
 
-**Updated:** 2026-10-17 · **Branch:** `feat/agents`
+**Updated:** 2026-10-17 · **Branch:** `feat/deploy`
 
 The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in mock data**
 (`frontend/src/mock/demo-match.ts`). This list tracks what remains for it to work on
@@ -13,7 +13,7 @@ The viewer UI (`frontend/`) is feature-complete for the demo **on its built-in m
 | 1 | No overlay cards in live mode | ✅ Fixed | | milestone 3 tasks 9–10 |
 | 2 | Clubs and players hard-coded from the mock | ✅ Fixed | | `7ac4ec1` |
 | 3 | Half-time ordering and live clock | ✅ Fixed | | `c4db013` |
-| 4 | Live mode: no pause, seek, slow-down or end-of-stream | 🟡 Partly | End of stream and `until=mm:ss` done; slow-down and seek in milestone 4 task 7 | milestone 3 task 10 |
+| 4 | Live mode: no pause, seek, slow-down or end-of-stream | ✅ Fixed (no seek bar) | Speed, pause/play, restart, slow-down near shots, resumable stream, `start=`/`until=` | `63d8b66` |
 | 5 | Favorites don't take priority for the overlay slot | ✅ Fixed | | milestone 3 task 10 |
 | 6 | Not checked in a browser against the backend | ✅ Done | Three key moments rendered from backend data (`docs/ui/live/`) | milestone 3 task 10 |
 | 7 | Optional half-time or full-time recap card | ⬜ Open | Milestone 3 | |
