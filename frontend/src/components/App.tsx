@@ -104,6 +104,18 @@ export default function App() {
               ))}
             </select>
           </label>
+          <button
+            type="button"
+            className="ctl toggle"
+            aria-pressed={stream.slowMo}
+            disabled={!stream.slowMoApplies}
+            onClick={() => stream.setSlowMo(!stream.slowMo)}
+            title={stream.slowMoApplies
+              ? `Slow-mo ${stream.slowMo ? 'on' : 'off'}: ${stream.source === 'sse' ? 'slows to about 3×' : 'slows down'} around shots and insight cards so they stay readable`
+              : 'Slow-mo has no effect at this speed'}
+          >
+            Slow-mo
+          </button>
         </div>
       </header>
 

@@ -57,6 +57,10 @@ h2, h3 { margin: 0; }
 .ctl:hover { border-color: var(--accent); }
 /* One width for Play and Pause, so toggling never shifts Restart and the menus. */
 .ctl.play-toggle { box-sizing: border-box; width: 84px; }
+/* An on/off control: lit while on, like the header switches. */
+.ctl.toggle[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-bg); color: #fff; }
+.ctl:disabled { opacity: 0.45; cursor: not-allowed; }
+.ctl:disabled:hover { border-color: var(--border); }
 .speed { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .speed select, .settings select { min-height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); padding: 0 8px; }
 

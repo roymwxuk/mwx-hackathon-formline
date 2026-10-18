@@ -143,6 +143,16 @@ describe('live stream controls', () => {
     expect(liveStreamUrl(base, 20, { period: 1, clockMs: 46 * 60_000 })).toContain('start=45%3A00');
     expect(liveStreamUrl(base, 20, { period: 2, clockMs: 45 * 60_000 })).toContain('start=45%3A01');
   });
+
+  it('turns slow-mo off with slow=false and back on by dropping it', async () => {
+    const { liveStreamUrl } = await import('@/lib/useMatchStream');
+    const base = 'http://localhost:8000/matches/m/stream?speed=20';
+    expect(new URL(liveStreamUrl(base, 20, null)).searchParams.has('slow')).toBe(false);
+    const off = liveStreamUrl(base, 20, { period: 1, clockMs: 12 * 60_000 }, false);
+    expect(new URL(off).searchParams.get('slow')).toBe('false');
+    expect(off).toContain('start=12%3A00'); // switching keeps the match time
+    expect(new URL(liveStreamUrl(off, 20, null, true)).searchParams.has('slow')).toBe(false);
+  });
 });
 
 describe('clock messages', () => {

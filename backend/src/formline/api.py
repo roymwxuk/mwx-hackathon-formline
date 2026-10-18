@@ -88,7 +88,7 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
 
     Playback controls: `speed` (feed seconds per real second); `start=mm:ss` delivers
     everything before that match time at once, then plays on; `until=mm:ss` stops there;
-    `slow=true` (default) plays about 6x slower around shots and cards, but not below 3x
+    `slow=true` (default) plays about 6x slower around shots and insight cards, but not below 3x
     (or the chosen speed, if slower). During gaps between
     events, `{"kind": "clock"}` messages (no SSE id) carry the running match time every 0.25 s
     of real time; when the match has tracking data (and `tracking=true`, the default) they

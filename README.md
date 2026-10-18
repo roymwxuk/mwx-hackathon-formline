@@ -257,7 +257,7 @@ sequential SSE `id`, so a reconnect with `Last-Event-ID` resumes where it stoppe
 0.25 s of real time a `frame` message (no id) carries the match time, counted from the half's
 kick-off, and all 22 players and the ball (`tracking=false` sends a plain `clock` instead).
 `start=mm:ss` sends everything before that time at once, `until=mm:ss` ends early, and pacing
-slows down around shots (`slow=false` turns it off). By default
+slows down around shots (`slow=false`, the viewer's Slow-mo toggle, turns it off). By default
 the stream replays the feed with the overlays cached by `formline-gen overlays`;
 `live=true` runs the engine and the agents during the replay; `chaos=true&chaos_seed=N`
 replays a chaotic feed (and implies live). The agents use Microsoft Foundry when
