@@ -52,8 +52,8 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
   answer with its evidence.
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
-  set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× and a Jump to menu
-  for the key moments.
+  set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× with an optional
+  slow-mo around shots, and a Jump to menu for the key moments.
 
 Example cards from the demo match (63:44, Foundry-narrated, verified):
 
@@ -73,8 +73,9 @@ Example cards from the demo match (63:44, Foundry-narrated, verified):
 | Shrinkage makes baselines more accurate | **30%** lower error than raw averages (**45%** for 1–4 shots) | [docs/shrinkage-accuracy.md](docs/shrinkage-accuracy.md) |
 | The synthetic data is football-realistic | **14 / 14** event checks within range of league aggregates | [docs/realism-report.md](docs/realism-report.md) |
 | Tracking agrees with the events | **99.5%** of players on their event spots (within 0.5 m); distance covered is low (about 8 km per 90, real 10–12 km), reported honestly | [realism report, tracking section](docs/realism-report.md) |
-| Agents produce usable text | **80 / 80** Foundry texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
-| Cost | about **¥21** in model tokens for all runs so far; apps scale to zero | [ADR-009](docs/decisions.md) |
+| Agents produce usable text | **80 / 80** Foundry card texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
+| The Match Analyst writes verified commentary | **96 / 96** comments and **190 / 192** follow-up answers written by the model and verified (2 template fallbacks); **48 / 48** question picks by the Suggester | `formline-gen analyst` run summary, ADR-011 |
+| Cost | about **¥70–90** in model tokens for all runs so far (estimate; Azure billing lags); apps scale to zero | [ADR-009](docs/decisions.md), ADR-011 |
 
 ## How it works
 
@@ -84,7 +85,7 @@ The five stages of the brief, end to end:
 |---|---|---|
 | a. Ingest | `generator/` (synthetic feed), `engine/log.py` + `engine/ingest.py` (append-only log, dedupe, reorder window with an idle timeout, corrections), `tracking/` (22 players and the ball at 10 Hz, derived from events), `replay.py` | ✅ |
 | b. Interpret | `engine/`: shot features (xG, PSxG, placement), like-for-like baselines with empirical Bayes shrinkage | ✅ |
-| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework, `gpt-4.1-mini` on Foundry) + `analyst/` (comments on shots, corners and cards) | ✅ |
+| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework, `gpt-4.1-mini` on Foundry) + `analyst/` (comments on shots, corners and cards; follow-up questions picked by a Suggester, answered by `/ask`) | ✅ |
 | d. Render | overlay contract (`docs/contracts/overlay.schema.json`), timed overlays and tracking frames over SSE, viewer in `frontend/` | ✅ |
 | e. Personalize | EN/JA, casual/analyst, favorite clubs and players (card priority), player focus, "my metric" | ✅ (client-side) |
 
@@ -107,6 +108,14 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
                               Narrator[ja·analyst] ┘                    └─ else ─► TemplateFallback ─► Composer
 ```
 
+The Match Analyst runs beside it, on the same model and the same verify-retry-template pattern:
+
+```
+Key moment ─► facts pack ─► Match Analyst ─► Analyst verifier ─► comment (EN, JA)
+                                  └──► Question Suggester ─► 2–3 catalog questions on the comment
+Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Match Analyst ─► verifier ─► answer
+```
+
 | Agent | Kind | Job |
 |---|---|---|
 | Insight Selector | Rules + LLM | Rules shortlist (salience, cooldowns, rate limit); the LLM picks one card and says why (JSON); falls back to the top candidate |
@@ -122,8 +131,9 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 - **Corrections:** when VAR overturns a goal, the corrected insight goes back through the
   same workflow and is re-issued as `op: correct`, with a banner citing the shot and the VAR
   events ([screenshot](docs/ui/live/2-var-correction-65m.png)).
-- **Cost:** response cache, per-run call budget, precomputed demo overlays (a rerun makes no
-  model calls).
+- **Cost:** response cache, per-run call budget, precomputed demo overlays, comments and
+  follow-up answers (a rerun makes no model calls; `/ask` calls the model only for questions
+  that were not precomputed, under the call budget).
 - **With or without Azure:** Microsoft Foundry (`FoundryChatClient`) when
   `AZURE_AI_PROJECT_ENDPOINT` is set (see `backend/.env.example`), otherwise a fake model on
   the same Agent Framework path. Tests and CI never need Azure.
@@ -223,7 +233,8 @@ tracking data capture today.
 
 Quickest: Docker. `docker compose up --build`, then open http://localhost:3000 (backend on
 :8000). No Azure account is needed: without a Foundry endpoint the agents use a built-in
-fake model on the same code path, and the repo's precomputed Foundry overlays are served.
+fake model on the same code path, and the repo's precomputed Foundry overlays, Analyst
+comments and follow-up answers are served.
 
 Development setup:
 
@@ -249,10 +260,11 @@ NEXT_PUBLIC_STREAM_URL="http://localhost:8000/matches/mtc_s26_md11_har_nor/strea
 
 ### Docker images
 
-The backend image (~640 MB) builds the synthetic season, the live match's overlays and its
-tracking at build time and runs as a non-root user with a health check; the viewer image (~325 MB) is a Next.js
-standalone server. The live match's Foundry-narrated overlays ship in `backend/demo/overlays/`
-and replace the build-time ones at startup (see `backend/demo/README.md`).
+The backend image (~640 MB) builds the synthetic season, the live match's overlays, Analyst
+comments and tracking at build time and runs as a non-root user with a health check; the viewer
+image (~325 MB) is a Next.js standalone server. The live match's Foundry-written overlays
+(`backend/demo/overlays/`) and Analyst comments and answers (`backend/demo/analyst/`) replace
+the build-time ones at startup (see `backend/demo/README.md`).
 
 **API:** `GET /matches`; `GET /matches/{match_id}/league` (both squads with each player's
 shrunk season shot-speed norm); and `GET /matches/{match_id}/stream?speed=N`, where each SSE
@@ -294,7 +306,8 @@ scripts/azure/teardown.sh                # delete everything (asks to confirm)
 | `formline-ai-mwx` / project `formline` | AI Services S0, `gpt-4.1-mini` (Global Standard) |
 | Budget | ¥3,000/month, email alerts at 50% and 100% |
 
-**Cost so far:** about ¥21 in model tokens; Container Apps within the free grant. Names can be
+**Cost so far:** about ¥70–90 in model tokens (estimate from call counts and prompt sizes;
+Azure billing lags); Container Apps within the free grant. Names can be
 overridden through the variables in `scripts/azure/common.sh`.
 
 ## Production readiness
@@ -303,20 +316,20 @@ overridden through the variables in `scripts/azure/common.sh`.
 |---|---|
 | Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.6% of injected errors with 0 false positives |
 | Reliability | Agent retries with feedback, template fallback after 3 failures, selector falls back to rules; idempotent, event-sourced ingestion that converges under chaos (300/300); resumable SSE streams |
-| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer |
+| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget |
 | Cost | Scale to zero, ingress off when not in use, LLM response cache and per-run call budget, budget alerts |
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 233 backend + 54 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
-| Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet |
+| Tests | 255 backend + 71 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
+| Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; no per-client rate limit on `/ask` |
 
 ## Microsoft and Azure technologies
 
 | Technology | Use | Status |
 |---|---|---|
 | Microsoft Agent Framework | Multi-agent workflow (`WorkflowBuilder`, executors, fan-out, switch-case retry cycle), `Agent`, chat clients | ✅ In use |
-| Microsoft Foundry | `gpt-4.1-mini` deployment for the Selector and Narrators (`FoundryChatClient`), keyless via managed identity | ✅ In use |
+| Microsoft Foundry | `gpt-4.1-mini` deployment for the Selector, Narrators, Match Analyst and Question Suggester (`FoundryChatClient`), keyless via managed identity | ✅ In use |
 | Azure Container Apps | Hosting backend and viewer, scale to zero, logs to Log Analytics | ✅ Deployed |
 | Microsoft Entra ID | Managed identity and the "Foundry User" role, no API keys | ✅ In use |
 | Azure Monitor Log Analytics | Container logs from both apps | ✅ In use |
@@ -361,6 +374,13 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Single replica, JSONL event log** baked into the image (the event log interface is
   ready for Postgres); no infrastructure as code yet.
 - **Verifier misses role confusions** (a real fact in the wrong place, 0.4% of injected errors).
+- **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
+  checked, but a qualitative claim can slip through: a few answers call the teams "balanced
+  in possession", which the facts do not hold (they only count completed passes).
+- **Follow-up questions come from a fixed catalog of four** ("What's happening?", "Why is it
+  1–0?", "How is X doing tonight?", "Compare the teams"), by design: every question offered
+  is one the data can answer. Club names stay in their FACTS spelling in Japanese answers,
+  since the league has no official Japanese names the verifier could check.
 
 ## Documentation
 
@@ -368,8 +388,10 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 |---|---|
 | Project pitch | [docs/pitch.md](docs/pitch.md) |
 | Design decisions (ADR-001 to ADR-011) | [docs/decisions.md](docs/decisions.md) |
+| Match Analyst (comments, follow-up questions) | [docs/plan-match-analyst.md](docs/plan-match-analyst.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |
 | Status and plan | [docs/roadmap.md](docs/roadmap.md) |
 | Synthetic tracking (plan, findings) | [docs/epic-tracking.md](docs/epic-tracking.md) |
+| Optional next milestone: team style baselines (tactics) | [docs/milestone-6-team-styles.md](docs/milestone-6-team-styles.md) |
 | Hackathon brief | [HACKATHON_BRIEF.md](HACKATHON_BRIEF.md) |

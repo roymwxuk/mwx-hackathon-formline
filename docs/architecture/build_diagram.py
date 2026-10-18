@@ -106,21 +106,24 @@ arrow([(666,758),(790,758),(790,670)],GREEN)
 lines(690,774,[('Bad JSON, timeouts → retry',MUTED),('A card is never blocked,',MUTED),('and never wrong',MUTED)],13.5,19)
 
 # render
-box(910,476,210,358,'d · Render',GREEN,[
- 'Overlay contract',
- '  (JSON schema)',
- 'template_id, slots',
- 'clock, ttl, priority',
- 'source_event_ids',
- 'op: show / correct',
- '  / retract',
- '',
- 'SSE stream',
- '  resumable (event ids)',
- '  speed · start=mm:ss',
+box(910,476,210,186,'d · Render',GREEN,[
+ 'Overlay contract (JSON)',
+ '  source_event_ids',
+ 'SSE stream, resumable',
  '  + tracking frames 4/s',
-])
+ '  + Analyst comments',
+],size=14)
 arrow([(874,632),(904,632)],GREEN)
+
+# Match Analyst (phase 1 comments, phase 2 follow-up questions)
+box(910,676,210,158,'Match Analyst',PURPLE,[
+ 'Comments after shots,',
+ '  corners, cards, VAR',
+ 'Suggester: 2 of 4 questions',
+ '/ask: precomputed or live',
+ '  own verifier · template',
+],size=13)
+arrow([(1015,676),(1015,668)],PURPLE)
 
 # web app
 rect(1160,140,330,712,stroke=BORDER,fill='#10151c',r=14)
@@ -143,11 +146,16 @@ box(1180,192,290,642,'e · Personalize',GOLD,[
  'Live viewer',
  'Two viewers side by side',
  '',
- 'Speed · pause · jump to moment',
+ 'Speed · slow-mo · jump to moment',
  'GOAL! · set-piece labels',
  'VAR correction banner',
+ '',
+ ('Match analyst panel',MUTED),
+ 'Comments + follow-up chips',
+ '  → POST /ask, verified answer',
 ],size=15)
-arrow([(1120,700),(1174,700)],GOLD,sw=2.5); text(1147,690,'SSE',12.5,GOLD,700,'middle')
+arrow([(1120,600),(1174,600)],GOLD,sw=2.5); text(1147,590,'SSE',12.5,GOLD,700,'middle')
+arrow([(1174,780),(1126,780)],GOLD,sw=2); text(1150,770,'/ask',12.5,GOLD,700,'middle')
 
 # viewers
 rect(1540,92,350,360,stroke=GOLD,fill=PANEL,r=14)
@@ -181,9 +189,10 @@ out.append(f'<rect x="76" y="900" width="6" height="150" rx="3" fill="{BLUE}"/>'
 text(96,932,'Microsoft Foundry',20,TEXT,700); chip(470,914,'gpt-4.1-mini',BLUE)
 lines(96,962,['Project with a Global Standard deployment',
  'Entra ID managed identity, role "Foundry User": no keys',
- ('Response cache · call budget · demo overlays precomputed',MUTED)],15,24)
+ ('Response cache · call budget · demo text precomputed',MUTED)],15,24)
 arrow([(171,664),(171,894)],BLUE,dash='5 4')
 arrow([(368,752),(368,894)],BLUE,dash='5 4')
+arrow([(940,834),(940,884),(600,884),(600,894)],BLUE,dash='5 4')
 text(380,889,'model calls (managed identity)',13,BLUE,600)
 
 # CI/CD (bottom)
@@ -199,7 +208,7 @@ arrow([(1080,950),(1080,872)],BLUE,dash='5 4'); text(1090,890,'pull image',13,BL
 # Budget
 rect(1540,900,350,150,stroke=BORDER,fill=PANEL,r=14)
 text(1560,932,'Cost controls',20,TEXT,700)
-lines(1560,962,['Scale to zero; ingress off when idle','Budget ¥3,000/month, alerts 50/100%',('~¥21 in model tokens so far',MUTED)],15,24)
+lines(1560,962,['Scale to zero; ingress off when idle','Budget ¥3,000/month, alerts 50/100%',('~¥70–90 in model tokens so far (est.)',MUTED)],15,24)
 
 colors={MUTED,GREEN,PURPLE,GOLD,BLUE}
 markers=''.join(f'<marker id="arr-{c[1:]}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{c}"/></marker>' for c in colors)

@@ -120,6 +120,16 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are
   about 1,300 characters in and 160 out per answer, so roughly ¥25–50 with `gpt-4.1-mini`
   (the earlier "about ¥1" for 96 comments was too low).
+- **Foundry runs (2026-10-18).** The first run hit its 600-call cap: 40% of first attempts
+  failed the verifier (English bodies twice the limit, because LIMITS were not called
+  characters; xG without estimate wording; role words such as "SHOOTER Ingleby"; a club name
+  translated into Japanese) and the retries used the budget, so half the output was templates.
+  Fixes: limits stated in characters, the exact estimate marker to write, no role words, no
+  computed totals, club names as in FACTS, one EN and one JA example; the verifier accepts
+  "3 m" for "3.0 m" and rejects Japanese renderings of club names. A 6-moment sample went from
+  53% to 78% first-attempt passes. The full run: 296 calls, 96/96 comments and 190/192
+  answers by the model (2 templates), 48/48 Suggester picks (always 2 questions). Shipped in
+  `backend/demo/analyst/`. About 1,000 calls in all, roughly ¥50–70 (estimate).
 
 ## Files
 - New: `backend/src/formline/analyst/{__init__,catalog,facts,agent,writer}.py`,

@@ -561,5 +561,9 @@ clock: it replays the feed up to the comment's sequence number, so a live answer
 exactly what was known when the comment was written (a test checks it equals the
 precomputed one). Cost note: measured prompt sizes put the Foundry run for comments,
 suggestions and answers at about 430–520 calls, roughly ¥25–50; the "under ¥1" above was too
-low.
+low. Outcome (Foundry, 2026-10-18): the first run hit its call cap because 40% of
+first attempts failed the verifier (length in characters not stated, missing estimate
+wording); after tightening the prompt (explicit limits and markers, one example per
+language) the full run took 296 calls: 96/96 comments, 190/192 answers and 48/48 picks by
+the model. The verifier did its job both times: nothing unverified reached the files.
 
