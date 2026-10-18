@@ -54,7 +54,7 @@ export function OverlayCard({ state, favorite, onClose }: Props) {
         </dl>
       )}
 
-      {retracted ? <p className="overlay-sub">{str.withdrawnNote}</p> : s.sub && <p className="overlay-sub">{s.sub}</p>}
+      {retracted ? <p className="overlay-sub">{state.reason ?? str.withdrawnNote}</p> : s.sub && <p className="overlay-sub">{s.sub}</p>}
 
       <div className="chips">
         {o.verified && !retracted && <span className="badge ok">✓ {str.verified}</span>}

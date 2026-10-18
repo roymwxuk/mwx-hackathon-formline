@@ -169,3 +169,20 @@ describe('key moments', () => {
     expect(MOMENTS.filter((m) => m.at.period === 2).map((m) => m.label.slice(0, 5))).toEqual(['52:35', '63:30', '64:05']);
   });
 });
+
+describe('why a card changed', () => {
+  it('links withdrawn and corrected cards to the correction banner for the same shot', () => {
+    const base = overlays.find((o) => o.template_id !== 'correction_banner' && o.lang === 'en')!;
+    const shot = base.source_event_ids[0];
+    const card = { ...base, overlay_id: 'c1', op: 'show' as const, supersedes_overlay_id: null };
+    const fixed = { ...card, overlay_id: 'c1_v2', op: 'correct' as const, supersedes_overlay_id: 'c1', match_clock_ms: 3_924_000 };
+    const banner = { ...card, overlay_id: 'b1', template_id: 'correction_banner' as const, source_event_ids: [shot, 'evt_var'],
+      slots: { tag: 'CORRECTION', headline: 'Goal disallowed after review' } };
+    const [old, corrected] = applyOverlays([card, fixed, banner]);
+    expect(old.retracted).toBe(true);
+    expect(old.replacedBy?.overlay_id).toBe('c1_v2');
+    expect(old.reason).toBe('Goal disallowed after review');
+    expect(corrected.corrects?.overlay_id).toBe('c1');
+    expect(corrected.reason).toBe('Goal disallowed after review');
+  });
+});
