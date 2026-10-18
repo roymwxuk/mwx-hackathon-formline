@@ -1,110 +1,133 @@
 # Plan: agentic research for typed questions (a tool-using Researcher agent)
 
-**Status:** Planned 2026-10-19, not started; waiting for the owner's review and go.
-**Estimate:** 4–5 h. **Prompted by:** the "ask, find a gap, patch" loop on typed questions.
+**Status:** Planned 2026-10-19, revised after Codex's review the same day; not started,
+waiting for the owner's review and go.
+**Estimate:** 5.5–6.5 h (verifier binding and adversarial tests added by the review).
+**Prompted by:** the "ask, find a gap, patch" loop on typed questions.
+**Review:** `private/researcher-plan-review.md` (Codex), all six points adopted.
 
 ## Context
 
-Typed questions are answered by a one-shot Router that picks 1–3 fact sections, then the
-Analyst writes and the Verifier checks. No agent ever decides to look something up,
-inspects the result and continues. So a question that needs two chained lookups ("how did
-the top scorer do in his last 3 games?": find the top scorer, then his last 3 games) cannot
-be answered, and every new kind of question needed a new section (the patching loop of
-tonight). The brief's judging criterion "Agentic design and innovation" and the target
-category reward exactly this missing piece: an agent that plans, uses tools, recovers.
+Typed questions are answered by a one-shot Router that picks 1–3 fact sections; the
+Analyst writes and the Verifier checks. No agent decides to look something up, inspects the
+result and continues, so chained questions ("how did the top scorer do in his last 3
+games?") fail, and each new question type needed a new section. The brief's "Agentic design
+and innovation" criterion and the Multi-Agent Orchestration category reward exactly this.
 
-Outcome: a **Researcher** agent with tools (the existing fact sections, parameterized) that
-gathers facts in as many steps as it needs (capped), then the existing Analyst writes and
-the existing Verifier checks against everything the tools returned. Compound questions work
-without new sections. The safety model is unchanged.
+Outcome: a **Researcher** agent uses the existing fact sections as tools, in as many steps
+as it needs within hard limits, and hands every result to the Analyst and the Verifier.
 
-Feasibility (checked): Agent Framework 1.19 has `@tool` / `FunctionTool` and a built-in tool
-loop with `max_function_calls` and `max_iterations`; `FoundryChatClient` already includes
-`FunctionInvocationLayer`. Only our `FakeChatClient` lacks it.
+**What this does not solve on its own** (review point 3): retrieving more facts does not
+show that an answer addresses the question or uses facts in the right relationships. The
+current verifier checks that each number and name appears somewhere in the facts, not that
+they belong together: Codex reproduced an answer swapping two players' goal counts that
+passes today. More facts per question would widen that gap, so this plan includes a
+binding check (below) and a separate relevance evaluation.
+
+Feasibility (checked): Agent Framework 1.19 has `@tool` / `FunctionTool` and a tool loop
+(`max_function_calls`, `max_iterations`); `FoundryChatClient` includes
+`FunctionInvocationLayer`; only our `FakeChatClient` lacks it.
 
 ## Design
 
-### Agents for a typed question
+### Flow
 ```
-question ─► name check (code, existing) ─► Researcher (LLM + tools, ≤5 tool calls)
-              │                                 │ tool results = facts (code-computed)
-              │                                 ▼
-              │                           facts pack (all tool results, one roles map)
-              │                                 ▼
-              │                           Analyst (writes the answer) ─► Verifier
-              │                                 └─ retry with feedback / template (existing)
-              └─ Researcher fails (budget, errors, bad output) ─► one-shot Router (existing) ─► same path
+question ─► name check (code, existing) ─► Researcher (LLM + tools; hard caps in our code)
+                                              │ each valid call → one lookup result
+                                              ▼
+                              facts pack: lookups keyed by tool + arguments, one roles map
+                                              ▼
+                              Analyst ─► Verifier (existing checks + number-to-subject binding)
+                                              └─ retry with feedback / template (existing)
+ Researcher fails (timeout, budget, malformed, no evidence) ─► one-shot Router (reserved budget)
 ```
-- **Researcher** (`analyst/researcher.py`, `prompts/researcher.md`): sees the viewer text
-  (as data), the two clubs and both squads (ids and names), and the tools. It calls tools,
-  reads their results, and may call more (chaining ids it found, e.g. the top scorer's
-  player id). Its final reply is `{"done": true}` or `{"cannot_answer": true}`; it never
-  writes viewer-facing text. Limits: `max_function_calls=5`, `max_iterations=6`.
-- **Tools** (`analyst/tools.py`): thin wrappers over the existing section builders in
-  `analyst/sections.py` (no new fact logic): `get_match_info`, `get_match_so_far`,
-  `get_score_explanation`, `get_team_comparison`, `get_team_tonight(club_id)`,
-  `get_player_profile(player_id)`, `get_player_shooting_tonight(player_id)`,
-  `get_best_chances`, `get_discipline`, `get_last_10_minutes`, `get_season_leaders`,
-  `get_player_recent(player_id, n)`, `get_team_recent(club_id, n)`, plus
-  `find_player(name)` (candidates with id, club, shirt number) for names.
-  Each tool validates its arguments in code (the checks of `router.check_route`: a club of
-  this match, a squad player, a shooter, n 1–5) and on bad arguments returns an error
-  message the agent can act on (agentic recovery), never facts. Each successful call adds a
-  section to one shared facts pack (one `_Roles`, so placeholders stay consistent across
-  calls) and returns the facts plus a placeholder→player id map so the agent can chain.
-- **Analyst + Verifier**: unchanged (`answer_verified(..., viewer_question=...)` with the
-  merged pack). The Verifier checks numbers, names, clubs, wording against every tool result.
-- **Fallback**: if the Researcher raises, exceeds limits or returns nothing usable, the
-  existing one-shot Router path runs (so a typed question always gets the old behaviour at
-  worst). Logged as `researcher_fallback`.
 
-### LLM layer (`agents/llm.py`)
-- `LLMRunner.research(agent_name, instructions, input, tools, limits)`: runs an `Agent`
-  with tools; spends the call budget per model round-trip (counted with a chat middleware
-  or by `max_iterations` up front); no response cache (tool loops are not replayable),
-  except that identical questions at the same event reuse the gathered pack in-process.
-- `FakeToolChatClient(FunctionInvocationLayer, BaseChatClient)`: a scripted fake that emits
-  `Content.from_function_call(...)` turns and then `{"done": true}`, so tests run the real
-  framework tool loop offline. Its script chains: for "top scorer … last 3 games" it calls
-  `get_season_leaders`, reads the returned id map, then calls `get_player_recent` with that
-  id: the test proves real chaining, not a hard-coded pair.
+### 1. Researcher and tools
+- `analyst/researcher.py`, `prompts/researcher.md`; tools in `analyst/tools.py` as thin
+  wrappers over the existing builders in `analyst/sections.py`: `get_match_info`,
+  `get_match_so_far`, `get_score_explanation`, `get_team_comparison`,
+  `get_team_tonight(club_id)`, `get_player_profile(player_id)`,
+  `get_player_shooting_tonight(player_id)`, `get_best_chances`, `get_discipline`,
+  `get_last_10_minutes`, `get_season_leaders`, `get_player_recent(player_id, n)`,
+  `get_team_recent(club_id, n)`, `find_player(name)`.
+- Arguments validated in code with the existing `router.check_route` rules (club of this
+  match, squad player, shooter, n an int 1–5, not bool). Invalid arguments return an error
+  the agent can act on; **errors and the Researcher's own text never enter the facts**.
+- Final reply `{"done": true}` or `{"cannot_answer": true}`; it writes nothing viewers see.
+- Scope stated in the prompt and docs: season leaders cover the two match clubs only.
 
-### API and viewer
-- `POST /ask/free` response gains `research: [{tool, args_label, ok}]` (the steps taken).
-  `retrieved.label` becomes the chain, e.g. "Season leaders → Reyner: last 3 games".
-- Ask tab: under each typed answer, a small "Looked up: Season leaders · Reyner: last 3
-  games" line (makes the agentic steps visible in the video).
+### 2. Hard limits in application code (review point 1)
+- The framework's `max_function_calls` is best-effort (checked after a parallel batch), and
+  iteration exhaustion adds a final no-tools model call. So: a **request-local admission
+  counter** checked and charged **before** each tool executes (concurrency-safe); call 6 is
+  refused even inside one parallel batch. Invalid attempts count, so errors cannot loop.
+- **Every provider round-trip** is charged to the call budget through a chat middleware on
+  the Researcher's request, including the final no-tools call. No per-request mutation of a
+  shared client's settings (configuration passed per run).
 
-### Cost and latency (typed questions only; chips unchanged and precomputed)
-About 2–4 Researcher round-trips plus 1–3 Analyst calls: roughly ¥0.3–0.6 and 5–12 s per
-typed question on `gpt-4.1-mini`. The per-viewer limit (10 per 10 minutes) and the call
-budget stay.
+### 3. Lookups keyed by tool and arguments (review point 2)
+- The facts pack becomes a list of lookups `{id, tool, args, subject, scope, facts,
+  source_event_ids}`; key = tool + validated arguments; identical calls deduplicate,
+  different arguments (two players, two windows) both survive. One request-local roles map
+  across all lookups. `facts_for` stays for the Router path; both feed the same Analyst.
+
+### 4. Verifier: bind numbers to their subject (review point 3)
+- Lookups keep each player's numbers together (per-subject sub-facts). A new check: in a
+  sentence (or clause) that names a player or club, every number must come from that
+  subject's facts (or from subject-free facts such as the score). Rejects the reproduced
+  swap ("Reyner 1, Ito 2" when the facts say 2 and 1) and season totals given as recent
+  totals where the scope is labelled. Applies to typed answers on both paths.
+- Limitation stated in README: binding is per sentence; a fact in the wrong role inside one
+  subject (goals vs shots of the same player) is still not caught, as today's catch-rate
+  report notes.
+
+### 5. Budget reservation, deadline and outcomes (review point 4)
+- Separate allowances: research (≤ 6 model calls), fallback Router (1 + retry), Analyst
+  (3); the fallback allowance is reserved up front, so it can still run. Overall request
+  deadline (e.g. 25 s) across research, fallback and narration.
+- Distinct outcomes, logged: `answered`, `cannot_answer`, `fallback_malformed`,
+  `fallback_timeout`, `fallback_budget`, `fallback_no_evidence`, `budget_exhausted`
+  (decline politely). On fallback, partial research is **discarded**, not mixed in.
+- No gathered-pack cache in this version (avoids stale facts after corrections); if added
+  later, key it by match, event id and version, question, prompt and model versions.
+
+### 6. API and viewer
+- `POST /ask/free` reply gains `research: [{tool, args_label, ok}]` and `outcome`;
+  `retrieved.label` is the chain ("Season leaders → Reyner: last 3 games").
+- Ask tab: a "Looked up: …" line under each typed answer (shows the agent's steps).
+
+## Tests (fake tool client, real framework loop; review point 5)
+`FakeToolChatClient(FunctionInvocationLayer, BaseChatClient)` with scripted turns:
+- chaining: the first tool's result carries a **changed** player id; the second call must
+  use the returned id, not a hard-coded one;
+- invalid player/club ids, `n` as bool, string, 0, 6, 2.5: no lookup added, error returned;
+- one response requesting more than 5 parallel calls: the 6th never executes;
+- iteration exhaustion: every round-trip charged, including the final no-tools call;
+- repeated tool with different subjects/windows: all results kept, placeholders consistent;
+- malformed final reply, `done` with no evidence, timeout, research budget exhausted while
+  the reserved fallback still answers, global budget already exhausted → polite decline;
+- tied top scorers named together; unspecified club scope not resolved arbitrarily;
+  the existing name clarification still runs first;
+- verifier binding: swapped counts, season totals as recent totals, goals vs shots, wrong
+  period → rejected; the original correct answer → accepted;
+- existing typed-question and history tests pass on both paths.
+
+## Real-model evaluation (owner's go; review point 6)
+About 30 questions, EN and JA: direct, compound, ambiguous, unanswerable, hostile, the
+owner's reported wording verbatim and unseen paraphrases. Scored separately: relevance
+(does it answer the question), factual relationships, coverage, clarify/decline behaviour,
+verifier acceptance; measured provider calls, tokens, latency, fallback rate. Cost and
+latency in the docs are reported as measured, not estimated. Roughly ¥5–10.
 
 ## Files
-- New: `backend/src/formline/analyst/researcher.py`, `analyst/tools.py`,
-  `prompts/researcher.md`, `backend/tests/test_analyst_research.py`.
-- Changed: `agents/llm.py` (`research`, `FakeToolChatClient`), `agents/fakes.py` (scripted
-  researcher), `analyst/ask.py` (Researcher first, Router as fallback, `research` in the
-  reply), `analyst/sections.py` (expose the shared roles/pack builder for tools; no fact
-  changes), `api.py` (response shape), frontend `lib/types.ts`,
-  `components/Analyst.tsx` ("Looked up" line), i18n.
-- Docs: ADR-013 (agentic research: why tools over one-shot routing, limits, fallback,
-  safety), README agents table and flow, architecture diagram (Researcher + tools),
-  `DATA_SCHEMA.md` (`research` field), `docs/plan-match-analyst.md`.
+- New: `analyst/researcher.py`, `analyst/tools.py`, `prompts/researcher.md`,
+  `tests/test_analyst_research.py`, `tests/test_verify_binding.py`.
+- Changed: `agents/llm.py` (research run with admission counter and per-round-trip budget
+  middleware; `FakeToolChatClient`), `agents/fakes.py`, `analyst/verify.py` (binding check),
+  `analyst/sections.py` (lookup records), `analyst/ask.py` (Researcher first, reserved
+  fallback, outcomes, deadline), `api.py`, frontend `lib/types.ts`,
+  `components/Analyst.tsx`, i18n.
+- Docs: ADR-013, README (agents, flow, limitations incl. the binding scope), architecture
+  diagram, `DATA_SCHEMA.md`, `docs/plan-match-analyst.md`.
 - Unchanged: comments, Suggester, chips and their precomputed Foundry answers, the card
   workflow.
-
-## Verification
-- Tests (fake, real framework tool loop): compound question chains two tools with the id
-  from the first result; bad tool arguments return an error and the agent corrects them;
-  over the call limit the loop stops and the Router fallback answers; out-of-scope →
-  `cannot_answer` → decline; facts pack from tools equals `facts_for` for the same sections;
-  the Verifier rejects an answer citing a fact no tool returned; existing typed-question and
-  history tests still pass (via Researcher, or Router fallback).
-- Full backend and frontend suites, ruff, typecheck, lint.
-- Browser (fake): a compound question shows the "Looked up" chain.
-- Real model (owner's go, about ¥2–3): 8–10 questions locally, including "how did the top
-  scorer do in his last 3 games?", "info about reyner?", "why nor score nothing today",
-  "how was the weather", one out-of-scope; report steps, latency and cost.
-
-Estimate: 4–5 h, then push → PR → redeploy and the video.
