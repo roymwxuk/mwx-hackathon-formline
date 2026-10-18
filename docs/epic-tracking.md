@@ -1,8 +1,8 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** In progress. Done: T0–T9 (T6: tracking section in `docs/realism-report.md`;
-T9: resources measured, below). Left: T10 docs; image size and build time come from CI.
-Moving preview: `docs/tracking/preview.html`.
+**Status:** Done (2026-10-18). T0–T10 complete; the Oct 21 checkpoint was reviewed early and
+passed (ADR-010 outcome). Image size and build time come from CI. Moving preview:
+`docs/tracking/preview.html`.
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.

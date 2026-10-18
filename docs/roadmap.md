@@ -28,7 +28,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [ ] Live seek bar in the viewer (the backend already supports `start=mm:ss`)
 
 **Could (only if time allows)**
-- [ ] Epic: synthetic tracking data, all 22 players and the ball (`docs/epic-tracking.md`; MVP about 8 h, shelve if not convincing by Oct 21)
+- [x] Epic: synthetic tracking data, all 22 players and the ball (`docs/epic-tracking.md`, ADR-010): done 2026-10-18, checkpoint passed
 - [ ] Infrastructure as code: Bicep + `azd` (M4 task 6)
 - [ ] Foundry evaluations (M3 task 11)
 - [ ] Half-time or full-time baseline recap card (M3 task 12, frontend gap 7)
@@ -106,7 +106,7 @@ production. Signals and status:
 |---|---|
 | Reliability: failure recovery, retries, fallbacks, deterministic replays | ✅ |
 | Correctness controls: verifier (99.6% catch rate), lineage, corrections | ✅ |
-| Tests and docs: 192 backend + 18 frontend tests, ADR-001 to ADR-009 | ✅ |
+| Tests and docs: 233 backend + 41 frontend tests, ADR-001 to ADR-010 | ✅ |
 | Config via environment, no secrets in code | ✅ managed identity for Foundry, no keys |
 | Cost controls: LLM call budget, response cache, scale to zero, budget alert | ✅ |
 | Observability: JSON-line traces → Log Analytics / App Insights | 🟡 logs reach Log Analytics; queries not checked |

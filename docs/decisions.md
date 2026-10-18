@@ -12,10 +12,10 @@ happened, so the reasoning at the time remains visible.
 | [004](#adr-004-adopt-the-claudeai-ui-prototype-as-the-viewer-inside-nextjs) | Port the UI prototype into Next.js; client-side personalization | Accepted |
 | [005](#adr-005-synthetic-data-generator) | Synthetic generator: fictional league, hidden profiles, calibrated realism | Accepted |
 | [006](#adr-006-personal-baselines-with-shrinkage) | Like-for-like baselines with empirical Bayes shrinkage, exact incremental state | Accepted |
-| [007](#adr-007-chaos-injector-design) | Chaos injector: duplicates, reordering, late messages, corrections | Accepted |
+| [007](#adr-007-chaos-injector-design) | Chaos injector: duplicates, reordering, late messages, corrections; idle timeout | Accepted; updated 2026-10-18 |
 | [008](#adr-008-multi-agent-architecture-for-narration) | Multi-agent workflow on Agent Framework with a deterministic verifier | Accepted |
 | [009](#adr-009-deploy-on-azure-container-apps-with-scale-to-zero-and-keyless-foundry-access) | Container Apps, scale to zero, GHCR, managed identity for Foundry | Accepted |
-| [010](#adr-010-synthetic-tracking-data-derived-from-the-event-feed) | Synthetic tracking for all 22 players and the ball, derived from the events | Accepted (checkpoint Oct 21) |
+| [010](#adr-010-synthetic-tracking-data-derived-from-the-event-feed) | Synthetic tracking for all 22 players and the ball, derived from the events | Accepted; built |
 
 ---
 
@@ -302,6 +302,17 @@ without injected corrections or deletes, and insights equal the clean run in 57/
 that also had no beyond-window late messages. Property-based tests (`hypothesis`, 140
 random configurations per test run) check the same three properties.
 
+**Update (2026-10-18): idle timeout.** The watermark only moved when the next message
+arrived, so after a goal (no events for 29 s) its card waited for the VAR review to start.
+`Ingestor.advance_to(now)` adds an idle timeout, as streaming systems do for quiet sources:
+when no message arrives within the window, the watermark moves on and buffered events are
+released; anything older that arrives later is flagged late as before. The live
+orchestrator applies it in one replay loop shared by the precomputed and live streams (56
+demo cards now come earlier). Convergence results are unchanged, since the batch rebuild
+does not use it. A related fix counts the stream's clock from each half's kick-off rather
+than the last event, so late or corrected events cannot stall it
+([docs/live-clock-anchoring.md](live-clock-anchoring.md)).
+
 ---
 
 ## ADR-008: Multi-agent architecture for narration
@@ -485,4 +496,12 @@ the pitch agree with every card and freeze frame. (c) is honest but sparse.
 **Trade-offs.** Positions between anchors are modeled, not observed, so they are plausible
 rather than "true" even within the synthetic world; the README says so. Only the live match
 has tracking, so tracking-based baselines (sprint speed) would need history matches first.
+
+**Outcome (2026-10-18).** Kept: the Oct 21 checkpoint was reviewed early and passed. Built
+as planned (T0–T10); 57,651 frames, 99.5% of players on their event spots, 150 MB memory
+with five streams. Two review findings changed the model: players ran out and straight back
+at turnovers (fixed by easing shape changes over 4 s and following a smoothed ball), and
+Firefox stuttered on CSS transitions (the viewer now interpolates in JavaScript). The
+trade-off is less running than real players (about 8 km per 90), reported in the realism
+report. Details: [docs/epic-tracking.md](epic-tracking.md).
 
