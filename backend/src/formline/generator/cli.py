@@ -56,7 +56,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     checks, extra = compute(args.data)
-    args.out.write_text(render(checks, extra, args.seed), encoding="utf-8")
+    text = render(checks, extra, args.seed) + _tracking_section(args.data, args.seed)
+    args.out.write_text(text, encoding="utf-8")
     for c in checks:
         print(f"{'ok ' if c.ok else 'OUT'} {c.metric}: {c.fmt.format(c.value)}")
     print(f"wrote {args.out}")
@@ -79,6 +80,33 @@ def _overlays(data: Path, match_id: str | None) -> int:
     print(f"wrote {path}")
     print(json.dumps(summary_dict(summary, runner), indent=2))
     return 0
+
+
+def _tracking_section(data: Path, seed: int) -> str:
+    """The report's tracking section, when the live match has tracking (else nothing)."""
+    import json
+
+    from formline.engine.log import current_events
+    from formline.generator.output import read_feed
+    from formline.generator.report import render_tracking
+    from formline.schema.tracking import read_tracking, tracking_path
+    from formline.tracking.anchors import event_anchors
+    from formline.tracking.realism import tracking_checks
+
+    matches = json.loads((data / "matches.json").read_text())
+    live = next(m for m in matches if m["is_live_demo"])
+    path = tracking_path(data, live["match_id"])
+    if not path.exists():
+        return ""
+    season = generate_season(seed)  # the starting line-ups, as for `formline-gen tracking`
+    players = {p.player_id: p for p in season.league.players}
+    events = current_events(read_feed(data / "feeds" / f"{live['match_id']}.jsonl"))
+    anchors = event_anchors(events, live["home_club_id"], players, season.league.starters)
+    checks, extra = tracking_checks(read_tracking(path), anchors)
+    for c in checks:
+        print(f"{'ok ' if c.ok else 'low' if c.value < c.lo else 'high'} {c.metric}: "
+              f"{c.fmt.format(c.value)}")
+    return render_tracking(checks, extra)
 
 
 def _tracking(seed: int, out: Path) -> int:
