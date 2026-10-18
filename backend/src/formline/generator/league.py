@@ -22,7 +22,7 @@ class ClubSpec:
 
 CLUB_SPECS = [
     ClubSpec("harbourside", "Harbourside Athletic", "HAR", "#0B3D91", "#FFFFFF", "Quayside Park"),
-    ClubSpec("northgate", "Northgate Rovers", "NOR", "#E8E3D9", "#111111", "Gatehouse Lane"),
+    ClubSpec("northgate", "Northgate Rovers", "NOR", "#A6F28C", "#111111", "Gatehouse Lane"),
     ClubSpec("elderwick", "Elderwick Town", "ELD", "#1E6B3A", "#F2E8C9", "The Elder Ground"),
     ClubSpec("thornmoor", "Thornmoor United", "THO", "#7A1F2B", "#E9C46A", "Moorside Stadium"),
     ClubSpec("kestrelbay", "Kestrel Bay FC", "KES", "#F28C28", "#1A1A1A", "Cliff Road"),
