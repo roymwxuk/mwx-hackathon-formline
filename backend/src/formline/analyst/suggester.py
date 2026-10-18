@@ -14,15 +14,13 @@ from formline.agents.llm import LLMRunner
 from formline.agents.selector import strip_fences
 from formline.analyst.facts import FactsPack
 from formline.analyst.followups import DESCRIPTIONS
+from formline.prompts import load
 
 MAX_ATTEMPTS = 2
 MIN_PICKS, MAX_PICKS = 2, 3
 
-INSTRUCTIONS = """You choose follow-up questions for viewers of a live football broadcast
-(synthetic match data). MOMENT is what just happened (MOMENT_FACTS describe it); OPTIONS are
-the only questions that can be answered now, with what each answer covers. Pick the 2 or 3 a
-viewer would most want to ask right after this moment, the best first. Use only option ids
-from OPTIONS. Reply with JSON only: {"pick": ["option id", ...]}"""
+PROMPT = load("suggester")  # prompts/suggester.md
+INSTRUCTIONS = PROMPT.text
 
 
 @dataclass(frozen=True)

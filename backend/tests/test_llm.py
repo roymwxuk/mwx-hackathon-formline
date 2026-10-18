@@ -108,3 +108,16 @@ def test_tests_never_reach_azure():
 
     assert not LLMConfig.from_settings().uses_foundry
     assert make_runner().kind == "fake"
+
+
+def test_every_agent_prompt_loads_from_its_versioned_file():
+    from formline.prompts import DIR, load
+
+    names = sorted(p.stem for p in DIR.glob("*.md"))
+    assert names == ["analyst", "insight_selector", "narrator", "router", "suggester"]
+    for name in names:
+        p = load(name)
+        assert p.version >= 1 and p.description and p.text.strip()
+        assert not p.text.startswith("---") and not p.text.endswith("\n")
+        assert p.ref.startswith(f"{name}@v{p.version}+") and len(p.ref.split("+")[1]) == 8
+    assert "{lang}" in load("analyst").text  # filled per call

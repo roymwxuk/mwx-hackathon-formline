@@ -142,6 +142,9 @@ Typed question ─► POST /ask/free ─► Question Router ─┬─► catalog
 - **Cost:** response cache, per-run call budget, precomputed demo overlays, comments and
   follow-up answers (a rerun makes no model calls; `/ask` calls the model only for questions
   that were not precomputed, under the call budget).
+- **Prompts are versioned files** (`backend/src/formline/prompts/<agent>.md`: name, version,
+  change notes, then the text), apart from the code; the JSON contracts and verifiers stay in
+  code (ADR-012).
 - **With or without Azure:** Microsoft Foundry (`FoundryChatClient`) when
   `AZURE_AI_PROJECT_ENDPOINT` is set (see `backend/.env.example`), otherwise a fake model on
   the same Agent Framework path. Tests and CI never need Azure.
@@ -331,7 +334,7 @@ overridden through the variables in `scripts/azure/common.sh`.
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 264 backend + 74 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
+| Tests | 265 backend + 74 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
 | Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; the typed-question limit is in memory and keyed on `X-Forwarded-For` (a cost guard, not abuse protection) |
 
 ## Microsoft and Azure technologies
@@ -355,7 +358,8 @@ backend/    Python 3.12 · FastAPI · Pydantic · Microsoft Agent Framework (uv)
   src/formline/engine/      event log, ingestion, shot features, baselines, insights
   src/formline/agents/      catalog, narrators, verifier, selector, workflow, live orchestration
   src/formline/tracking/    synthetic tracking: team shape, event anchors, motion, realism
-  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer, follow-ups, suggester, /ask
+  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer, follow-ups, suggester, router, /ask
+  src/formline/prompts/     every agent's prompt as a versioned .md file
   data/sample/              committed excerpt of the generated data and example overlays
 frontend/   Next.js · React · TypeScript (pnpm): live viewer UI
 docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI screenshots
@@ -398,7 +402,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 | Topic | Where |
 |---|---|
 | Project pitch | [docs/pitch.md](docs/pitch.md) |
-| Design decisions (ADR-001 to ADR-011) | [docs/decisions.md](docs/decisions.md) |
+| Design decisions (ADR-001 to ADR-012) | [docs/decisions.md](docs/decisions.md) |
 | Match Analyst (comments, follow-up questions) | [docs/plan-match-analyst.md](docs/plan-match-analyst.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |

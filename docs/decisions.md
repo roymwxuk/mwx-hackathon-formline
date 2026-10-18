@@ -16,7 +16,8 @@ happened, so the reasoning at the time remains visible.
 | [008](#adr-008-multi-agent-architecture-for-narration) | Multi-agent workflow on Agent Framework with a deterministic verifier | Accepted |
 | [009](#adr-009-deploy-on-azure-container-apps-with-scale-to-zero-and-keyless-foundry-access) | Container Apps, scale to zero, GHCR, managed identity for Foundry | Accepted |
 | [010](#adr-010-synthetic-tracking-data-derived-from-the-event-feed) | Synthetic tracking for all 22 players and the ball, derived from the events | Accepted; built |
-| [011](#adr-011-match-analyst-proactive-comments-at-key-events-questions-on-demand) | Match Analyst: verified comments at shots, corners and cards; questions on demand | Accepted; phase 1 built |
+| [011](#adr-011-match-analyst-proactive-comments-at-key-events-questions-on-demand) | Match Analyst: verified comments at shots, corners and cards; questions on demand | Accepted; phases 1–2 and typed questions built |
+| [012](#adr-012-agent-prompts-as-versioned-files) | Agent prompts as versioned files, apart from the code | Accepted; step 1 built |
 
 ---
 
@@ -579,4 +580,29 @@ verifiable as a click, and a route that matches a suggested question is served p
 Typed questions are live model calls, so they are capped (200 characters, 10 per viewer per
 10 minutes); the limiter is in memory and trusts `X-Forwarded-For`, a cost guard rather than
 abuse protection.
+
+## ADR-012: Agent prompts as versioned files
+
+**Status:** Accepted (2026-10-18). Step 1 built; steps 2–3 open.
+
+**Context.** The five agents' prompts were string constants in their Python modules. They
+were reviewed through git, and the response cache keys on the full text, so a change could
+never serve a stale answer. But a prompt could only be read or changed by editing code, and
+no output said which prompt produced it.
+
+**Options.** (a) Keep constants in code. (b) Prompt files in the repo, one per agent, with a
+name, version and change notes. (c) A hosted prompt registry (A/B tests, rollback without a
+deploy).
+
+**Decision.** (b): `backend/src/formline/prompts/<agent>.md`, a small header then the prompt
+text, loaded at startup (`formline.prompts.load`). The JSON contracts and the verifiers that
+check the replies stay in code, since they are logic, not wording. `Prompt.ref` (e.g.
+`router@v1+9236cec0`: name, version, hash of the text) names the exact prompt. The narrator's
+voice and example per language and audience stay in `agents/narrator.py` as data.
+
+**Why.** Prompts become reviewable on their own and carry their history (`changes:`), at
+almost no cost, and the move was byte-identical (a check compared all nine rendered prompts),
+so the cache and the shipped Foundry text stay valid. (c) is overkill for one team and one
+deployment. Next: (2) stamp `Prompt.ref` into every comment, answer and overlay written;
+(3) a small offline eval reporting first-attempt verifier passes per prompt version.
 
