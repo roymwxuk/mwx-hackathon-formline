@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Viewer } from './Viewer';
-import { applyComments, applyEvents, applyOverlays, formatClock } from '@/lib/logic';
+import { applyComments, applyEvents, applyOverlays, feedStatus, formatClock } from '@/lib/logic';
 import { useLeague } from '@/lib/league';
 import type { ViewerSettings } from '@/lib/types';
 import { MOMENTS, useMatchStream } from '@/lib/useMatchStream';
@@ -52,6 +52,7 @@ export default function App() {
   const store = useMemo(() => applyEvents(stream.events), [stream.events]);
   const overlayStates = useMemo(() => applyOverlays(stream.overlays), [stream.overlays]);
   const commentStates = useMemo(() => applyComments(stream.comments), [stream.comments]);
+  const feed = feedStatus(stream);
 
   const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame, commentStates, catchingUp: stream.catchingUp };
 
@@ -74,9 +75,7 @@ export default function App() {
               {league.status === 'loading' ? 'Loading squads…' : 'Squads unavailable'}
             </span>
           )}
-          <span className={`source ${stream.connected ? 'on' : 'off'}`}>
-            {stream.source === 'mock' ? 'Mock replay' : stream.ended ? 'Full time' : stream.connected ? 'Live feed' : 'Reconnecting…'}
-          </span>
+          <span className={`source ${feed.tone}`} title={feed.title}>{feed.label}</span>
           <span className="clock-big">{formatClock(stream.clockMs)}</span>
           <button type="button" className="ctl" onClick={() => stream.setPlaying(!stream.playing)}>
             {stream.playing ? 'Pause' : 'Play'}

@@ -218,3 +218,19 @@ export function formatClock(ms: number): string {
   const ss = total % 60;
   return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 }
+
+export interface FeedStatus {
+  label: string;
+  /** on: data is flowing; idle: nothing expected (paused, full time); off: trying to connect. */
+  tone: 'on' | 'idle' | 'off';
+  title: string;
+}
+
+/** The header badge: where the viewer's data comes from and whether it is arriving. */
+export function feedStatus(s: { source: 'mock' | 'sse'; playing: boolean; connected: boolean; ended: boolean }): FeedStatus {
+  if (s.ended) return { label: 'Full time', tone: 'idle', title: 'The replay reached the end of the match' };
+  if (!s.playing) return { label: 'Paused', tone: 'idle', title: 'Playback paused; press Play to resume' };
+  if (s.source === 'mock') return { label: 'Mock replay', tone: 'on', title: 'Built-in demo match, no backend' };
+  if (s.connected) return { label: 'Live stream', tone: 'on', title: 'Connected: the backend streams the synthetic match through the pipeline' };
+  return { label: 'Connecting…', tone: 'off', title: 'Waiting for the backend stream; retrying automatically' };
+}

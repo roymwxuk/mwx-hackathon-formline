@@ -188,6 +188,7 @@ export function useMatchStream(): MatchStream {
     };
     return () => {
       es.close();
+      setConnected(false); // paused or restarting: no stream is open now
       if (esRef.current === es) esRef.current = null;
     };
   }, [source, playing, speed, connectKey]);
