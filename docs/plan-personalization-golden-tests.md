@@ -1,6 +1,9 @@
 # Plan: golden tests for viewer personalization
 
-**Status:** Planned (2026-10-18). Not started. Optional: no behaviour change.
+**Status:** Done (2026-10-18): `frontend/src/lib/personalization.golden.test.ts`, 9 profiles ×
+5 moments (12:10, 40:16, 44:50, 63:46, 65:30) plus language/mode/verified and banner checks;
+13 tests. Observation kept as designed: with no card active, the slot keeps the viewer's most
+recent card (a Brandt-only fan still sees his 18:43 card at 40:16).
 **Origin:** a review by another LLM (used as a reference, not a spec) pointed at unclear
 ownership of personalization and missing end-to-end checks. This plan takes its most useful
 point; see "Context" for what was kept and what was not.

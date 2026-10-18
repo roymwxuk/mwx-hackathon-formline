@@ -295,7 +295,7 @@ overridden through the variables in `scripts/azure/common.sh`.
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 233 backend + 41 frontend tests; tests never call Azure |
+| Tests | 233 backend + 54 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
 | Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet |
 
 ## Microsoft and Azure technologies
@@ -336,7 +336,12 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Shots only.** Personal baselines cover shot speed, placement and finish quality; other
   metrics (pass difficulty, sprint speed) would reuse the same engine but are not built.
 - **Personalization is client-side.** The backend produces every variant (EN/JA ×
-  casual/analyst); the viewer filters and ranks. Fine for the demo, wasteful at scale.
+  casual/analyst); the viewer filters and ranks. Fine for the demo, wasteful at scale. Golden
+  tests pin the exact card nine viewer profiles see at key moments of the real demo match.
+- **Viewer settings cannot bring back an insight the backend never produced.** The Selector
+  runs once for everyone (one card per shot, a per-player cooldown, at most 3 cards per 10
+  minutes); "my metric" secondary cards are a partial answer. Per-viewer selection would need
+  the backend to select per profile.
 - **Precomputed narration for the demo.** The live match's cards are narrated once and
   replayed (`?live=true` runs the agents live). The verifier checks facts, not style.
 - **Single replica, JSONL event log** baked into the image (the event log interface is
