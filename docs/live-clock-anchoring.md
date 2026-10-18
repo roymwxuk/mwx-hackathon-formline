@@ -116,6 +116,15 @@ kick-off anchor is fixed per half; fallback without `event_time`; ids and resume
 - Tests: even ticks with varying send delays, a late event does not stall the clock, the
   kick-off is fixed per half, frame blending.
 
+## Follow-up: a 1 s presentation delay (2026-10-18)
+
+Counting from kick-off shows the true match time, so the tracked ball ran up to 0.9 s ahead
+of the pass events (each sent 0.25–0.9 s after it happens): the ball flew along a new pass
+while the dotted line still showed the previous one (14 of 30 passes in a sample). Clock and
+frames now run 1 s behind true time, like a broadcast delay, and the viewer takes its clock
+from the ticks alone once they flow. Measured at 1x and 5x: every pass event arrives before
+the ball starts on it.
+
 ## Related: high speeds feel slower than selected (question 2)
 
 Measured in the same run: 60× averaged about 41×, 120× about 56× (115× with the slow-down

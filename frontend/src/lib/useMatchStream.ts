@@ -113,6 +113,9 @@ export function useMatchStream(): MatchStream {
   const [ended, setEnded] = useState(false);
   const [catchingUp, setCatchingUp] = useState(false);
   const catchUpTo = useRef<MatchTime | null>(null);
+  // Once clock/frame ticks flow, they alone drive the clock: they run a presentation delay
+  // behind true time, and event times would jump it ahead and make it stall.
+  const ticksRef = useRef(false);
   const cursor = useRef(0);
   const clockRef = useRef(0);
 
@@ -168,7 +171,10 @@ export function useMatchStream(): MatchStream {
           seenRef.current.add(key);
           setReceived((r) => [...r, msg]);
         }
-        timeRef.current = timeAfter(timeRef.current, msg);
+        if (msg.kind === 'clock' || msg.kind === 'frame') ticksRef.current = true;
+        if (!ticksRef.current || msg.kind === 'clock' || msg.kind === 'frame') {
+          timeRef.current = timeAfter(timeRef.current, msg);
+        }
         const target = catchUpTo.current;
         if (target && (timeRef.current.period > target.period
           || (timeRef.current.period === target.period && timeRef.current.clockMs >= target.clockMs))) {
@@ -189,6 +195,7 @@ export function useMatchStream(): MatchStream {
   /** Start over, from kick-off or from a match time (the backend sends the past at once). */
   const liveRestart = useCallback((from: MatchTime | null = null) => {
     timeRef.current = { period: 1, clockMs: 0 };
+    ticksRef.current = false; // the catch-up's events move the clock until ticks resume
     startRef.current = from;
     seenRef.current = new Set();
     setReceived([]);

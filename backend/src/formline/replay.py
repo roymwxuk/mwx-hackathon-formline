@@ -65,6 +65,9 @@ def merge_stream(feed: list[FeedMessage], overlays: list[tuple[datetime, object]
 
 TICK_SECONDS = 0.25  # during a gap, send the match time this often (real seconds)
 MAX_SEND_DELAY_MS = 15_000  # true time may lead the next event by its send delay; more is bad data
+# Like a broadcast delay: clock and tracking frames run this far behind true match time, so an
+# event (sent 0.25–0.9 s after it happens) is already on screen when the ball starts moving on it.
+PRESENTATION_DELAY_MS = 1_000
 PERIOD_ENDS = {"half_end"}  # the match clock stops here: no clock messages until play resumes
 
 SLOW_FACTOR = 6.0  # around shots and cards, pacing is this many times slower (20x -> ~3x)
@@ -120,7 +123,7 @@ async def _wait(seconds: float, pace: float, clock, prev: datetime,
     if not stopped:
         period, base_ms, anchor = clock
         if kickoff is not None:
-            base_ms, offset = 0, (prev - kickoff).total_seconds()
+            base_ms, offset = -PRESENTATION_DELAY_MS, (prev - kickoff).total_seconds()
         else:
             offset = (prev - anchor).total_seconds()
     waited, last = 0.0, None
@@ -137,6 +140,8 @@ async def _wait(seconds: float, pace: float, clock, prev: datetime,
             # from kick-off it is the true time, which leads the next event by that event's
             # send delay; only a lead beyond any real delay is capped (bad data).
             ms = min(ms, nxt[1] + (MAX_SEND_DELAY_MS if kickoff is not None else 0))
+        if ms < 0:
+            continue  # the first second after kick-off, behind the presentation delay
         if last_tick is not None:
             if last_tick[0] is not None and last_tick[0][0] == period and ms <= last_tick[0][1]:
                 continue  # never backwards (a late or corrected event)
