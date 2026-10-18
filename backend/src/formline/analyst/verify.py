@@ -31,6 +31,11 @@ PROBABILITY = {"en": ("%", "percentile", "probability", "likelihood", "xg"),
                "ja": ("%", "パーセンタイル", "確率", "期待値")}
 MARKERS = {"en": ("estimate", "est.", "model", "about", "around", "roughly", "~"),
            "ja": ("推定", "約", "モデル")}
+# Club names have no official Japanese form, so the verifier can only check the spelling in
+# FACTS. A Japanese rendering ("ノースゲート・ローバーズ", "北ゲート") could name any club unchecked,
+# so the words of the league's club names in katakana are rejected.
+JA_CLUB_WORDS = ("アスレチック", "アスレティック", "ローバーズ", "タウン", "ユナイテッド", "シティ",
+                 "ケストレル", "ゲート", "ハーバーサイド", "エルダー", "ソーンム", "コラン")
 
 
 @dataclass(frozen=True)
@@ -52,7 +57,8 @@ def allowed_numbers(pack: FactsPack) -> set[str]:
     nums = set()
     for s in _strings(pack.facts):
         nums |= set(NUMBER.findall(normalize(s)))
-    return nums
+    # "3.0 m" in the facts may be written "3 m": the same number, not a new one
+    return nums | {n[:-2] for n in nums if n.endswith(".0")}
 
 
 def _forms(en: str, ja: str, lang: str) -> set[str]:
@@ -107,6 +113,9 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
     if roles:
         failures.append(Failure("jargon", f"internal labels or role placeholders shown ({', '.join(roles)}); "
                                           "use the player names from NAMES and plain words"))
+    if ctx.lang == "ja" and any(w in text for w in JA_CLUB_WORDS):
+        failures.append(Failure("entities", "write club names exactly as in FACTS (not in katakana "
+                                            "or translated)"))
     if ctx.lang == "ja" and not JAPANESE.search(text):
         failures.append(Failure("language", "write in Japanese"))
     if ctx.lang == "en" and KANA.search(text):

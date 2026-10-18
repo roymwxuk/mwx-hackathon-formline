@@ -110,7 +110,8 @@ def _analyst(data: Path, match_id: str | None) -> int:
     if match_id is None:
         matches = json.loads((data / "matches.json").read_text())
         match_id = next(m["match_id"] for m in matches if m["is_live_demo"])
-    runner = default_runner(data)
+    # comments (96) + Suggester picks (48) + answers (~290) + retries: above the default 600
+    runner = default_runner(data, max_calls=1000)
     history = bootstrap_history(data)  # season norms for "how is he doing tonight?"
     writer = make_writer(data, match_id, runner, norm=history.season_norm, answer_followups=True)
     rows = asyncio.run(write_comments(read_feed(data / "feeds" / f"{match_id}.jsonl"), writer))
