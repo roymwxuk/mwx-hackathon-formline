@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { ballAt } from '@/lib/ball';
 import { FrameInterpolator } from '@/lib/interpolate';
-import { labelledPlayers, trackedMarkers } from '@/lib/tracking';
+import { eventsReached, labelledPlayers, trackedMarkers } from '@/lib/tracking';
 import type { Club, Lang, MatchEvent, Player, TrackingFrameMessage } from '@/lib/types';
 
 interface Props {
@@ -36,7 +36,10 @@ function toScreen(x: number, y: number, flip: boolean): [number, number] {
   return [dx * (W / 100), dy * (H / 100)];
 }
 
-export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null, favoritePlayers = [] }: Props) {
+export function Pitch({ events: received, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null, favoritePlayers = [] }: Props) {
+  // Only what the clock has reached: the ball travels first, then its pass line appears.
+  const period = frame?.p ?? received[received.length - 1]?.period ?? 1;
+  const events = frame ? eventsReached(received, period, clockMs) : received;
   const tracked = frame ? trackedMarkers(frame, clubs, players) : null;
   const named = tracked ? labelledPlayers(events, clockMs, focusPlayer, favoritePlayers) : null;
 

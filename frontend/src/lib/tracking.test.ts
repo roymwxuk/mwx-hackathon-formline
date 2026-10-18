@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { labelledPlayers, trackedMarkers } from '@/lib/tracking';
+import { eventsReached, labelledPlayers, trackedMarkers } from '@/lib/tracking';
 import type { Club, MatchEvent, Player, TrackingFrameMessage } from '@/lib/types';
 
 const clubs: Club[] = [
@@ -46,5 +46,21 @@ describe('isNewerFrame', () => {
     expect(isNewerFrame(f(1, 1250), f(1, 1000))).toBe(false); // a stale stream's frame
     expect(isNewerFrame(f(1, 1250), f(1, 1250))).toBe(false);
     expect(isNewerFrame(f(1, 2_800_000), f(2, 2_700_000))).toBe(true); // second half
+  });
+});
+
+describe('eventsReached', () => {
+  const ev = (id: string, period: number, clock: number, type: MatchEvent['type'] = 'pass', duration_ms?: number) =>
+    ({ event_id: id, version: 1, type, period, match_clock_ms: clock, team_id: 'h', player_id: 'p', x: 1, y: 1, duration_ms } as MatchEvent);
+  it('shows a pass line only once the ball has arrived', () => {
+    const pass = ev('p', 1, 10_000, 'pass', 1_200);
+    expect(eventsReached([pass], 1, 10_500)).toEqual([]); // ball still travelling
+    expect(eventsReached([pass], 1, 11_200)).toEqual([pass]);
+  });
+  it('other events once they happened; earlier periods always', () => {
+    const shot = ev('s', 1, 10_000, 'shot');
+    expect(eventsReached([shot], 1, 9_999)).toEqual([]);
+    expect(eventsReached([shot], 1, 10_000)).toEqual([shot]);
+    expect(eventsReached([ev('old', 1, 2_790_000)], 2, 2_700_100).length).toBe(1);
   });
 });
