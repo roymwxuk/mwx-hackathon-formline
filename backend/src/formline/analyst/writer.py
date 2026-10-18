@@ -53,8 +53,10 @@ class AnalystWriter:
         if msg.op == "update" and before is not None:
             if e.type == "shot" and before.outcome == "goal" and e.outcome != "goal":
                 out += self._withdraw(e.event_id)
+                # timed at the decision (now), not at the shot it overturns
                 out += await self._comment(var_pack(before, e, self._sorted(), self.clubs,
-                                                    self.home, self.away), e.player_id)
+                                                    self.home, self.away), e.player_id,
+                                           at_ms=self.clock[1])
             return out
         if self.card is not None:
             out += await self._card_comment(e if e.type == "foul_committed" else None)

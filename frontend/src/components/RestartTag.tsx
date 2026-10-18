@@ -6,11 +6,11 @@ import type { Lang, MatchEvent } from '@/lib/types';
 const SHOW_MS = 1_800; // real time, whatever the playback speed
 
 /** A small label at the top of the pitch when play restarts: throw-in, corner, goal kick… */
-export function RestartTag({ events, clockMs, lang }: { events: MatchEvent[]; clockMs: number; lang: Lang }) {
+export function RestartTag({ events, clockMs, lang, paused = false }: { events: MatchEvent[]; clockMs: number; lang: Lang; paused?: boolean }) {
   const shown = useRef(new Set<string>());
   const [restart, setRestart] = useState<MatchEvent | null>(null);
 
-  const fresh = freshRestart(events, clockMs, shown.current);
+  const fresh = paused ? undefined : freshRestart(events, clockMs, shown.current);
   useEffect(() => {
     if (!fresh) return;
     shown.current.add(fresh.event_id);

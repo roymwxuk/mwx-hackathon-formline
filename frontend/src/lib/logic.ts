@@ -1,4 +1,4 @@
-import type { MatchEvent, Overlay, Player, StreamMessage, ViewerSettings } from '@/lib/types';
+import type { AnalystComment, MatchEvent, Overlay, Player, StreamMessage, ViewerSettings } from '@/lib/types';
 
 // ---------- Event store: idempotent, keeps the highest version per event_id ----------
 
@@ -70,6 +70,25 @@ export function score(store: Map<string, MatchEvent>, clubIds: [string, string])
 export interface OverlayState {
   overlay: Overlay;
   retracted: boolean;
+}
+
+export interface CommentState {
+  comment: AnalystComment;
+  retracted: boolean;
+}
+
+/** Analyst comments in arrival order; a retract (the VAR overturn) marks its comment withdrawn. */
+export function applyComments(received: AnalystComment[]): CommentState[] {
+  const byId = new Map<string, CommentState>();
+  for (const c of received) {
+    if (c.op === 'retract') {
+      const target = c.supersedes_comment_id ? byId.get(c.supersedes_comment_id) : undefined;
+      if (target) target.retracted = true;
+    } else if (!byId.has(c.comment_id)) {
+      byId.set(c.comment_id, { comment: c, retracted: false });
+    }
+  }
+  return [...byId.values()];
 }
 
 /** Applies ops in arrival order. A retract marks its superseded overlay as withdrawn. */

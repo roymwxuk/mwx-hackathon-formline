@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Viewer } from './Viewer';
-import { applyEvents, applyOverlays, formatClock } from '@/lib/logic';
+import { applyComments, applyEvents, applyOverlays, formatClock } from '@/lib/logic';
 import { useLeague } from '@/lib/league';
 import type { ViewerSettings } from '@/lib/types';
 import { MOMENTS, useMatchStream } from '@/lib/useMatchStream';
@@ -51,8 +51,9 @@ export default function App() {
 
   const store = useMemo(() => applyEvents(stream.events), [stream.events]);
   const overlayStates = useMemo(() => applyOverlays(stream.overlays), [stream.overlays]);
+  const commentStates = useMemo(() => applyComments(stream.comments), [stream.comments]);
 
-  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame };
+  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame, commentStates, catchingUp: stream.catchingUp };
 
   return (
     <div className="app">

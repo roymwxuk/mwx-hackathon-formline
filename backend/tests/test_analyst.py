@@ -62,6 +62,7 @@ def test_the_var_overturn_withdraws_the_goal_comments(comments):
                                                                 if g["match_clock_ms"] // 1000 == 3822}
     var = [c for _, c in rows if c["question"] == "var" and c["lang"] == "en"]
     assert var and "1–0" in var[0]["body"]
+    assert var[0]["match_clock_ms"] > 65 * 60_000  # timed at the decision, not at the shot
 
 
 def test_the_red_card_explains_the_second_yellow(comments):
