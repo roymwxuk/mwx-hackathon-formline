@@ -96,8 +96,11 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
             ))}
           </div>
           <form className="ask-form" onSubmit={(e) => { e.preventDefault(); askTyped(latest); }}>
-            <input type="text" value={text} maxLength={MAX_TEXT} placeholder={str.askPlaceholder}
-              aria-label={str.askPlaceholder} onChange={(e) => setText(e.target.value)} />
+            <textarea rows={2} value={text} maxLength={MAX_TEXT} placeholder={str.askPlaceholder}
+              aria-label={str.askPlaceholder} onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { // Enter asks, Shift+Enter starts a new line (not while composing Japanese)
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); askTyped(latest); }
+              }} />
             <button type="submit" className="ctl" disabled={!text.trim()}>{str.askSend}</button>
           </form>
         </div>
