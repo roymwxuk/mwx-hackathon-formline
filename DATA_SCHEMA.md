@@ -137,6 +137,14 @@ Realism note: providers also re-issue corrected event files after the match (e.g
 
 > VAR in real feeds is a **pair of events**: review started, then review concluded with an outcome. If the goal is cancelled, the target shot then receives an `update` (outcome changed) through the envelope.
 
+### 5.5 Analyst comment (DERIVED, LLM-written and verified)
+
+`comment_id`, `op (show / retract)`, `supersedes_comment_id`, `question (shot_outcome /
+corner / card / var)`, `period`, `match_clock_ms`, `lang (en / ja)`, `headline`, `body`,
+`player_id`, `evidence[] {event_id, minute, type}`, `verified`, `source (llm / template)`.
+Streamed as `{"kind": "comment", "comment": {...}}` with an SSE id. A retract withdraws a
+comment whose event was revised (the VAR overturn).
+
 ### 5.4 Tracking frame (RAW-TRACK, synthetic)
 
 Every player on the pitch and the ball, 10 frames per second (tracking providers deliver about 25). In Formline, frames are **derived from the event feed** by a team shape model with hard event anchors and motion limits (ADR-010), for the live demo match only.

@@ -1,6 +1,8 @@
 # Plan: Match Analyst (proactive comments at key events + contextual question buttons)
 
-**Status:** Planned (2026-10-18). Not started. Owner decisions: proactive comments only after
+**Status:** Phase 1 built (2026-10-18): comments after every shot, corner and card, the VAR
+withdrawal, bubble and panel; 96 verified comments on the live match with the fake model. The
+Foundry run (about ¥1) waits for the owner's go. Phase 2 (buttons) to be decided. Owner decisions: proactive comments only after
 shots, corners and cards; button answers live with cache; one version per language; phase 1
 first, then decide on the buttons.
 
