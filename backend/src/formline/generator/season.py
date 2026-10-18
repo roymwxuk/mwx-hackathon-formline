@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from formline.generator.league import League, build_league
 from formline.generator.match_sim import MatchSim, PendingUpdate, ScriptedShot
 from formline.schema.feed import FeedMessage
-from formline.schema.reference import Match
+from formline.schema.reference import Match, MatchConditions
 
 SEASON = "2026-27"
 SEASON_START = datetime(2026, 8, 15, 14, 0, tzinfo=UTC)
@@ -108,8 +108,30 @@ def generate_season(seed: int) -> Season:
     return Season(league=league, matches=matches)
 
 
+# Fictional referees (no real officials), with Japanese renderings for the JA answers.
+REFEREES = [("Owen Hartigan", "オーウェン・ハーティガン"), ("Lewis Penrose", "ルイス・ペンローズ"),
+            ("Adam Kettering", "アダム・ケタリング"), ("Neil Wexford", "ニール・ウェックスフォード"),
+            ("Simon Arkwright", "サイモン・アークライト"), ("Craig Tolland", "クレイグ・トーランド")]
+WEATHER = [("clear", 3), ("partly cloudy", 4), ("overcast", 4), ("light rain", 3), ("rain", 1),
+           ("windy", 1)]  # an English autumn
+
+
+def conditions(seed: int, match: Match) -> MatchConditions:
+    """Weather, temperature, attendance and referee for a match, from their own random
+    stream (seeded by the match id), so adding them never changes the events."""
+    rng = random.Random(f"{seed}:{match.match_id}:conditions")
+    capacity = random.Random(f"{seed}:{match.venue}:capacity").randrange(22_000, 42_001, 500)
+    weather = rng.choices([w for w, _ in WEATHER], [n for _, n in WEATHER])[0]
+    base = 18 - (match.kickoff_at.month - 8) * 3  # mid-August ~18 °C, cooling into autumn
+    referee, referee_ja = rng.choice(REFEREES)
+    return MatchConditions(weather=weather, temperature_c=base + rng.randint(-3, 3),
+                           attendance=int(capacity * rng.uniform(0.82, 0.99)), capacity=capacity,
+                           referee=referee, referee_ja=referee_ja)
+
+
 def _play(league: League, seed: int, match_no: int, match: Match,
           script: list[ScriptedShot] | None = None) -> GeneratedMatch:
     events, updates = MatchSim(match, league, match_no, seed, script).run()
+    match = match.model_copy(update={"conditions": conditions(seed, match)})
     rng = random.Random(f"{seed}:{match.match_id}:feed")
     return GeneratedMatch(match=match, feed=build_feed(match_no, events, updates, rng))

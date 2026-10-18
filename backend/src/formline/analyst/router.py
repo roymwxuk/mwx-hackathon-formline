@@ -105,9 +105,10 @@ async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str
 
 
 DECLINE = {
-    "en": "I can only answer from this match's data: the fixture and venue, goals, shots and "
+    "en": "I can only answer from this match's data: the fixture, venue, weather, crowd and "
+          "referee, goals, shots and "
           "chances, a team or a player (profile, season, tonight), fouls and cards, corners, the "
           "last 10 minutes, and both clubs' season so far.",
-    "ja": "答えられるのはこの試合のデータだけです：試合情報と会場、ゴール、シュートと決定機、チームや"
+    "ja": "答えられるのはこの試合のデータだけです：試合情報（会場・天気・観客・審判）、ゴール、シュートと決定機、チームや"
           "選手（プロフィール・今季・今夜）、ファウルとカード、コーナー、直近10分、両チームの今季成績。",
 }

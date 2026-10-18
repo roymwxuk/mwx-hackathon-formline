@@ -155,3 +155,16 @@ def test_replay_yields_viewer_stream_messages(season):
     msg = to_stream_message(out[0])
     assert msg["kind"] == "event"
     assert msg["event"]["version"] == 1 and msg["event"]["event_id"] == out[0].event_id
+
+
+def test_match_conditions_are_plausible_and_do_not_change_the_events():
+    from formline.generator.season import REFEREES, conditions
+
+    season = generate_season(2026)
+    for gm in season.matches:
+        c = gm.match.conditions
+        assert c is not None and 0.8 * c.capacity <= c.attendance <= c.capacity
+        assert 0 <= c.temperature_c <= 22 and (c.referee, c.referee_ja) in REFEREES
+        assert conditions(2026, gm.match) == c  # its own stream: deterministic per match
+    live = next(g for g in season.matches if g.match.is_live_demo)
+    assert live.match.conditions.weather and len(live.feed) > 1000

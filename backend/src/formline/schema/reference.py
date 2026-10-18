@@ -44,6 +44,17 @@ class Player(BaseModel):
     preferred_foot: Literal["left", "right"]
 
 
+class MatchConditions(BaseModel):
+    """Match-day metadata, as in professional match feeds (synthetic; the referee is fictional)."""
+
+    weather: Literal["clear", "partly cloudy", "overcast", "light rain", "rain", "windy"]
+    temperature_c: int
+    attendance: int
+    capacity: int
+    referee: str
+    referee_ja: str
+
+
 class Match(BaseModel):
     match_id: str
     season: str
@@ -53,3 +64,4 @@ class Match(BaseModel):
     away_club_id: str
     venue: str
     is_live_demo: bool
+    conditions: MatchConditions | None = None

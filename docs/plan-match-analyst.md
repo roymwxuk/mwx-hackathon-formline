@@ -143,6 +143,9 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   shot: public profile (club, shirt number, position, preferred foot; never the generator's
   hidden ratings), his season before tonight (appearances, goals, assists, shots, shot-speed
   norm) and his involvement tonight; "info about reyner?" at 2' was declined before.
+  Matches now carry match-day `conditions` (weather, temperature, attendance, a fictional
+  referee) from a per-match random stream (events byte-identical), so "how was the
+  weather?" is answered from `match_info`.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are

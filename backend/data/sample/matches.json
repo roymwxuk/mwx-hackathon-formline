@@ -7,7 +7,15 @@
     "home_club_id": "clb_harbourside",
     "away_club_id": "clb_corranvale",
     "venue": "Quayside Park",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 19,
+      "attendance": 34529,
+      "capacity": 42000,
+      "referee": "Craig Tolland",
+      "referee_ja": "クレイグ・トーランド"
+    }
   },
   {
     "match_id": "mtc_s26_md01_kes_nor",
@@ -17,7 +25,15 @@
     "home_club_id": "clb_kestrelbay",
     "away_club_id": "clb_northgate",
     "venue": "Cliff Road",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 16,
+      "attendance": 30836,
+      "capacity": 35000,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md01_eld_tho",
@@ -27,7 +43,15 @@
     "home_club_id": "clb_elderwick",
     "away_club_id": "clb_thornmoor",
     "venue": "The Elder Ground",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 18,
+      "attendance": 25480,
+      "capacity": 30500,
+      "referee": "Craig Tolland",
+      "referee_ja": "クレイグ・トーランド"
+    }
   },
   {
     "match_id": "mtc_s26_md02_kes_har",
@@ -37,7 +61,15 @@
     "home_club_id": "clb_kestrelbay",
     "away_club_id": "clb_harbourside",
     "venue": "Cliff Road",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 17,
+      "attendance": 31929,
+      "capacity": 35000,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md02_cor_tho",
@@ -47,7 +79,15 @@
     "home_club_id": "clb_corranvale",
     "away_club_id": "clb_thornmoor",
     "venue": "Vale Arena",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "overcast",
+      "temperature_c": 17,
+      "attendance": 32868,
+      "capacity": 39000,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md02_eld_nor",
@@ -57,7 +97,15 @@
     "home_club_id": "clb_elderwick",
     "away_club_id": "clb_northgate",
     "venue": "The Elder Ground",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 19,
+      "attendance": 28994,
+      "capacity": 30500,
+      "referee": "Owen Hartigan",
+      "referee_ja": "オーウェン・ハーティガン"
+    }
   },
   {
     "match_id": "mtc_s26_md03_har_tho",
@@ -67,7 +115,15 @@
     "home_club_id": "clb_harbourside",
     "away_club_id": "clb_thornmoor",
     "venue": "Quayside Park",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 17,
+      "attendance": 36721,
+      "capacity": 42000,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md03_eld_kes",
@@ -77,7 +133,15 @@
     "home_club_id": "clb_elderwick",
     "away_club_id": "clb_kestrelbay",
     "venue": "The Elder Ground",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 18,
+      "attendance": 25371,
+      "capacity": 30500,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md03_cor_nor",
@@ -87,7 +151,15 @@
     "home_club_id": "clb_corranvale",
     "away_club_id": "clb_northgate",
     "venue": "Vale Arena",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "overcast",
+      "temperature_c": 16,
+      "attendance": 38003,
+      "capacity": 39000,
+      "referee": "Owen Hartigan",
+      "referee_ja": "オーウェン・ハーティガン"
+    }
   },
   {
     "match_id": "mtc_s26_md04_eld_har",
@@ -97,7 +169,15 @@
     "home_club_id": "clb_elderwick",
     "away_club_id": "clb_harbourside",
     "venue": "The Elder Ground",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 13,
+      "attendance": 27010,
+      "capacity": 30500,
+      "referee": "Adam Kettering",
+      "referee_ja": "アダム・ケタリング"
+    }
   },
   {
     "match_id": "mtc_s26_md04_tho_nor",
@@ -107,7 +187,15 @@
     "home_club_id": "clb_thornmoor",
     "away_club_id": "clb_northgate",
     "venue": "Moorside Stadium",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 13,
+      "attendance": 19102,
+      "capacity": 22500,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md04_cor_kes",
@@ -117,7 +205,15 @@
     "home_club_id": "clb_corranvale",
     "away_club_id": "clb_kestrelbay",
     "venue": "Vale Arena",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 16,
+      "attendance": 33824,
+      "capacity": 39000,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md05_har_nor",
@@ -127,7 +223,15 @@
     "home_club_id": "clb_harbourside",
     "away_club_id": "clb_northgate",
     "venue": "Quayside Park",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 18,
+      "attendance": 39945,
+      "capacity": 42000,
+      "referee": "Owen Hartigan",
+      "referee_ja": "オーウェン・ハーティガン"
+    }
   },
   {
     "match_id": "mtc_s26_md05_cor_eld",
@@ -137,7 +241,15 @@
     "home_club_id": "clb_corranvale",
     "away_club_id": "clb_elderwick",
     "venue": "Vale Arena",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 14,
+      "attendance": 32748,
+      "capacity": 39000,
+      "referee": "Craig Tolland",
+      "referee_ja": "クレイグ・トーランド"
+    }
   },
   {
     "match_id": "mtc_s26_md05_tho_kes",
@@ -147,7 +259,15 @@
     "home_club_id": "clb_thornmoor",
     "away_club_id": "clb_kestrelbay",
     "venue": "Moorside Stadium",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 14,
+      "attendance": 19171,
+      "capacity": 22500,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md06_cor_har",
@@ -157,7 +277,15 @@
     "home_club_id": "clb_corranvale",
     "away_club_id": "clb_harbourside",
     "venue": "Vale Arena",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 16,
+      "attendance": 33011,
+      "capacity": 39000,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md06_nor_kes",
@@ -167,7 +295,15 @@
     "home_club_id": "clb_northgate",
     "away_club_id": "clb_kestrelbay",
     "venue": "Gatehouse Lane",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 18,
+      "attendance": 22847,
+      "capacity": 27000,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md06_tho_eld",
@@ -177,7 +313,15 @@
     "home_club_id": "clb_thornmoor",
     "away_club_id": "clb_elderwick",
     "venue": "Moorside Stadium",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "windy",
+      "temperature_c": 18,
+      "attendance": 19514,
+      "capacity": 22500,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md07_har_kes",
@@ -187,7 +331,15 @@
     "home_club_id": "clb_harbourside",
     "away_club_id": "clb_kestrelbay",
     "venue": "Quayside Park",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 16,
+      "attendance": 36047,
+      "capacity": 42000,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md07_tho_cor",
@@ -197,7 +349,15 @@
     "home_club_id": "clb_thornmoor",
     "away_club_id": "clb_corranvale",
     "venue": "Moorside Stadium",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 14,
+      "attendance": 22030,
+      "capacity": 22500,
+      "referee": "Simon Arkwright",
+      "referee_ja": "サイモン・アークライト"
+    }
   },
   {
     "match_id": "mtc_s26_md07_nor_eld",
@@ -207,7 +367,15 @@
     "home_club_id": "clb_northgate",
     "away_club_id": "clb_elderwick",
     "venue": "Gatehouse Lane",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "windy",
+      "temperature_c": 17,
+      "attendance": 22346,
+      "capacity": 27000,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md08_tho_har",
@@ -217,7 +385,15 @@
     "home_club_id": "clb_thornmoor",
     "away_club_id": "clb_harbourside",
     "venue": "Moorside Stadium",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 13,
+      "attendance": 20621,
+      "capacity": 22500,
+      "referee": "Adam Kettering",
+      "referee_ja": "アダム・ケタリング"
+    }
   },
   {
     "match_id": "mtc_s26_md08_kes_eld",
@@ -227,7 +403,15 @@
     "home_club_id": "clb_kestrelbay",
     "away_club_id": "clb_elderwick",
     "venue": "Cliff Road",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "overcast",
+      "temperature_c": 10,
+      "attendance": 29762,
+      "capacity": 35000,
+      "referee": "Adam Kettering",
+      "referee_ja": "アダム・ケタリング"
+    }
   },
   {
     "match_id": "mtc_s26_md08_nor_cor",
@@ -237,7 +421,15 @@
     "home_club_id": "clb_northgate",
     "away_club_id": "clb_corranvale",
     "venue": "Gatehouse Lane",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 12,
+      "attendance": 25339,
+      "capacity": 27000,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md09_har_eld",
@@ -247,7 +439,15 @@
     "home_club_id": "clb_harbourside",
     "away_club_id": "clb_elderwick",
     "venue": "Quayside Park",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 13,
+      "attendance": 37376,
+      "capacity": 42000,
+      "referee": "Lewis Penrose",
+      "referee_ja": "ルイス・ペンローズ"
+    }
   },
   {
     "match_id": "mtc_s26_md09_nor_tho",
@@ -257,7 +457,15 @@
     "home_club_id": "clb_northgate",
     "away_club_id": "clb_thornmoor",
     "venue": "Gatehouse Lane",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "windy",
+      "temperature_c": 10,
+      "attendance": 25040,
+      "capacity": 27000,
+      "referee": "Craig Tolland",
+      "referee_ja": "クレイグ・トーランド"
+    }
   },
   {
     "match_id": "mtc_s26_md09_kes_cor",
@@ -267,7 +475,15 @@
     "home_club_id": "clb_kestrelbay",
     "away_club_id": "clb_corranvale",
     "venue": "Cliff Road",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "light rain",
+      "temperature_c": 10,
+      "attendance": 34269,
+      "capacity": 35000,
+      "referee": "Owen Hartigan",
+      "referee_ja": "オーウェン・ハーティガン"
+    }
   },
   {
     "match_id": "mtc_s26_md10_nor_har",
@@ -277,7 +493,15 @@
     "home_club_id": "clb_northgate",
     "away_club_id": "clb_harbourside",
     "venue": "Gatehouse Lane",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 10,
+      "attendance": 25166,
+      "capacity": 27000,
+      "referee": "Craig Tolland",
+      "referee_ja": "クレイグ・トーランド"
+    }
   },
   {
     "match_id": "mtc_s26_md10_eld_cor",
@@ -287,7 +511,15 @@
     "home_club_id": "clb_elderwick",
     "away_club_id": "clb_corranvale",
     "venue": "The Elder Ground",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "partly cloudy",
+      "temperature_c": 14,
+      "attendance": 25685,
+      "capacity": 30500,
+      "referee": "Neil Wexford",
+      "referee_ja": "ニール・ウェックスフォード"
+    }
   },
   {
     "match_id": "mtc_s26_md10_kes_tho",
@@ -297,7 +529,15 @@
     "home_club_id": "clb_kestrelbay",
     "away_club_id": "clb_thornmoor",
     "venue": "Cliff Road",
-    "is_live_demo": false
+    "is_live_demo": false,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 12,
+      "attendance": 31844,
+      "capacity": 35000,
+      "referee": "Owen Hartigan",
+      "referee_ja": "オーウェン・ハーティガン"
+    }
   },
   {
     "match_id": "mtc_s26_md11_har_nor",
@@ -307,6 +547,14 @@
     "home_club_id": "clb_harbourside",
     "away_club_id": "clb_northgate",
     "venue": "Quayside Park",
-    "is_live_demo": true
+    "is_live_demo": true,
+    "conditions": {
+      "weather": "clear",
+      "temperature_c": 10,
+      "attendance": 36732,
+      "capacity": 42000,
+      "referee": "Adam Kettering",
+      "referee_ja": "アダム・ケタリング"
+    }
   }
 ]

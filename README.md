@@ -240,6 +240,9 @@ tracking data capture today.
   its events by a team-shape model with event anchors and motion limits (ADR-010), as
   professional feeds pair event data with optical tracking. Its realism is measured in the
   same report, including where it falls short.
+- **Match-day metadata:** each match carries weather, temperature, attendance and a
+  fictional referee, as professional match feeds do, from its own random stream so the
+  events never change.
 - **Sample:** `backend/data/sample/` holds the league, the match list, a live-feed excerpt
   including the VAR correction, and 20 s of tracking.
 
@@ -396,7 +399,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
 - **Typed questions are answered from 10 fact sections.** A question needing facts outside
-  them (attendance, weather, the referee, a player's age or injuries, a time window other
+  them (team news, a player's age or injuries, the referee's reasons, a time window other
   than the last 10 minutes) gets a partial answer or a decline, never invented facts. Player
   profiles use only public fields (club, shirt number, position, preferred foot); the
   generator's hidden ratings are never shown. Suggested chips come from a

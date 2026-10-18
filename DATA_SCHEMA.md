@@ -45,7 +45,7 @@ Every **raw** field below exists in real professional football data today, eithe
 Hidden "true" tendencies used to generate events, such as shot power mean and sd, placement skill, shot volume, long-range tendency and pressure sensitivity. **Never visible to the engine.** Use it afterwards to measure how well estimated baselines recover the truth.
 
 ### 2.4 `match` (RAW-EVENT, match sheet data)
-`match_id`, `season`, `matchday`, `kickoff_at`, `home_club_id`, `away_club_id`, `venue` (fictional), `is_live_demo` (internal flag)
+`match_id`, `season`, `matchday`, `kickoff_at`, `home_club_id`, `away_club_id`, `venue` (fictional), `is_live_demo` (internal flag), `conditions {weather, temperature_c, attendance, capacity, referee, referee_ja}` (match-day metadata as in professional match feeds; the referee is fictional; drawn from a per-match random stream, so the events never change)
 
 ---
 
@@ -171,7 +171,8 @@ chars), lang}` (the latest event the viewer has received: the backend replays th
 that message, so a question can be asked from kick-off and never trusts a clock) returns `{retrieved {sections[], club_id, player_id, label} | null, answer
 {question: "free", lang, headline, body, coverage (full / partial), evidence[], verified,
 source, cached} | null, declined | null}`. Sections: `match_info` (season, matchday,
-venue, kick-off, home and away, both clubs' record before tonight from the history),
+venue, kick-off, home and away, weather, attendance, referee, both clubs' record before
+tonight from the history),
 `situation`, `score`, `team_stats`,
 `team_tonight` (club), `player_info` (any squad player: club, shirt number, position,
 preferred foot, season before tonight from the history, involvement tonight),

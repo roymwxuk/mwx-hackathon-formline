@@ -116,8 +116,8 @@ def test_questions_between_the_old_categories_get_their_own_facts(match):
 
 
 def test_where_the_match_is_played_comes_from_the_match_info(match):
-    """Reported: "where is this game host" was declined; the fixture is in the match list."""
-    _, ctx, _, _ = match
+    """Reported: "where is this game host" and "how was the weather" were declined."""
+    gm, ctx, _, _ = match
     out = ask(match, "where is this game hosted?")
     assert out["retrieved"]["sections"] == ["match_info"]
     assert "Quayside Park" in out["answer"]["body"] and out["answer"]["verified"]
@@ -127,6 +127,11 @@ def test_where_the_match_is_played_comes_from_the_match_info(match):
     assert info["venue"] == "played at Quayside Park, the home ground of Harbourside Athletic"
     assert info["season"] == "season 2026-27, matchday 11"
     assert "not in the data" in info["not_in_the_data"]
+    c = gm.match.conditions
+    assert info["weather"] == f"{c.weather}, {c.temperature_c} °C at kick-off"
+    assert info["referee"].startswith(f"referee {c.referee}")
+    weather = ask(match, "how was the weather?")
+    assert weather["retrieved"]["sections"] == ["match_info"] and c.weather in weather["answer"]["body"]
     rec = ctx.records[ctx.home]
     assert rec["played"] == rec["won"] + rec["drawn"] + rec["lost"] > 0
     assert f"{rec['played']} played, {rec['won']} won" in info["season_so_far"]
@@ -163,7 +168,7 @@ def test_a_player_who_has_not_shot_gets_his_profile(match):
 
 
 def test_questions_the_data_cannot_answer_are_declined(match):
-    for text in ("what's the weather like?", "who will win the league?"):
+    for text in ("who will win the league?", "what did the coach say at half-time?"):
         out = ask(match, text)
         assert out["retrieved"] is None and out["answer"] is None
         assert "match's data" in out["declined"]

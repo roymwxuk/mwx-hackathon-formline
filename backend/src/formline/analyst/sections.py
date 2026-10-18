@@ -32,7 +32,8 @@ MAX_SECTIONS = 3
 # What each section holds: the Router reads these to choose.
 SECTIONS = {
     "match_info": "the fixture: competition, season and matchday, the venue, the kick-off time, "
-                  "which team is at home, both clubs' season record before tonight",
+                  "which team is at home, weather and temperature, attendance, the referee, "
+                  "both clubs' season record before tonight",
     "situation": "the score, the goals and the shots so far, the last 10 minutes in brief, cards",
     "score": "why the score is what it is: goals and their chance quality, the best missed "
              "chances, the goalkeepers' saves",
@@ -151,16 +152,24 @@ def match_info(m: Moment, info: dict, records: dict) -> tuple[dict, list[str]]:
     home, away = m.clubs[m.home], m.clubs[m.away]
     kickoff = datetime.fromisoformat(str(info["kickoff_at"]))
     now = max(m.events, key=_key)
-    facts = {
-        "competition": "a synthetic league of six fictional clubs",
-        "season": f"season {info['season']}, matchday {info['matchday']}",
+    facts: dict = {
         "fixture": f"{home} (home) against {away} (away)",
         "venue": f"played at {info['venue']}, the home ground of {home}",
+    }
+    c = info.get("conditions")
+    if c:
+        facts["weather"] = f"{c['weather']}, {c['temperature_c']} °C at kick-off"
+        facts["attendance"] = f"{c['attendance']:,} spectators (capacity {c['capacity']:,})"
+        facts["referee"] = f"referee {c['referee']}"
+    facts |= {
         "kick_off": f"kick-off {kickoff:%H:%M} UTC on {kickoff.day} {kickoff:%B %Y}",
         "now": f"minute {_minute(now)}, {'first' if now.period == 1 else 'second'} half",
+        "season": f"season {info['season']}, matchday {info['matchday']}",
+        "competition": "a synthetic league of six fictional clubs",
         "season_so_far": "before tonight: " + "; ".join(
-            _record_text(m.clubs[c], records.get(c)) for c in (m.home, m.away)),
-        "not_in_the_data": "attendance, weather, the referee and team news are not in the data",
+            _record_text(m.clubs[club], records.get(club)) for club in (m.home, m.away)),
+        "not_in_the_data": ("team news, injuries and the referee's reasons for decisions are "
+                            "not in the data"),
     }
     return facts, []
 
