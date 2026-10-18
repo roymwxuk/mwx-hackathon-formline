@@ -63,6 +63,68 @@ def allowed_numbers(pack: FactsPack) -> set[str]:
     return nums | {n[:-2] for n in nums if n.endswith(".0")}
 
 
+# Clause boundaries: sentence ends, semicolons, Japanese commas, and commas that are not
+# thousands separators ("36,732"); a full stop between digits is a decimal point.
+CLAUSE = re.compile(r"(?<!\d)\.(?!\d)|\.\s|[;!?。；！？、]|,(?!\d)")
+SCORE = re.compile(r"\d+\s*[–-]\s*\d+")  # "1–0": a score, not anyone's count
+
+
+def _with_whole(nums: set[str]) -> set[str]:
+    return nums | {n[:-2] for n in nums if n.endswith(".0")}
+
+
+def bound_numbers(pack: FactsPack) -> dict[str, set[str]]:
+    """role -> the numbers that belong to that player in the facts.
+
+    A fact clause naming exactly one role gives its numbers to that role; a section whose
+    "player" fact is a role (a profile, his recent games) belongs to that role entirely.
+    Clauses naming several roles give their numbers to each of them."""
+    bound: dict[str, set[str]] = {r: set() for r in pack.roles}
+
+    def visit(value, owner: str | None) -> None:
+        if isinstance(value, dict):
+            own = value.get("player") if value.get("player") in pack.roles else owner
+            for v in value.values():
+                visit(v, own)
+            return
+        if isinstance(value, (list, tuple)):
+            for v in value:
+                visit(v, owner)
+            return
+        text = normalize(str(value))
+        for clause in CLAUSE.split(text):
+            nums = set(NUMBER.findall(clause))
+            named = [r for r in pack.roles if r in clause]
+            for r in named + ([owner] if owner else []):
+                bound[r] |= nums
+    visit(pack.facts, None)
+    return {r: _with_whole(n) for r, n in bound.items()}
+
+
+def _check_binding(text: str, ctx: AnswerContext, league: LeagueNames) -> list[Failure]:
+    """In a clause that names a player, every number must be one of his numbers in FACTS
+    (scores like 1–0 excepted). Catches counts swapped between players."""
+    bound = bound_numbers(ctx.pack)
+    forms = {r: _forms(*league.players[pid], ctx.lang) for r, pid in ctx.pack.roles.items()
+             if pid in league.players}
+    out = []
+    for clause in CLAUSE.split(text):
+        named = [r for r, fs in forms.items()
+                 if any((re.search(rf"\b{re.escape(f)}\b", clause) if ctx.lang == "en" else f in clause)
+                        for f in fs)]
+        if not named:
+            continue
+        own = set().union(*(bound[r] for r in named))
+        for num in NUMBER.findall(SCORE.sub(" ", clause)):
+            if num not in own:
+                who = " / ".join(sorted({min(forms[r], key=len) for r in named}))
+                out.append(Failure("binding", f"{num} is not a number of {who} in FACTS "
+                                              f"(in: \"{clause.strip()[:60]}\"); give each player "
+                                              "only his own numbers"))
+                break
+    return out
+
+
 def _forms(en: str, ja: str, lang: str) -> set[str]:
     return {en, en.split()[-1]} if lang == "en" else {ja, ja.split("・")[-1]}
 
@@ -115,6 +177,8 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
         failures.append(Failure("estimates", "percentages and xG are model estimates; say so, e.g. "
                                              + ("（推定）" if ctx.lang == "ja" else "(model estimate)")))
     failures += _check_certainty(text, vctx)
+    if ctx.free:  # typed answers merge several players' facts: bind numbers to their player
+        failures += _check_binding(text, ctx, league)
     roles = [r for r in SNAKE_CASE.findall(text)] + [r for r in ctx.pack.roles if r in text]
     if roles:
         failures.append(Failure("jargon", f"internal labels or role placeholders shown ({', '.join(roles)}); "
