@@ -66,8 +66,8 @@ details.panel[open] summary { margin-bottom: 8px; }
 /* ---------- Stage: pitch + overlays ---------- */
 .stage { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
 .pitch { display: block; width: 100%; height: auto; }
-.ball, .track-player { transition: transform 0.25s linear; }
-@media (prefers-reduced-motion: reduce) { .ball, .track-player { transition: none; } }
+.ball { transition: transform 0.25s linear; } /* event-only mode; tracking animates in JS */
+@media (prefers-reduced-motion: reduce) { .ball { transition: none; } }
 .pitch-label { font: 600 16px var(--body); fill: #fff; paint-order: stroke; stroke: #0d1117; stroke-width: 5px; }
 .pitch-number { font: 700 16px var(--body); }
 .pitch-gk { font: 700 11px var(--body); fill: #111; }
