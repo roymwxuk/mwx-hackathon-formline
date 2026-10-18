@@ -139,7 +139,10 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   before any comment, and always reflect the current minute. A `match_info` section (from
   `matches.json`: season, matchday, venue, kick-off, home and away; plus both clubs' record
   before tonight from the 30 history matches) answers "where is this game played?", which was
-  declined before.
+  declined before. A `player_info` section covers any squad player, not just those who have
+  shot: public profile (club, shirt number, position, preferred foot; never the generator's
+  hidden ratings), his season before tonight (appearances, goals, assists, shots, shot-speed
+  norm) and his involvement tonight; "info about reyner?" at 2' was declined before.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are

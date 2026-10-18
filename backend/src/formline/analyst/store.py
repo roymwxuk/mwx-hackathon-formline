@@ -42,6 +42,7 @@ class MatchContext:
     # the fixture (season, matchday, kick-off, venue) and each club's record before tonight
     info: dict = field(default_factory=dict)
     records: dict = field(default_factory=dict)
+    player_seasons: dict = field(default_factory=dict)  # player id -> season before tonight
 
 
 def match_context(data_dir: Path, match_id: str) -> MatchContext:
@@ -50,7 +51,8 @@ def match_context(data_dir: Path, match_id: str) -> MatchContext:
     match = next(m for m in matches if m["match_id"] == match_id)
     return MatchContext(league_names(players, clubs), {p.player_id: p for p in players},
                         {c.club_id: c.name for c in clubs}, match["home_club_id"],
-                        match["away_club_id"], info=match, records=_records(data_dir))
+                        match["away_club_id"], info=match, records=_records(data_dir),
+                        player_seasons=_player_seasons(data_dir))
 
 
 def season_records(results: Iterable[tuple[str, str, int, int]]) -> dict[str, dict]:
@@ -68,19 +70,54 @@ def season_records(results: Iterable[tuple[str, str, int, int]]) -> dict[str, di
     return rec
 
 
-@cache
-def _records(data_dir: Path) -> dict[str, dict]:
-    """Season records from the generated history (every match but the live one)."""
+def player_season_stats(matches: Iterable[list]) -> dict[str, dict]:
+    """player id -> {appearances, goals, assists, shots, on_target} over matches (each a
+    list of its events, latest versions). Appearances count matches with any event of his."""
+    stats: dict[str, dict] = {}
+
+    def row(pid: str) -> dict:
+        return stats.setdefault(pid, {"appearances": 0, "goals": 0, "assists": 0, "shots": 0,
+                                      "on_target": 0})
+    for events in matches:
+        by_id = {e.event_id: e for e in events}
+        seen: set[str] = set()
+        for e in events:
+            seen |= {p for p in (getattr(e, "player_id", None), getattr(e, "player_on_id", None)) if p}
+            if e.type != "shot":
+                continue
+            r = row(e.player_id)
+            r["shots"] += 1
+            r["on_target"] += e.outcome in ("goal", "saved")
+            if e.outcome == "goal":
+                r["goals"] += 1
+                kp = by_id.get(e.key_pass_event_id or "")
+                if kp is not None and kp.player_id:
+                    row(kp.player_id)["assists"] += 1
+        for pid in seen:
+            row(pid)["appearances"] += 1
+    return stats
+
+
+def _history_events(data_dir: Path) -> list[tuple[dict, list]]:
     from formline.engine.log import current_events
     from formline.generator.output import read_feed
 
     matches = json.loads((data_dir / "matches.json").read_text(encoding="utf-8"))
+    return [(m, current_events(read_feed(data_dir / "feeds" / f"{m['match_id']}.jsonl")))
+            for m in matches if not m["is_live_demo"]]
+
+
+@cache
+def _player_seasons(data_dir: Path) -> dict[str, dict]:
+    return player_season_stats(events for _, events in _history_events(data_dir))
+
+
+@cache
+def _records(data_dir: Path) -> dict[str, dict]:
+    """Season records from the generated history (every match but the live one)."""
     results = []
-    for m in matches:
-        if m["is_live_demo"]:
-            continue
-        goals = [e.team_id for e in current_events(read_feed(data_dir / "feeds" / f"{m['match_id']}.jsonl"))
-                 if e.type == "shot" and e.outcome == "goal"]
+    for m, events in _history_events(data_dir):
+        goals = [e.team_id for e in events if e.type == "shot" and e.outcome == "goal"]
         results.append((m["home_club_id"], m["away_club_id"], goals.count(m["home_club_id"]),
                         goals.count(m["away_club_id"])))
     return season_records(results)

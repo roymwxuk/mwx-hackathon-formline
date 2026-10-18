@@ -13,9 +13,9 @@ from formline.agents.llm import LLMConfig, make_runner
 from formline.agents.verifier import league_names
 from formline.analyst.ask import AskError, answer_free, known_events
 from formline.analyst.followups import Moment, moment_kind
-from formline.analyst.router import check_route, shooters
+from formline.analyst.router import check_route, shooters, squad
 from formline.analyst.sections import facts_for
-from formline.analyst.store import MatchContext, season_records
+from formline.analyst.store import MatchContext, player_season_stats, season_records
 from formline.analyst.verify import AnswerContext, verify_answer
 from formline.analyst.writer import AnalystWriter, write_comments
 from formline.config import settings
@@ -36,14 +36,16 @@ def match():
     clubs = {c.club_id: c.name for c in season.league.clubs}
     short = {c.club_id: c.short_name for c in season.league.clubs}
     history = [g for g in season.matches if not g.match.is_live_demo]
-    results = []
+    results, history_events = [], []
     for g in history:
+        history_events.append(current_events(g.feed))
         goals = [e.team_id for e in current_events(g.feed) if e.type == "shot" and e.outcome == "goal"]
         results.append((g.match.home_club_id, g.match.away_club_id,
                         goals.count(g.match.home_club_id), goals.count(g.match.away_club_id)))
     ctx = MatchContext(league_names(season.league.players, season.league.clubs), players, clubs,
                        gm.match.home_club_id, gm.match.away_club_id,
-                       info=gm.match.model_dump(), records=season_records(results))
+                       info=gm.match.model_dump(), records=season_records(results),
+                       player_seasons=player_season_stats(history_events))
     w = AnalystWriter(make_runner(LLMConfig(), fake_responder=FakeAgents()), ctx.league,
                       ctx.players, ctx.clubs, ctx.home, ctx.away)
     rows = asyncio.run(write_comments(gm.feed, w))
@@ -130,6 +132,36 @@ def test_where_the_match_is_played_comes_from_the_match_info(match):
     assert f"{rec['played']} played, {rec['won']} won" in info["season_so_far"]
 
 
+def test_any_player_has_a_profile_and_a_season_from_kick_off(match):
+    """Reported: "info about reyner?" at 2' was declined (he had not shot yet)."""
+    gm, ctx, _, _ = match
+    first = next(m for m in gm.feed if m.event is not None)
+    out = ask(match, "info about reyner?", as_of=(first.event_id, first.version))
+    assert out["retrieved"]["sections"] == ["player_info"]
+    assert out["retrieved"]["player_id"] == REYNER and out["retrieved"]["label"] == "About Reyner"
+    m = moment(match)
+    info = facts_for(["player_info"], m, player_id=REYNER, seasons=ctx.player_seasons).facts["player_info"]
+    assert info["club"] == "Harbourside Athletic"
+    assert info["profile"] == "shirt number 9, striker, right-footed"
+    season = ctx.player_seasons[REYNER]
+    assert info["season_before_tonight"].startswith(f"{season['appearances']} appearance(s), "
+                                                    f"{season['goals']} goal(s)")
+    assert season["appearances"] > 0 and season["shots"] >= season["on_target"] >= season["goals"]
+    # only public fields: nothing from the generator's hidden profiles
+    assert set(info) <= {"player", "club", "profile", "season_before_tonight", "shot_speed_norm",
+                         "substitution", "tonight", "not_in_the_data"}
+
+
+def test_a_player_who_has_not_shot_gets_his_profile(match):
+    m = moment(match)
+    keeper = next(pid for pid in squad(m) if m.players[pid].position == "GK"
+                  and pid not in shooters(m))
+    surname = match[1].league.players[keeper][0].split()[-1]
+    out = ask(match, f"how is {surname} doing?")
+    assert out["retrieved"]["sections"] == ["player_info"] and out["retrieved"]["player_id"] == keeper
+    assert "goalkeeper" in out["answer"]["body"]
+
+
 def test_questions_the_data_cannot_answer_are_declined(match):
     for text in ("what's the weather like?", "who will win the league?"):
         out = ask(match, text)
@@ -156,6 +188,11 @@ def test_router_replies_are_checked_in_code(match):
     assert "1 to 3" in check_route({"sections": ["score", "chances", "recent", "discipline"]}, m)
     assert "club_id" in check_route({"sections": ["team_tonight"], "club_id": other_club}, m)
     assert "PLAYERS" in check_route({"sections": ["player_tonight"], "player_id": nobody}, m)
+    elsewhere = next(pid for pid, p in match[1].players.items() if p.club_id == other_club)
+    assert check_route({"sections": ["player_info"], "player_id": nobody}, m) is None
+    assert "PLAYERS" in check_route({"sections": ["player_info"], "player_id": elsewhere}, m)
+    assert "not both" in check_route({"sections": ["player_info", "player_tonight"],
+                                      "player_id": REYNER}, m)
 
 
 def test_a_misbehaving_router_declines_instead_of_guessing(match):

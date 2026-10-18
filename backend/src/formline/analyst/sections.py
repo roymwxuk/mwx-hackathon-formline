@@ -41,6 +41,9 @@ SECTIONS = {
                     "best missed chances, the opposing goalkeeper's saves, corners, cards",
     "player_tonight": "one player who has shot (needs player_id): his shots, on target, goals, "
                       "best chance, fastest shot, speed vs his own season norm",
+    "player_info": "any player of either squad (needs player_id): club, shirt number, "
+                   "position, preferred foot, his season before tonight (appearances, goals, "
+                   "assists, shots, shot-speed norm) and what he has done tonight",
     "chances": "the best chances of the match so far, both teams, by chance quality",
     "discipline": "fouls and cards per team, and who was booked or sent off",
     "recent": "the last 10 minutes: shots, corners and cards per team, and each shot",
@@ -49,10 +52,12 @@ SECTIONS = {
 LABELS = {
     "en": {"match_info": "Match info", "situation": "Match so far", "score": "Score", "team_stats": "Team comparison",
            "team_tonight": "{club} tonight", "player_tonight": "{player} tonight",
+           "player_info": "About {player}",
            "chances": "Best chances", "discipline": "Fouls and cards",
            "recent": "Last 10 minutes"},
     "ja": {"match_info": "試合情報", "situation": "試合の流れ", "score": "スコア", "team_stats": "両チーム比較",
            "team_tonight": "今夜の{club}", "player_tonight": "今夜の{player}",
+           "player_info": "{player}について",
            "chances": "決定機", "discipline": "ファウルとカード", "recent": "直近10分"},
 }
 
@@ -160,6 +165,51 @@ def match_info(m: Moment, info: dict, records: dict) -> tuple[dict, list[str]]:
     return facts, []
 
 
+POSITION = {"GK": "goalkeeper", "RB": "right back", "CB": "centre back", "LB": "left back",
+            "DM": "defensive midfielder", "CM": "central midfielder",
+            "AM": "attacking midfielder", "RW": "right winger", "LW": "left winger",
+            "ST": "striker"}
+
+
+def player_info(m: Moment, roles: _Roles, pid: str, seasons: dict,
+                norm: Callable[[str], float | None] | None) -> tuple[dict, list[str]]:
+    """A player's public profile (never the generator's hidden ratings), his season before
+    tonight from the history, and his involvement tonight so far."""
+    p = m.players[pid]
+    s = seasons.get(pid, {"appearances": 0, "goals": 0, "assists": 0, "shots": 0, "on_target": 0})
+    mine = [e for e in m.events if getattr(e, "player_id", None) == pid]
+    passes = [e for e in mine if e.type == "pass"]
+    shots = [e for e in mine if e.type == "shot"]
+    won = [e for e in mine if e.type in ("duel", "interception", "ball_recovery")]
+    facts: dict = {
+        "player": roles("PLAYER", pid),
+        "club": m.clubs[p.club_id],
+        "profile": (f"shirt number {p.shirt_number}, {POSITION.get(p.position, p.position)}, "
+                    f"{p.preferred_foot}-footed"),
+        "season_before_tonight": (f"{s['appearances']} appearance(s), {s['goals']} goal(s), "
+                                  f"{s['assists']} assist(s), {s['shots']} shot(s), "
+                                  f"{s['on_target']} on target"),
+    }
+    speed = norm(pid) if norm else None
+    if speed:
+        facts["shot_speed_norm"] = (f"season shot-speed norm {round(speed)} km/h with his "
+                                    "stronger foot (model estimate)")
+    subs = [e for e in m.events if e.type == "substitution" and pid in (e.player_off_id, e.player_on_id)]
+    if subs:
+        sub = subs[-1]
+        facts["substitution"] = (f"{'came on' if sub.player_on_id == pid else 'was substituted'} "
+                                 f"in minute {_minute(sub)}")
+    if mine or subs:
+        facts["tonight"] = (f"tonight so far: {sum(e.outcome == 'complete' for e in passes)} of "
+                            f"{len(passes)} passes completed, {len(shots)} shot(s), "
+                            f"{sum(e.type == 'foul_committed' for e in mine)} foul(s), "
+                            f"{len(won)} duel(s), interception(s) or recoveries")
+    else:
+        facts["tonight"] = "not involved tonight so far (no events of his yet)"
+    facts["not_in_the_data"] = "age, height, nationality, contract and injuries are not in the data"
+    return facts, [e.event_id for e in shots]
+
+
 def _from_pack(build: Callable[..., FactsPack]):
     def section(m: Moment, roles: _Roles) -> tuple[dict, list[str]]:
         pack = build(m, roles)
@@ -174,7 +224,8 @@ BUILDERS = {"situation": _from_pack(situation_pack), "score": _from_pack(score_p
 
 def facts_for(sections: list[str], m: Moment, club_id: str | None = None,
               player_id: str | None = None, info: dict | None = None,
-              records: dict | None = None) -> FactsPack:
+              records: dict | None = None, seasons: dict | None = None,
+              norm: Callable[[str], float | None] | None = None) -> FactsPack:
     """The merged facts of `sections` (one sub-dict each), with one shared roles map."""
     roles = _Roles()
     facts: dict = {}
@@ -182,6 +233,8 @@ def facts_for(sections: list[str], m: Moment, club_id: str | None = None,
     for sec in sections:
         if sec == "match_info":
             part, src = match_info(m, info or {}, records or {})
+        elif sec == "player_info":
+            part, src = player_info(m, roles, player_id, seasons or {}, norm or m.norm)
         elif sec == "team_tonight":
             part, src = team_tonight(m, roles, club_id)
         elif sec == "player_tonight":

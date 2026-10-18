@@ -173,7 +173,9 @@ that message, so a question can be asked from kick-off and never trusts a clock)
 source, cached} | null, declined | null}`. Sections: `match_info` (season, matchday,
 venue, kick-off, home and away, both clubs' record before tonight from the history),
 `situation`, `score`, `team_stats`,
-`team_tonight` (club), `player_tonight` (a player who has shot), `chances`, `discipline`,
+`team_tonight` (club), `player_info` (any squad player: club, shirt number, position,
+preferred foot, season before tonight from the history, involvement tonight),
+`player_tonight` (a player who has shot), `chances`, `discipline`,
 `recent` (last 10 minutes). 429 after 10 typed questions per viewer in 10 minutes.
 
 ---

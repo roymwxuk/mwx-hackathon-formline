@@ -130,7 +130,8 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     r = await route(text, lang, m, ctx.league.players, dict(short_names or {}), runner)
     if not r.sections:
         return {"retrieved": None, "answer": None, "declined": DECLINE[lang]}
-    pack = facts_for(r.sections, m, r.club_id, r.player_id, ctx.info, ctx.records)
+    pack = facts_for(r.sections, m, r.club_id, r.player_id, ctx.info, ctx.records,
+                     ctx.player_seasons, norm)
     player = None
     if r.player_id:
         en, ja = ctx.league.players[r.player_id]

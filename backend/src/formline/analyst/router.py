@@ -56,15 +56,27 @@ def check_route(reply: object, m: Moment) -> str | None:
     if "team_tonight" in secs and reply.get("club_id") not in (m.home, m.away):
         return f"team_tonight needs club_id {m.home} or {m.away}"
     if "player_tonight" in secs and reply.get("player_id") not in shooters(m):
-        return f"player_tonight needs a player_id from PLAYERS, got {reply.get('player_id')!r}"
+        return ("player_tonight needs a player_id from PLAYERS with has_shot true, got "
+                f"{reply.get('player_id')!r}")
+    if "player_info" in secs and reply.get("player_id") not in squad(m):
+        return f"player_info needs a player_id from PLAYERS, got {reply.get('player_id')!r}"
+    if "player_info" in secs and "player_tonight" in secs:
+        return "use player_info or player_tonight, not both"
     return None
+
+
+def squad(m: Moment) -> list[str]:
+    """Every player of the two clubs in this match."""
+    return [pid for pid, p in m.players.items() if p.club_id in (m.home, m.away)]
 
 
 async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str]],
                 short_names: dict[str, str], runner: LLMRunner) -> Route:
     """The sections (and their subject) that answer `text` at moment `m`, or none."""
+    shot = set(shooters(m))
     players = [{"id": pid, "name": names[pid][0], "name_ja": names[pid][1],
-                "club": m.clubs[m.players[pid].club_id]} for pid in shooters(m)]
+                "club": m.clubs[m.players[pid].club_id], "has_shot": pid in shot}
+               for pid in squad(m)]
     clubs = [{"id": c, "name": m.clubs[c], "short_name": short_names.get(c, "")}
              for c in (m.home, m.away)]
     payload = {"VIEWER_TEXT": text[:MAX_TEXT], "LANGUAGE": lang, "SECTIONS": SECTIONS,
@@ -86,16 +98,16 @@ async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str
             if reply.get("cannot_answer") is True:
                 return Route([], None, None, "llm", attempt)
             secs = reply["sections"]
+            needs_player = "player_tonight" in secs or "player_info" in secs
             return Route(secs, reply.get("club_id") if "team_tonight" in secs else None,
-                         reply.get("player_id") if "player_tonight" in secs else None,
-                         "llm", attempt)
+                         reply.get("player_id") if needs_player else None, "llm", attempt)
     return Route([], None, None, "rule", MAX_ATTEMPTS)
 
 
 DECLINE = {
     "en": "I can only answer from this match's data: the fixture and venue, goals, shots and "
-          "chances, how a team or a player who has shot is doing, fouls and cards, corners, the "
+          "chances, a team or a player (profile, season, tonight), fouls and cards, corners, the "
           "last 10 minutes, and both clubs' season so far.",
     "ja": "答えられるのはこの試合のデータだけです：試合情報と会場、ゴール、シュートと決定機、チームや"
-          "シュートを打った選手の出来、ファウルとカード、コーナー、直近10分、両チームの今季成績。",
+          "選手（プロフィール・今季・今夜）、ファウルとカード、コーナー、直近10分、両チームの今季成績。",
 }

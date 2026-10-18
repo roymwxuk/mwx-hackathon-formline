@@ -36,11 +36,15 @@ def fake_route(p: dict) -> dict:
         if first in text or (c["short_name"] and c["short_name"].lower() in text.split()):
             sections, club = ["team_tonight"], c["id"]
             break
+    about = ("info", "about", "who is", "profile", "season", "情報", "について", "プロフィール")
     for pl in p["PLAYERS"]:
         if pl["name"].split()[-1].lower() in text or pl["name_ja"].split("・")[-1] in text:
-            sections, player = sections + ["player_tonight"], pl["id"]
+            shooting = pl.get("has_shot", True) and not any(w in text for w in about)
+            sections = sections + ["player_tonight" if shooting else "player_info"]
+            player = pl["id"]
             break
-    sections += [q for q, words in ROUTE_WORDS if any(w in text for w in words)]
+    sections += [q for q, words in ROUTE_WORDS if any(w in text for w in words)
+                 and not (player and q == "match_info")]
     sections = list(dict.fromkeys(sections))[:3]
     if not sections:
         return {"cannot_answer": True}
