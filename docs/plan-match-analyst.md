@@ -113,8 +113,19 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   `data/analyst/<match>.answers.jsonl`; `POST /matches/{id}/ask` serves those and otherwise
   replays the feed up to the comment's sequence and answers live (same facts, same verifier).
   The comment carries `ask {moment, seq}` and `suggestions[]` (`DATA_SCHEMA.md` §5.5).
-- **Viewer**: chips under each comment in the Match analyst panel (both pages, live mode
-  only); a click shows "Thinking…", then the answer with its evidence; a second click closes it.
+- **Viewer**: the Match analyst panel has two tabs (owner's choice, 2026-10-18): *Commentary*
+  (the comments) and *Ask the analyst*: the latest moment's 2–3 question chips, and below them
+  every answer asked so far, newest first, with its evidence ("Thinking…" while it loads, a
+  retry on error). A dot on the tab marks new questions. Both pages; live mode only.
+- **Typed questions (owner's request, 2026-10-18):** the Ask tab keeps the two suggested
+  chips and adds a text box. A **Question Router** agent (`analyst/router.py`) maps the text
+  to `{question, player_id}` from the catalog, or `cannot_answer` (owner's choice: route to
+  the catalog rather than one broad facts pack, so every answer stays as verifiable as a
+  click). Code checks the route (known id; for `player_tonight` any player who has shot so
+  far), one retry, then a polite decline. The typed text reaches only the Router; the
+  Analyst answers the routed catalog question, so prompt injection can at worst choose
+  another valid question. `POST /ask/free`, 200 characters, 10 per viewer per 10 minutes
+  (in-memory limiter keyed on `X-Forwarded-For`). The answer shows *Answered as: …*.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are

@@ -46,10 +46,15 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
 - **Explains key moments as they happen.** A Match Analyst agent writes a short, verified
   comment after every shot, corner and card, in English or Japanese, from the facts the data
   holds (distance, pressure, chance quality, placement, the build-up, fouls tonight) and shows
-  its evidence; it says when the data cannot answer (e.g. who was fouled). Under each comment
+  its evidence; it says when the data cannot answer (e.g. who was fouled). For each comment
   it offers 2–3 follow-up questions ("Why is it 1–0?", "How is Ito doing tonight?", "Compare
   the teams"), picked by a Suggester agent from a fixed catalog; a click returns a verified
   answer with its evidence.
+  The panel has two tabs: *Commentary* and *Ask the analyst*: the latest moment's two
+  suggested questions, a box to type your own, and the answers asked so far. A typed question
+  is routed by a Question Router agent to one the data can answer ("is Reyner having a good
+  game?" → "How is Reyner doing tonight?", shown as *Answered as*) or politely declined
+  (weather, opinions); the answering agent never sees the typed text.
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
   set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× with an optional
@@ -114,6 +119,8 @@ The Match Analyst runs beside it, on the same model and the same verify-retry-te
 Key moment ─► facts pack ─► Match Analyst ─► Analyst verifier ─► comment (EN, JA)
                                   └──► Question Suggester ─► 2–3 catalog questions on the comment
 Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Match Analyst ─► verifier ─► answer
+Typed question ─► POST /ask/free ─► Question Router ─┬─► catalog question ─► (same as a click)
+                                                     └─► cannot_answer ─► polite decline
 ```
 
 | Agent | Kind | Job |
@@ -125,6 +132,7 @@ Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Ma
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 | Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
+| Question Router | LLM, checked in code | Maps a typed question to `{question, player_id}` from the catalog (any player who has shot) or `cannot_answer`; invalid replies retry once, then decline. The viewer's text goes only to the Router, never to the agent that writes the answer |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -134,6 +142,9 @@ Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Ma
 - **Cost:** response cache, per-run call budget, precomputed demo overlays, comments and
   follow-up answers (a rerun makes no model calls; `/ask` calls the model only for questions
   that were not precomputed, under the call budget).
+- **Prompts are versioned files** (`backend/src/formline/prompts/<agent>.md`: name, version,
+  change notes, then the text), apart from the code; the JSON contracts and verifiers stay in
+  code (ADR-012).
 - **With or without Azure:** Microsoft Foundry (`FoundryChatClient`) when
   `AZURE_AI_PROJECT_ENDPOINT` is set (see `backend/.env.example`), otherwise a fake model on
   the same Agent Framework path. Tests and CI never need Azure.
@@ -279,8 +290,10 @@ the stream replays the feed with the overlays cached by `formline-gen overlays`;
 replays a chaotic feed (and implies live). `POST /matches/{match_id}/ask` answers a
 follow-up question about a comment (`DATA_SCHEMA.md` §5.5): the answer precomputed by
 `formline-gen analyst` when there is one, otherwise the Match Analyst live, verified and
-under the call budget. The agents use Microsoft Foundry when `AZURE_AI_PROJECT_ENDPOINT` is
-set, otherwise a built-in fake model.
+under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question
+(`{moment, seq, text, lang}`, at most 200 characters, 10 per viewer per 10 minutes) and
+returns `{routed_as, answer, declined}`. The agents use Microsoft Foundry when
+`AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
 ## Deploy to Azure
 
@@ -316,20 +329,20 @@ overridden through the variables in `scripts/azure/common.sh`.
 |---|---|
 | Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.6% of injected errors with 0 false positives |
 | Reliability | Agent retries with feedback, template fallback after 3 failures, selector falls back to rules; idempotent, event-sourced ingestion that converges under chaos (300/300); resumable SSE streams |
-| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget |
+| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget; typed questions are capped at 200 characters and 10 per viewer per 10 minutes, and never reach the answering agent (prompt injection can at worst pick another valid question) |
 | Cost | Scale to zero, ingress off when not in use, LLM response cache and per-run call budget, budget alerts |
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 255 backend + 71 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
-| Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; no per-client rate limit on `/ask` |
+| Tests | 265 backend + 74 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
+| Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; the typed-question limit is in memory and keyed on `X-Forwarded-For` (a cost guard, not abuse protection) |
 
 ## Microsoft and Azure technologies
 
 | Technology | Use | Status |
 |---|---|---|
 | Microsoft Agent Framework | Multi-agent workflow (`WorkflowBuilder`, executors, fan-out, switch-case retry cycle), `Agent`, chat clients | ✅ In use |
-| Microsoft Foundry | `gpt-4.1-mini` deployment for the Selector, Narrators, Match Analyst and Question Suggester (`FoundryChatClient`), keyless via managed identity | ✅ In use |
+| Microsoft Foundry | `gpt-4.1-mini` deployment for the Selector, Narrators, Match Analyst, Question Suggester and Question Router (`FoundryChatClient`), keyless via managed identity | ✅ In use |
 | Azure Container Apps | Hosting backend and viewer, scale to zero, logs to Log Analytics | ✅ Deployed |
 | Microsoft Entra ID | Managed identity and the "Foundry User" role, no API keys | ✅ In use |
 | Azure Monitor Log Analytics | Container logs from both apps | ✅ In use |
@@ -345,7 +358,8 @@ backend/    Python 3.12 · FastAPI · Pydantic · Microsoft Agent Framework (uv)
   src/formline/engine/      event log, ingestion, shot features, baselines, insights
   src/formline/agents/      catalog, narrators, verifier, selector, workflow, live orchestration
   src/formline/tracking/    synthetic tracking: team shape, event anchors, motion, realism
-  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer, follow-ups, suggester, /ask
+  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer, follow-ups, suggester, router, /ask
+  src/formline/prompts/     every agent's prompt as a versioned .md file
   data/sample/              committed excerpt of the generated data and example overlays
 frontend/   Next.js · React · TypeScript (pnpm): live viewer UI
 docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI screenshots
@@ -377,9 +391,10 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
-- **Follow-up questions come from a fixed catalog of four** ("What's happening?", "Why is it
+- **Answers come from a fixed catalog of four questions** ("What's happening?", "Why is it
   1–0?", "How is X doing tonight?", "Compare the teams"), by design: every question offered
-  is one the data can answer. Club names stay in their FACTS spelling in Japanese answers,
+  is one the data can answer, and a typed question is routed to one of them or declined, so
+  "who has the most shots?" gets the team comparison rather than a ranking. Club names stay in their FACTS spelling in Japanese answers,
   since the league has no official Japanese names the verifier could check.
 
 ## Documentation
@@ -387,7 +402,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 | Topic | Where |
 |---|---|
 | Project pitch | [docs/pitch.md](docs/pitch.md) |
-| Design decisions (ADR-001 to ADR-011) | [docs/decisions.md](docs/decisions.md) |
+| Design decisions (ADR-001 to ADR-012) | [docs/decisions.md](docs/decisions.md) |
 | Match Analyst (comments, follow-up questions) | [docs/plan-match-analyst.md](docs/plan-match-analyst.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |

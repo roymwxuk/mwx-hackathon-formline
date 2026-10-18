@@ -166,6 +166,12 @@ comment's language. The viewer posts `{moment, seq, question, player_id, lang}` 
 verified, source, cached}` (`cached`: precomputed with the match). Unknown moments, questions
 that do not apply to the moment, or a `player_id` other than the moment's player get a 422.
 
+Typed questions: `POST /matches/{match_id}/ask/free` with `{moment, seq, text (1–200
+chars), lang}` returns `{routed_as {question, player_id, label} | null, answer | null,
+declined | null}`. The Question Router maps the text to a catalog question (for
+`player_tonight`, any player who has shot so far) or declines; 429 after 10 typed questions
+per viewer in 10 minutes.
+
 ---
 
 ## 6. Derived data (engine output)

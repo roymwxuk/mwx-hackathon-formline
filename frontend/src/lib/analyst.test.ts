@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { answerKey, askAnalyst, askUrlFor, commentsFor, freshComment } from '@/lib/analyst';
+import { AskLimited, answerKey, askAnalyst, askFree, askUrlFor, commentsFor, freshComment, latestAskable } from '@/lib/analyst';
 import { applyComments } from '@/lib/logic';
 import type { AnalystComment } from '@/lib/types';
 
@@ -38,6 +38,23 @@ describe('follow-up questions', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('asks about the newest comment that has questions, never a withdrawn one', () => {
+    const suggestions = [score];
+    const states = applyComments([
+      c('a', 1_000, 'en', { ask, suggestions }),
+      c('b', 2_000, 'en', { ask: { moment: 'corner_evt_9', seq: 400 }, suggestions }),
+      c('old', 3_000), // no questions
+    ]);
+    expect(latestAskable(states)?.comment.comment_id).toBe('b');
+    const withdrawn = applyComments([
+      c('a', 1_000, 'en', { ask, suggestions }),
+      c('b', 2_000, 'en', { ask: { moment: 'corner_evt_9', seq: 400 }, suggestions }),
+      c('b_retract', 4_000, 'en', { op: 'retract', supersedes_comment_id: 'b' }),
+    ]);
+    expect(latestAskable(withdrawn)?.comment.comment_id).toBe('a');
+    expect(latestAskable([])).toBeUndefined();
+  });
+
   it('posts to /ask next to the stream URL', () => {
     expect(askUrlFor('http://localhost:8000/matches/m1/stream?speed=20&slow=false'))
       .toBe('http://localhost:8000/matches/m1/ask');
@@ -56,6 +73,21 @@ describe('follow-up questions', () => {
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe('http://x/matches/m1/ask');
     expect(JSON.parse(init.body)).toEqual({ ...ask, question: 'player_tonight', player_id: 'ply_0203', lang: 'ja' });
+  });
+
+  it('sends a typed question to /ask/free with the moment and the language', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ routed_as: null, answer: null, declined: 'no' }) });
+    vi.stubGlobal('fetch', fetch);
+    const out = await askFree('http://x/matches/m1/ask', c('a', 0, 'ja', { ask }), 'レイナーは？');
+    expect(out.declined).toBe('no');
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe('http://x/matches/m1/ask/free');
+    expect(JSON.parse(init.body)).toEqual({ ...ask, text: 'レイナーは？', lang: 'ja' });
+  });
+
+  it('tells the rate limit apart from other errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429 }));
+    await expect(askFree('http://x/ask', c('a', 0, 'en', { ask }), 'score?')).rejects.toBeInstanceOf(AskLimited);
   });
 
   it('fails on an error status, so the panel can offer a retry', async () => {

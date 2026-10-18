@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 
 from formline.agents.llm import LLMRunner
 from formline.engine.insights import Insight
+from formline.prompts import load
 
 MIN_SALIENCE = 0.35
 COOLDOWN_MS = 3 * 60_000  # same player again only after 3 match minutes...
@@ -21,12 +22,8 @@ COOLDOWN_OVERRIDE = 0.9  # ...unless the insight is this salient (e.g. a season 
 RATE_WINDOW_MS = 10 * 60_000
 RATE_MAX = 3  # cards per 10 match minutes
 
-INSTRUCTIONS = """You are the Insight Selector for a live football broadcast.
-Each candidate is a deterministic finding about one shot compared with the shooter's own
-history. Pick the ONE candidate that best tells viewers why this moment matters: prefer
-season records, big gaps from the player's norm, high confidence and goals. Never invent
-candidates.
-Reply with JSON only: {"show": "<candidate id>", "reason": "<at most 20 words>"}"""
+PROMPT = load("insight_selector")  # prompts/insight_selector.md
+INSTRUCTIONS = PROMPT.text
 
 
 @dataclass(frozen=True)
