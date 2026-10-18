@@ -107,7 +107,7 @@ export function Viewer(p: Props) {
         <AnalystPanel comments={comments} lang={s.lang} />
         <aside className="panel side" aria-label="Viewer settings">
           <h2>Make it yours</h2>
-          <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} />
+          <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} showLangMode={false} />
         </aside>
       </div>
     </div>

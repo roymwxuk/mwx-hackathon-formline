@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { LangModeSwitch } from './SettingsPanel';
 import { Viewer } from './Viewer';
 import { applyComments, applyEvents, applyOverlays, feedStatus, formatClock } from '@/lib/logic';
 import { useLeague } from '@/lib/league';
@@ -64,10 +65,13 @@ export default function App() {
           <span className="muted">Live personal-baseline insights · synthetic data</span>
         </div>
 
-        <nav className="tabs" aria-label="Views">
-          <button type="button" aria-pressed={view === 'single'} onClick={() => setView('single')}>Live viewer</button>
-          <button type="button" aria-pressed={view === 'two'} onClick={() => setView('two')}>Two viewers</button>
-        </nav>
+        <div className="top-switches">
+          {view === 'single' && <LangModeSwitch settings={single} onChange={setSingle} />}
+          <nav className="tabs" aria-label="Views">
+            <button type="button" aria-pressed={view === 'single'} onClick={() => setView('single')}>Live viewer</button>
+            <button type="button" aria-pressed={view === 'two'} onClick={() => setView('two')}>Two viewers</button>
+          </nav>
+        </div>
 
         <div className="controls">
           {league.status !== 'ready' && (
