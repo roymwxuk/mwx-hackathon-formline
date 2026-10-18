@@ -58,6 +58,9 @@ def test_the_var_overturn_withdraws_the_goal_comments(comments):
             and c["lang"] == "en"]
     retracts = [c for _, c in rows if c["op"] == "retract"]
     assert len(retracts) == 2  # EN and JA
+    goals = {c["match_clock_ms"] // 1000 for _, c in rows if c.get("goal") and c["op"] == "show"}
+    assert goals == {22 * 60 + 30, 63 * 60 + 42}  # Ito's goal and the one VAR overturns
+    assert not any(c.get("goal") for _, c in rows if c["question"] != "shot_outcome")
     assert {r["supersedes_comment_id"] for r in retracts} >= {g["comment_id"] for g in goal
                                                                 if g["match_clock_ms"] // 1000 == 3822}
     var = [c for _, c in rows if c["question"] == "var" and c["lang"] == "en"]

@@ -125,6 +125,8 @@ class AnalystWriter:
                 "lang": lang, "headline": a.headline, "body": a.body, "player_id": player_id,
                 "evidence": [self._evidence(eid) for eid in pack.source_event_ids],
                 "verified": True, "source": a.source,
+                # a goal (as known when written): the viewer highlights it
+                "goal": pack.question == "shot_outcome" and pack.event.outcome == "goal",
             })
         return out
 

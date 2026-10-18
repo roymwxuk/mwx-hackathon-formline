@@ -113,6 +113,8 @@ export interface AnalystComment {
   evidence: { event_id: string; minute: string; type: string }[];
   verified: boolean;
   source: 'llm' | 'template';
+  /** A comment on a goal (as known when written): highlighted in red. */
+  goal?: boolean;
 }
 
 /** One tracking frame (DATA_SCHEMA.md §5.4): shared frame, home attacks toward x = 100. */

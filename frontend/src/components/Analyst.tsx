@@ -28,7 +28,7 @@ export function CommentBubble({ comments, clockMs, lang, paused = false }: { com
   return (
     <div key={c.comment_id} className="comment-bubble" role="status" lang={lang}>
       <span className="comment-tag">{t(lang).analyst} · {t(lang).question[c.question as Q]}</span>
-      <strong className="comment-headline">{c.headline}</strong>
+      <strong className={`comment-headline${c.goal ? ' goal' : ''}`}>{c.headline}</strong>
       <p className="comment-body">{c.body}</p>
     </div>
   );
@@ -50,7 +50,7 @@ export function AnalystPanel({ comments, lang, limit }: { comments: CommentState
               <span className="comment-tag">{str.question[c.question as Q]}</span>
               {retracted && <span className="danger-text">{str.analystWithdrawn}</span>}
             </div>
-            <strong className="comment-headline">{c.headline}</strong>
+            <strong className={`comment-headline${c.goal ? ' goal' : ''}`}>{c.headline}</strong>
             <p className="comment-body">{c.body}</p>
             {limit === undefined && (
               <p className="analyst-evidence muted">
