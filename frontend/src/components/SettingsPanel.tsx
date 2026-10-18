@@ -6,31 +6,37 @@ interface Props {
   onChange: (s: ViewerSettings) => void;
   clubs: Club[];
   players: Player[];
+  /** False when the language and mode switches sit in the page header instead. */
+  showLangMode?: boolean;
 }
 
 const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
-export function SettingsPanel({ id, settings: s, onChange, clubs, players }: Props) {
+export function SettingsPanel({ id, settings: s, onChange, clubs, players, showLangMode = true }: Props) {
   const set = (patch: Partial<ViewerSettings>) => onChange({ ...s, ...patch });
 
   return (
     <div className="settings">
-      <div className="field">
-        <span className="field-label" id={`${id}-lang`}>Language</span>
-        <div className="segmented" role="group" aria-labelledby={`${id}-lang`}>
-          <button type="button" aria-pressed={s.lang === 'en'} onClick={() => set({ lang: 'en' })}>English</button>
-          <button type="button" aria-pressed={s.lang === 'ja'} onClick={() => set({ lang: 'ja' })} lang="ja">日本語</button>
-        </div>
-      </div>
+      {showLangMode && (
+        <>
+          <div className="field">
+            <span className="field-label" id={`${id}-lang`}>Language</span>
+            <div className="segmented" role="group" aria-labelledby={`${id}-lang`}>
+              <button type="button" aria-pressed={s.lang === 'en'} onClick={() => set({ lang: 'en' })}>English</button>
+              <button type="button" aria-pressed={s.lang === 'ja'} onClick={() => set({ lang: 'ja' })} lang="ja">日本語</button>
+            </div>
+          </div>
 
-      <div className="field">
-        <span className="field-label" id={`${id}-mode`}>Mode</span>
-        <div className="segmented" role="group" aria-labelledby={`${id}-mode`}>
-          <button type="button" aria-pressed={s.mode === 'casual'} onClick={() => set({ mode: 'casual' })}>Casual</button>
-          <button type="button" aria-pressed={s.mode === 'analyst'} onClick={() => set({ mode: 'analyst' })}>Analyst</button>
-        </div>
-        <span className="field-hint">Casual: fewer cards, only your favorites. Analyst: every insight with full numbers.</span>
-      </div>
+          <div className="field">
+            <span className="field-label" id={`${id}-mode`}>Mode</span>
+            <div className="segmented" role="group" aria-labelledby={`${id}-mode`}>
+              <button type="button" aria-pressed={s.mode === 'casual'} onClick={() => set({ mode: 'casual' })}>Casual</button>
+              <button type="button" aria-pressed={s.mode === 'analyst'} onClick={() => set({ mode: 'analyst' })}>Analyst</button>
+            </div>
+            <span className="field-hint">Casual: fewer cards, only your favorites. Analyst: every insight with full numbers.</span>
+          </div>
+        </>
+      )}
 
       <div className="field">
         <span className="field-label" id={`${id}-clubs`}>Favorite clubs</span>
@@ -117,5 +123,24 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players }: Pro
         ))}
       </fieldset>
     </div>
+  );
+}
+
+/** Language and mode as compact header switches (the single viewer's top bar). */
+export function LangModeSwitch({ settings: s, onChange }: { settings: ViewerSettings; onChange: (s: ViewerSettings) => void }) {
+  const set = (patch: Partial<ViewerSettings>) => onChange({ ...s, ...patch });
+  return (
+    <>
+      <div className="tabs" role="group" aria-label="Language">
+        <button type="button" aria-pressed={s.lang === 'en'} onClick={() => set({ lang: 'en' })}>English</button>
+        <button type="button" aria-pressed={s.lang === 'ja'} onClick={() => set({ lang: 'ja' })} lang="ja">日本語</button>
+      </div>
+      <div className="tabs" role="group" aria-label="Mode">
+        <button type="button" aria-pressed={s.mode === 'casual'} onClick={() => set({ mode: 'casual' })}
+          title="Fewer cards, only your favorites">Casual</button>
+        <button type="button" aria-pressed={s.mode === 'analyst'} onClick={() => set({ mode: 'analyst' })}
+          title="Every insight with full numbers">Analyst</button>
+      </div>
+    </>
   );
 }

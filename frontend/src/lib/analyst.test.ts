@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { commentsFor, freshComment } from '@/lib/analyst';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { answerKey, askAnalyst, askUrlFor, commentsFor, freshComment } from '@/lib/analyst';
 import { applyComments } from '@/lib/logic';
 import type { AnalystComment } from '@/lib/types';
 
@@ -28,5 +28,38 @@ describe('analyst comments', () => {
     expect(freshComment(states, 3_825_000, new Set())?.comment.comment_id).toBe('new');
     expect(freshComment(states, 3_825_000, new Set(['new']))).toBeUndefined();
     expect(freshComment(states, 3_900_000, new Set())).toBeUndefined(); // replayed after a jump
+  });
+});
+
+describe('follow-up questions', () => {
+  const ask = { moment: 'shot_outcome_evt_3100323', seq: 323 };
+  const me = { question: 'player_tonight' as const, label: 'How is Ito doing tonight?', player_id: 'ply_0203' };
+  const score = { question: 'score' as const, label: 'Why is it 1–0?', player_id: null };
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('posts to /ask next to the stream URL', () => {
+    expect(askUrlFor('http://localhost:8000/matches/m1/stream?speed=20&slow=false'))
+      .toBe('http://localhost:8000/matches/m1/ask');
+  });
+
+  it('keys an answer like the backend: moment, question, player, language', () => {
+    expect(answerKey(c('a', 0, 'ja', { ask }), me)).toBe('shot_outcome_evt_3100323|player_tonight|ply_0203|ja');
+    expect(answerKey(c('a', 0, 'en', { ask }), score)).toBe('shot_outcome_evt_3100323|score||en');
+  });
+
+  it("sends the comment's ask, the question and the language", async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ headline: 'H', body: 'B' }) });
+    vi.stubGlobal('fetch', fetch);
+    const answer = await askAnalyst('http://x/matches/m1/ask', c('a', 0, 'ja', { ask }), me);
+    expect(answer.headline).toBe('H');
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe('http://x/matches/m1/ask');
+    expect(JSON.parse(init.body)).toEqual({ ...ask, question: 'player_tonight', player_id: 'ply_0203', lang: 'ja' });
+  });
+
+  it('fails on an error status, so the panel can offer a retry', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 422 }));
+    await expect(askAnalyst('http://x/ask', c('a', 0, 'en', { ask }), score)).rejects.toThrow('422');
   });
 });

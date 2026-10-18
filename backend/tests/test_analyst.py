@@ -131,3 +131,31 @@ def test_comment_messages_are_json_ready(comments):
     json.dumps([c for _, c in rows], ensure_ascii=False)
     ids = [c["comment_id"] for _, c in rows]
     assert len(ids) == len(set(ids))
+
+
+def test_a_whole_number_written_without_its_decimal_is_not_a_new_number(match):
+    _, gm, players, clubs, league = match
+    events = sorted(current_events(gm.feed), key=lambda e: (e.period, e.match_clock_ms))
+    shot = next(e for e in events if e.type == "shot")
+    pack = shot_pack(shot, events, players, clubs, gm.match.home_club_id, gm.match.away_club_id)
+    pack.facts["goalkeeper"] = "goalkeeper 3.0 m off his line"
+    ctx = AnswerContext(pack, "en", (gm.match.home_club_id, gm.match.away_club_id))
+    shooter = league.players[shot.player_id][0].split()[-1]
+    ok = {"headline": f"{shooter}'s effort", "body": "The keeper was 3 m off his line."}
+    assert verify_answer(ok, ctx, league).ok
+    bad = {**ok, "body": "The keeper was 4 m off his line."}
+    assert not verify_answer(bad, ctx, league).ok
+
+
+def test_a_japanese_answer_must_not_translate_club_names(match):
+    _, gm, players, clubs, league = match
+    events = sorted(current_events(gm.feed), key=lambda e: (e.period, e.match_clock_ms))
+    shot = next(e for e in events if e.type == "shot")
+    pack = shot_pack(shot, events, players, clubs, gm.match.home_club_id, gm.match.away_club_id)
+    ctx = AnswerContext(pack, "ja", (gm.match.home_club_id, gm.match.away_club_id))
+    shooter = league.players[shot.player_id][1].split("・")[-1]
+    ok = {"headline": f"{shooter}のシュート", "body": "Northgate Roversの守備が固かった。"}
+    assert verify_answer(ok, ctx, league).ok
+    for club in ("北ゲート・ローバーズ", "ノースゲート・ローバーズ", "エルダーウィック・タウン"):
+        bad = {**ok, "body": f"{club}の守備が固かった。"}
+        assert "entities" in {f.check for f in verify_answer(bad, ctx, league).failures}, club

@@ -1,4 +1,5 @@
-"""Fake model behaviour for the Selector and Narrator (tests, CI, offline demos).
+"""Fake model behaviour for the Selector, Narrator, Match Analyst and Question Suggester
+(tests, CI, offline demos).
 
 `FakeAgents` answers like a well-behaved model: the Selector picks the most salient
 candidate; the Narrator writes a plain card from the payload's CARD_FACTS. It can also misbehave on
@@ -22,6 +23,8 @@ class FakeAgents:
 
     def __call__(self, texts: list[str]) -> str:
         payload = json.loads(texts[-1])
+        if "OPTIONS" in payload:  # the Question Suggester: the first options (best first)
+            return json.dumps({"pick": list(payload["OPTIONS"])[:3]})
         if "QUESTION_ID" in payload:  # the Match Analyst: answer like the template, from FACTS
             from formline.analyst.facts import FactsPack
             from formline.analyst.templates import template_answer

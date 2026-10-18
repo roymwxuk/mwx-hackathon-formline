@@ -1,8 +1,10 @@
 # Plan: Match Analyst (proactive comments at key events + contextual question buttons)
 
 **Status:** Phase 1 built (2026-10-18): comments after every shot, corner and card, the VAR
-withdrawal, bubble and panel; 96 verified comments on the live match with the fake model. The
-Foundry run (about ¥1) waits for the owner's go. Phase 2 (buttons) to be decided. Owner decisions: proactive comments only after
+withdrawal, bubble and panel; 96 verified comments on the live match with the fake model.
+Phase 2 built (2026-10-18): follow-up questions picked by a Suggester agent, answered by
+`/ask` (see "Phase 2 as built" below). The Foundry run for both (about ¥25–50, measured
+prompt sizes) waits for the owner's go. Owner decisions: proactive comments only after
 shots, corners and cards; button answers live with cache; one version per language; phase 1
 first, then decide on the buttons.
 
@@ -91,6 +93,43 @@ reasons, weather or opinions): the agent is told to say what the data cannot sho
 2. **Then decide: question buttons** (`situation`, `score`, `player_tonight`, `var`, the live
    `/ask` endpoint with cache, chips). About 2.5 h, weighed against the remaining time.
 3. Optional: catalog-picked follow-up questions.
+
+## Phase 2 as built (2026-10-18)
+
+Owner's choices: the LLM **picks** the questions from the fixed catalog (it does not write
+them); answers come from a **live endpoint whose cache is pre-warmed** by the precompute run.
+
+- **Catalog** (`analyst/followups.py`): `situation` ("What's happening?"), `score` ("Why is it
+  1–0?"), `player_tonight` ("How is Ito doing tonight?", only if the moment's player has shot;
+  his shots vs his shrunk season norm), `team_stats` ("Compare the teams"). Wording is fixed per
+  language in code. Each has a deterministic facts pack built from the events known when the
+  comment was written; players appear as roles (SCORER_A, CHANCE_B, PLAYER).
+- **Question Suggester** (`analyst/suggester.py`): one call per moment for both languages;
+  OPTIONS are only the questions that apply, in the moment's default order; the reply
+  `{"pick": [...]}` must use known ids, no repeats, 2–3 of them; one retry with the problem,
+  then the default order.
+- **Answers**: the Match Analyst agent and verifier as for comments, with new templates.
+  `formline-gen analyst` answers every suggested question in EN and JA into
+  `data/analyst/<match>.answers.jsonl`; `POST /matches/{id}/ask` serves those and otherwise
+  replays the feed up to the comment's sequence and answers live (same facts, same verifier).
+  The comment carries `ask {moment, seq}` and `suggestions[]` (`DATA_SCHEMA.md` §5.5).
+- **Viewer**: chips under each comment in the Match analyst panel (both pages, live mode
+  only); a click shows "Thinking…", then the answer with its evidence; a second click closes it.
+- **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
+  288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
+- **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are
+  about 1,300 characters in and 160 out per answer, so roughly ¥25–50 with `gpt-4.1-mini`
+  (the earlier "about ¥1" for 96 comments was too low).
+- **Foundry runs (2026-10-18).** The first run hit its 600-call cap: 40% of first attempts
+  failed the verifier (English bodies twice the limit, because LIMITS were not called
+  characters; xG without estimate wording; role words such as "SHOOTER Ingleby"; a club name
+  translated into Japanese) and the retries used the budget, so half the output was templates.
+  Fixes: limits stated in characters, the exact estimate marker to write, no role words, no
+  computed totals, club names as in FACTS, one EN and one JA example; the verifier accepts
+  "3 m" for "3.0 m" and rejects Japanese renderings of club names. A 6-moment sample went from
+  53% to 78% first-attempt passes. The full run: 296 calls, 96/96 comments and 190/192
+  answers by the model (2 templates), 48/48 Suggester picks (always 2 questions). Shipped in
+  `backend/demo/analyst/`. About 1,000 calls in all, roughly ¥50–70 (estimate).
 
 ## Files
 - New: `backend/src/formline/analyst/{__init__,catalog,facts,agent,writer}.py`,

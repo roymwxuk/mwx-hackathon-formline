@@ -41,6 +41,7 @@ h2, h3 { margin: 0; }
 .topbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
 .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .wordmark { font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: 0.5px; }
+.top-switches { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .tabs { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 4px; }
 .tabs button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: var(--text-2); cursor: pointer; }
 .tabs button[aria-pressed='true'] { background: var(--accent-bg); color: #fff; }
@@ -48,9 +49,18 @@ h2, h3 { margin: 0; }
 .source { font-size: 13px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
 .source.on::before { content: '● '; color: var(--ok); }
 .source.off::before { content: '● '; color: var(--danger); }
+.source.idle::before { content: '● '; color: var(--muted); }
+/* The feed badge keeps one width for every label (longest: Connecting…), so Play/Pause never shifts the controls. */
+.source.feed { box-sizing: border-box; width: 9.5em; white-space: nowrap; text-align: center; }
 .clock-big { font-family: var(--mono); font-size: 20px; color: var(--accent-soft); min-width: 64px; }
 .ctl { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
 .ctl:hover { border-color: var(--accent); }
+/* One width for Play and Pause, so toggling never shifts Restart and the menus. */
+.ctl.play-toggle { box-sizing: border-box; width: 84px; }
+/* An on/off control: lit while on, like the header switches. */
+.ctl.toggle[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-bg); color: #fff; }
+.ctl:disabled { opacity: 0.45; cursor: not-allowed; }
+.ctl:disabled:hover { border-color: var(--border); }
 .speed { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .speed select, .settings select { min-height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); padding: 0 8px; }
 
@@ -105,6 +115,16 @@ details.panel[open] summary { margin-bottom: 8px; }
 .analyst-list li.retracted .comment-headline, .analyst-list li.retracted .comment-body { text-decoration: line-through; opacity: 0.6; }
 .analyst-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; }
 .analyst-evidence { margin: 0; font-size: 11.5px; }
+/* Follow-up questions under a comment (Match Analyst phase 2). */
+.followups { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.followup-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.followup-chip { min-height: 32px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--analyst); background: transparent;
+  color: var(--analyst); font-size: 12.5px; cursor: pointer; text-align: left; }
+.followup-chip:hover { background: var(--analyst-bg); }
+.followup-chip[aria-pressed='true'] { background: var(--analyst-bg); color: var(--text); }
+.followup-answer { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-left: 3px solid var(--analyst);
+  background: var(--analyst-bg); border-radius: 0 8px 8px 0; }
+.followup-answer p { margin: 0; }
 .goal-flash { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px; pointer-events: none; animation: goal-pop 2.5s ease-out forwards; }
 .goal-word { font: 800 clamp(40px, 9vw, 96px)/1 var(--display, var(--body)); letter-spacing: 0.04em; padding: 10px 28px;

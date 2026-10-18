@@ -157,6 +157,15 @@ corner / card / var)`, `period`, `match_clock_ms`, `lang (en / ja)`, `headline`,
 Streamed as `{"kind": "comment", "comment": {...}}` with an SSE id. A retract withdraws a
 comment whose event was revised (the VAR overturn).
 
+Follow-up questions (phase 2): `ask {moment, seq}` names the comment's moment
+(`<question>_<event_id>`) and the feed sequence it was written at; `suggestions[] {question
+(situation / score / player_tonight / team_stats), label, player_id}` are the 2–3 questions
+the Suggester agent picked from the fixed catalog, with the catalog's wording in the
+comment's language. The viewer posts `{moment, seq, question, player_id, lang}` to
+`POST /matches/{match_id}/ask` and receives `{question, lang, headline, body, evidence[],
+verified, source, cached}` (`cached`: precomputed with the match). Unknown moments, questions
+that do not apply to the moment, or a `player_id` other than the moment's player get a 422.
+
 ---
 
 ## 6. Derived data (engine output)

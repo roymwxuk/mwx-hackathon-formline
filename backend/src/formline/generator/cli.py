@@ -89,25 +89,37 @@ def _overlays(data: Path, match_id: str | None) -> int:
 
 
 def _analyst(data: Path, match_id: str | None) -> int:
-    """Comments after every shot, corner and card (docs/plan-match-analyst.md). Uses Foundry
-    when AZURE_AI_PROJECT_ENDPOINT is set, otherwise the fake model; answers are cached."""
+    """Comments after every shot, corner and card, their suggested follow-up questions and
+    the answers to those (docs/plan-match-analyst.md). Uses Foundry when
+    AZURE_AI_PROJECT_ENDPOINT is set, otherwise the fake model; answers are cached."""
     import asyncio
     import json
 
     from formline.agents.precompute import default_runner
-    from formline.analyst.store import comments_path, make_writer, write_comments_file
+    from formline.analyst.store import (
+        answers_path,
+        comments_path,
+        make_writer,
+        write_answers_file,
+        write_comments_file,
+    )
     from formline.analyst.writer import write_comments
+    from formline.engine.bootstrap import bootstrap_history
     from formline.generator.output import read_feed
 
     if match_id is None:
         matches = json.loads((data / "matches.json").read_text())
         match_id = next(m["match_id"] for m in matches if m["is_live_demo"])
-    runner = default_runner(data)
-    writer = make_writer(data, match_id, runner)
+    # comments (96) + Suggester picks (48) + answers (~290) + retries: above the default 600
+    runner = default_runner(data, max_calls=1000)
+    history = bootstrap_history(data)  # season norms for "how is he doing tonight?"
+    writer = make_writer(data, match_id, runner, norm=history.season_norm, answer_followups=True)
     rows = asyncio.run(write_comments(read_feed(data / "feeds" / f"{match_id}.jsonl"), writer))
     path = comments_path(data, match_id)
     write_comments_file(path, rows)
     print(f"wrote {path}")
+    write_answers_file(answers_path(data, match_id), writer.answers)
+    print(f"wrote {answers_path(data, match_id)}")
     print(json.dumps({**writer.summary, "model": runner.kind, "model_calls": runner.budget.calls,
                       "cache_hits": runner.cache_hits}, indent=2))
     return 0

@@ -1,6 +1,6 @@
 # Roadmap and status
 
-**Updated:** 2026-10-17 · **Deadline:** submissions close Oct 27; treat Oct 26 (JST) as the
+**Updated:** 2026-10-18 · **Deadline:** submissions close Oct 27; treat Oct 26 (JST) as the
 deadline. · **Time budget:** 30–40 h in total.
 
 The original plan lives in `CLAUDE.md` (kept local since the history cleanup). This file
@@ -28,14 +28,15 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [ ] Live seek bar in the viewer (the backend already supports `start=mm:ss`)
 
 **Could (only if time allows)**
-- [x] Match Analyst phase 1: comments after shots, corners and cards (`docs/plan-match-analyst.md`, ADR-011); Foundry run pending
-- [ ] Match Analyst phase 2: contextual question buttons, live with cache (about 2.5 h)
+- [x] Match Analyst phase 1: comments after shots, corners and cards (`docs/plan-match-analyst.md`, ADR-011); Foundry run done 2026-10-18
+- [x] Match Analyst phase 2: LLM-suggested follow-up questions from a fixed catalog, answered by `/ask` (precomputed answers, live otherwise) (ADR-011 update); Foundry run done 2026-10-18 (96/96 comments, 190/192 answers by the model; shipped in `backend/demo/analyst/`)
 - [x] Golden tests for viewer personalization on the real demo overlays (`docs/plan-personalization-golden-tests.md`)
 - [x] Epic: synthetic tracking data, all 22 players and the ball (`docs/epic-tracking.md`, ADR-010): done 2026-10-18, checkpoint passed
 - [ ] Infrastructure as code: Bicep + `azd` (M4 task 6)
 - [ ] Foundry evaluations (M3 task 11)
 - [ ] Half-time or full-time baseline recap card (M3 task 12, frontend gap 7)
 - [ ] Studio graphics producer copilot (milestone 3b)
+- [ ] Milestone 6: team style baselines (tactics: low block, high press, possession, direct…), tonight vs the team's own norm; needs per-club style profiles in the generator (`docs/milestone-6-team-styles.md`, decision pending)
 
 **Done recently**
 - [x] Foundry resource, project and `gpt-4.1-mini` deployment; smoke test; identity-based auth (no keys)
@@ -55,6 +56,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 | 3b | ⭐ Optional plus: studio graphics producer copilot (a real agent with human approval, autonomy levels, audit log) | Only if time allows after milestone 4 MUST tasks | ⬜ Not started | `docs/milestone-3b-studio-copilot.md` |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 Tasks 1–4, 7 and 8 done; deployed once and stopped; redeploy and task 5 (observability) left; task 6 (IaC) optional | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | 🟡 Diagram, README, ADR cleanup, demo tuning and pitch done; redeploy, video, final check, submit left | `docs/video-plan.md`, `docs/pitch.md` |
+| 6 | ⭐ Optional: team style baselines (tactics), tonight vs each club's own norm | Only after the must-dos, before Oct 24 | ⬜ Not started (decision pending) | `docs/milestone-6-team-styles.md` |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
 
 ## Branches

@@ -19,19 +19,38 @@ MAX_ATTEMPTS = 3
 
 QUESTIONS = {
     "en": {"shot_outcome": "Why did this shot end as it did?", "corner": "What came of this corner?",
-           "card": "Why was this player booked?", "var": "Why was the goal ruled out?"},
+           "card": "Why was this player booked?", "var": "Why was the goal ruled out?",
+           # follow-up questions a viewer asks (analyst/followups.py)
+           "situation": "What is happening in the match so far?",
+           "score": "Why is the score what it is?",
+           "player_tonight": "How is PLAYER doing tonight, compared with his own season norm?",
+           "team_stats": "How do the two teams compare so far?"},
     "ja": {"shot_outcome": "このシュートはなぜこの結果になったのか？", "corner": "このコーナーキックはどうなったか？",
-           "card": "なぜこの選手にカードが出たのか？", "var": "なぜゴールは取り消されたのか？"},
+           "card": "なぜこの選手にカードが出たのか？", "var": "なぜゴールは取り消されたのか？",
+           "situation": "ここまでの試合の流れは？",
+           "score": "なぜこのスコアなのか？",
+           "player_tonight": "今夜のPLAYERの出来は？本人の今季平均と比べてどうか？",
+           "team_stats": "ここまでの両チームの比較は？"},
 }
 
 INSTRUCTIONS = """You are the match analyst for a live football broadcast (synthetic match data).
-Answer QUESTION about one moment using only FACTS. Name players only with the names in NAMES
-(FACTS refer to them by role, e.g. SHOOTER). Explain the one or two facts that matter most
-(e.g. distance, pressure, the goalkeeper, chance quality, placement); do not list every fact.
-Chances and percentages are model estimates: say so. Never state certainty. If FACTS say
-something is not in the data, do not guess it. Write in LANGUAGE ({lang}) for a general
-audience, warm but precise, within LIMITS.
-Reply with JSON only: {{"headline": "...", "body": "..."}}"""
+Answer QUESTION (about one moment, or about the match so far) using only FACTS.
+- Length: headline and body are at most MAX_CHARACTERS characters each; count them. Two
+  short sentences are enough for the body.
+- Explain the one or two facts that matter most (e.g. distance, pressure, the goalkeeper,
+  chance quality, placement); do not list every fact.
+- Numbers: only numbers that appear in FACTS; never add up, count or compute new ones.
+- Every percentage and every xG figure is a model estimate: write "(model estimate)" right
+  after it in English, "（推定）" in Japanese.
+- Players: only the names in NAMES. FACTS refer to players by role (SHOOTER, PASSER,
+  SCORER_A…); never write these role words.
+- Clubs: write club names exactly as in FACTS; do not translate them.
+- Never state certainty. If FACTS say something is not in the data, do not guess it.
+Write in LANGUAGE ({lang}) for a general audience, warm but precise.
+Reply with JSON only: {{"headline": "...", "body": "..."}}
+Examples of the form only (never copy their facts):
+{{"headline": "Denied from 18 m", "body": "A 5% chance (model estimate) from 18 m, and the goalkeeper was 1.1 m off his line to save it."}}
+{{"headline": "18mからのシュートはセーブ", "body": "得点期待値は5%（推定）。Harbourside Athleticの攻撃をGKが1.1m前に出て防いだ。"}}"""
 
 
 @dataclass(frozen=True)
@@ -53,7 +72,7 @@ def role_names(pack: FactsPack, lang: str, league: LeagueNames) -> dict[str, str
 def payload(pack: FactsPack, lang: str, names: dict[str, str], feedback: str | None) -> dict:
     p = {"LANGUAGE": lang, "QUESTION": QUESTIONS[lang][pack.question],
          "QUESTION_ID": pack.question, "NAMES": names,
-         "FACTS": pack.facts, "LIMITS": LIMITS[lang]}
+         "FACTS": pack.facts, "MAX_CHARACTERS": LIMITS[lang]}
     if feedback:
         p["FIX_THESE_PROBLEMS"] = feedback
     return p

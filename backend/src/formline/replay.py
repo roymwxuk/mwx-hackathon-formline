@@ -70,7 +70,7 @@ MAX_SEND_DELAY_MS = 15_000  # true time may lead the next event by its send dela
 PRESENTATION_DELAY_MS = 1_000
 PERIOD_ENDS = {"half_end"}  # the match clock stops here: no clock messages until play resumes
 
-SLOW_FACTOR = 6.0  # around shots and cards, pacing is this many times slower (20x -> ~3x)
+SLOW_FACTOR = 6.0  # around shots and insight cards, pacing is this many times slower (20x -> ~3x)
 MIN_SLOW_PACE = 3.0  # ...but never slower than 3x (unless the viewer chose a slower speed)
 SLOW_BEFORE = timedelta(seconds=4)  # feed time before a key moment
 SLOW_AFTER = timedelta(seconds=14)  # and after it
@@ -183,7 +183,7 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
       TICK_SECONDS of real time, so the viewer's clock (and tracking) keeps moving;
     - items with id <= `resume_after` (the client's Last-Event-ID) are skipped;
     - everything before `start` (match time) is delivered at once, then pacing begins;
-    - within SLOW_BEFORE/SLOW_AFTER of a key moment (shots, cards), pacing is SLOW_FACTOR
+    - within SLOW_BEFORE/SLOW_AFTER of a key moment (shots, insight cards), pacing is SLOW_FACTOR
       times slower, so the moment stays readable at any speed.
     """
     keys = sorted(key_times or [])

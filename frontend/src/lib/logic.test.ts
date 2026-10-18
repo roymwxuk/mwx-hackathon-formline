@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceTime, applyEvents, applyOverlays, orderedEvents, personalize, score, timeAfter } from '@/lib/logic';
+import { advanceTime, applyEvents, applyOverlays, feedStatus, orderedEvents, personalize, score, timeAfter } from '@/lib/logic';
 import { buildDemoStream, PLAYERS } from '@/mock/demo-match';
 import type { MatchEvent, Overlay, ViewerSettings } from '@/lib/types';
 
@@ -143,6 +143,16 @@ describe('live stream controls', () => {
     expect(liveStreamUrl(base, 20, { period: 1, clockMs: 46 * 60_000 })).toContain('start=45%3A00');
     expect(liveStreamUrl(base, 20, { period: 2, clockMs: 45 * 60_000 })).toContain('start=45%3A01');
   });
+
+  it('turns slow-mo off with slow=false and back on by dropping it', async () => {
+    const { liveStreamUrl } = await import('@/lib/useMatchStream');
+    const base = 'http://localhost:8000/matches/m/stream?speed=20';
+    expect(new URL(liveStreamUrl(base, 20, null)).searchParams.has('slow')).toBe(false);
+    const off = liveStreamUrl(base, 20, { period: 1, clockMs: 12 * 60_000 }, false);
+    expect(new URL(off).searchParams.get('slow')).toBe('false');
+    expect(off).toContain('start=12%3A00'); // switching keeps the match time
+    expect(new URL(liveStreamUrl(off, 20, null, true)).searchParams.has('slow')).toBe(false);
+  });
 });
 
 describe('clock messages', () => {
@@ -184,5 +194,27 @@ describe('why a card changed', () => {
     expect(old.reason).toBe('Goal disallowed after review');
     expect(corrected.corrects?.overlay_id).toBe('c1');
     expect(corrected.reason).toBe('Goal disallowed after review');
+  });
+});
+
+describe('feed status badge', () => {
+  const live = { source: 'sse' as const, playing: true, connected: true, ended: false };
+
+  it('is green only while data is flowing', () => {
+    expect(feedStatus(live)).toMatchObject({ label: 'Live stream', tone: 'on' });
+    expect(feedStatus({ ...live, source: 'mock' })).toMatchObject({ label: 'Mock replay', tone: 'on' });
+  });
+
+  it('says Paused, not live, when playback is paused', () => {
+    expect(feedStatus({ ...live, playing: false })).toMatchObject({ label: 'Paused', tone: 'idle' });
+    expect(feedStatus({ ...live, playing: false, connected: false })).toMatchObject({ label: 'Paused', tone: 'idle' });
+  });
+
+  it('is red while the stream is not connected', () => {
+    expect(feedStatus({ ...live, connected: false })).toMatchObject({ label: 'Connecting…', tone: 'off' });
+  });
+
+  it('says Full time at the end, even though playback stopped', () => {
+    expect(feedStatus({ ...live, playing: false, connected: false, ended: true })).toMatchObject({ label: 'Full time', tone: 'idle' });
   });
 });

@@ -9,7 +9,7 @@ so the demo is reproducible and costs nothing per view. Model answers are cached
 
 import copy
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 from pathlib import Path
 
@@ -40,8 +40,11 @@ def make_orchestrator(data_dir: Path, history: BaselineEngine,
     return LiveOrchestrator(copy.deepcopy(history), deps)
 
 
-def default_runner(data_dir: Path) -> LLMRunner:
-    return make_runner(LLMConfig.from_settings(), fake_responder=FakeAgents(),
+def default_runner(data_dir: Path, max_calls: int | None = None) -> LLMRunner:
+    config = LLMConfig.from_settings()
+    if max_calls is not None:
+        config = replace(config, max_calls=max_calls)
+    return make_runner(config, fake_responder=FakeAgents(),
                        cache_path=data_dir / "llm_cache.jsonl")
 
 

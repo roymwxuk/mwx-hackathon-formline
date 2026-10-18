@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { LangModeSwitch } from './SettingsPanel';
 import { Viewer } from './Viewer';
-import { applyComments, applyEvents, applyOverlays, formatClock } from '@/lib/logic';
+import { applyComments, applyEvents, applyOverlays, feedStatus, formatClock } from '@/lib/logic';
 import { useLeague } from '@/lib/league';
 import type { ViewerSettings } from '@/lib/types';
 import { MOMENTS, useMatchStream } from '@/lib/useMatchStream';
@@ -52,8 +53,9 @@ export default function App() {
   const store = useMemo(() => applyEvents(stream.events), [stream.events]);
   const overlayStates = useMemo(() => applyOverlays(stream.overlays), [stream.overlays]);
   const commentStates = useMemo(() => applyComments(stream.comments), [stream.comments]);
+  const feed = feedStatus(stream);
 
-  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame, commentStates, catchingUp: stream.catchingUp };
+  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame, commentStates, catchingUp: stream.catchingUp, askUrl: stream.askUrl };
 
   return (
     <div className="app">
@@ -63,10 +65,13 @@ export default function App() {
           <span className="muted">Live personal-baseline insights · synthetic data</span>
         </div>
 
-        <nav className="tabs" aria-label="Views">
-          <button type="button" aria-pressed={view === 'single'} onClick={() => setView('single')}>Live viewer</button>
-          <button type="button" aria-pressed={view === 'two'} onClick={() => setView('two')}>Two viewers</button>
-        </nav>
+        <div className="top-switches">
+          {view === 'single' && <LangModeSwitch settings={single} onChange={setSingle} />}
+          <nav className="tabs" aria-label="Views">
+            <button type="button" aria-pressed={view === 'single'} onClick={() => setView('single')}>Live viewer</button>
+            <button type="button" aria-pressed={view === 'two'} onClick={() => setView('two')}>Two viewers</button>
+          </nav>
+        </div>
 
         <div className="controls">
           {league.status !== 'ready' && (
@@ -74,11 +79,9 @@ export default function App() {
               {league.status === 'loading' ? 'Loading squads…' : 'Squads unavailable'}
             </span>
           )}
-          <span className={`source ${stream.connected ? 'on' : 'off'}`}>
-            {stream.source === 'mock' ? 'Mock replay' : stream.ended ? 'Full time' : stream.connected ? 'Live feed' : 'Reconnecting…'}
-          </span>
+          <span className={`source feed ${feed.tone}`} title={feed.title}>{feed.label}</span>
           <span className="clock-big">{formatClock(stream.clockMs)}</span>
-          <button type="button" className="ctl" onClick={() => stream.setPlaying(!stream.playing)}>
+          <button type="button" className="ctl play-toggle" onClick={() => stream.setPlaying(!stream.playing)}>
             {stream.playing ? 'Pause' : 'Play'}
           </button>
           <button type="button" className="ctl" onClick={stream.restart}>Restart</button>
@@ -101,6 +104,18 @@ export default function App() {
               ))}
             </select>
           </label>
+          <button
+            type="button"
+            className="ctl toggle"
+            aria-pressed={stream.slowMo}
+            disabled={!stream.slowMoApplies}
+            onClick={() => stream.setSlowMo(!stream.slowMo)}
+            title={stream.slowMoApplies
+              ? `Slow-mo ${stream.slowMo ? 'on' : 'off'}: ${stream.source === 'sse' ? 'slows to about 3×' : 'slows down'} around shots and insight cards so they stay readable`
+              : 'Slow-mo has no effect at this speed'}
+          >
+            Slow-mo
+          </button>
         </div>
       </header>
 

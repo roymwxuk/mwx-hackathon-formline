@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
+import { askUrlFor } from '@/lib/analyst';
 import { formatClock, timeAfter, type MatchTime } from '@/lib/logic';
 import type { AnalystComment, MatchEvent, Overlay, StreamMessage, TrackingFrameMessage } from '@/lib/types';
 
@@ -26,13 +27,21 @@ export interface MatchStream {
   catchingUp: boolean;
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
+  /** Slow-mo: play slower around shots (the backend's `slow`, the mock's key clocks). */
+  slowMo: boolean;
+  /** False when the chosen speed is already at or below the slow-mo pace. */
+  slowMoApplies: boolean;
+  setSlowMo: (on: boolean) => void;
   restart: () => void;
   /** Live mode: replay from a match time (everything before it arrives at once). */
   jumpTo: (to: MatchTime) => void;
+  /** The Analyst's /ask endpoint (live mode only; the mock replay has no backend). */
+  askUrl: string | null;
 }
 
 const SSE_URL: string | undefined = process.env.NEXT_PUBLIC_STREAM_URL;
 const LIVE_SPEEDS = [1, 5, 10, 20, 60, 120];
+const LIVE_MIN_SLOW_PACE = 3; // backend MIN_SLOW_PACE: slow-mo never goes below 3x
 const MOCK_SPEEDS = [30, 60, 120];
 const HALF_MS = 45 * 60_000;
 
@@ -42,10 +51,12 @@ const HALF_MS = 45 * 60_000;
  * minutes above 45 as the second half, so first-half stoppage time is capped at 45:00 and
  * second-half times are kept above it.
  */
-export function liveStreamUrl(base: string, speed: number, start: MatchTime | null): string {
+export function liveStreamUrl(base: string, speed: number, start: MatchTime | null, slowMo = true): string {
   const url = new URL(base);
   url.searchParams.set('speed', String(speed));
   url.searchParams.delete('start');
+  if (slowMo) url.searchParams.delete('slow');
+  else url.searchParams.set('slow', 'false');
   if (start && (start.period > 1 || start.clockMs > 0)) {
     const ms = start.period === 1 ? Math.min(start.clockMs, HALF_MS) : Math.max(start.clockMs, HALF_MS + 1000);
     url.searchParams.set('start', formatClock(ms));
@@ -102,6 +113,7 @@ export function useMatchStream(): MatchStream {
   const [frame, setFrame] = useState<TrackingFrameMessage | null>(null);
   const [playing, setPlayingState] = useState(true);
   const [speed, setSpeedState] = useState(() => (SSE_URL ? initialLiveSpeed(SSE_URL) : 60));
+  const [slowMo, setSlowMoState] = useState(true);
   const [connectKey, setConnectKey] = useState(0);
   const timeRef = useRef<MatchTime>({ period: 1, clockMs: 0 });
   const frameRef = useRef<TrackingFrameMessage | null>(null); // latest frame shown
@@ -124,7 +136,7 @@ export function useMatchStream(): MatchStream {
     if (source !== 'mock' || !playing) return;
     const id = window.setInterval(() => {
       // Broadcast pacing: slow down around key moments so viewers can read the overlays.
-      const nearKey = keyClocks.some((k) => clockRef.current > k - 4000 && clockRef.current < k + 14000);
+      const nearKey = slowMo && keyClocks.some((k) => clockRef.current > k - 4000 && clockRef.current < k + 14000);
       const effective = nearKey ? Math.min(speed, SLOW_SPEED) : speed;
       const next = Math.min(clockRef.current + TICK_MS * effective, MATCH_END_MS);
       clockRef.current = next;
@@ -138,7 +150,7 @@ export function useMatchStream(): MatchStream {
       if (next >= MATCH_END_MS) setPlayingState(false);
     }, TICK_MS);
     return () => window.clearInterval(id);
-  }, [source, playing, speed, demo, keyClocks]);
+  }, [source, playing, speed, slowMo, demo, keyClocks]);
 
   // ----- Live SSE -----
   // Speed, pause/play and restart reconnect with `speed=` and `start=` (the current match
@@ -146,7 +158,7 @@ export function useMatchStream(): MatchStream {
   useEffect(() => {
     if (source !== 'sse' || !SSE_URL || !playing) return;
     esRef.current?.close(); // never two streams at once (e.g. one left behind by a hot reload)
-    const es = new EventSource(liveStreamUrl(SSE_URL, speed, startRef.current));
+    const es = new EventSource(liveStreamUrl(SSE_URL, speed, startRef.current, slowMo));
     esRef.current = es;
     catchUpTo.current = startRef.current;
     setCatchingUp(startRef.current !== null);
@@ -188,9 +200,10 @@ export function useMatchStream(): MatchStream {
     };
     return () => {
       es.close();
+      setConnected(false); // paused or restarting: no stream is open now
       if (esRef.current === es) esRef.current = null;
     };
-  }, [source, playing, speed, connectKey]);
+  }, [source, playing, speed, slowMo, connectKey]);
 
   /** Start over, from kick-off or from a match time (the backend sends the past at once). */
   const liveRestart = useCallback((from: MatchTime | null = null) => {
@@ -229,6 +242,11 @@ export function useMatchStream(): MatchStream {
     setSpeedState(value);
   }, [source]);
 
+  const setSlowMo = useCallback((on: boolean) => {
+    if (source === 'sse') startRef.current = timeRef.current; // resume from here, new pacing
+    setSlowMoState(on);
+  }, [source]);
+
   const setPlaying = useCallback((value: boolean) => {
     if (source === 'sse' && value) {
       if (ended) return liveRestart(); // after full time, Play starts the match again
@@ -258,6 +276,7 @@ export function useMatchStream(): MatchStream {
   );
 
   const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
+  const slowMoApplies = speed > (source === 'sse' ? LIVE_MIN_SLOW_PACE : SLOW_SPEED);
 
-  return { source, clockMs, events, overlays, comments, playing, speed, speedOptions, connected, ended, frame, catchingUp: source === 'sse' && catchingUp, setPlaying, setSpeed, restart, jumpTo };
+  return { source, clockMs, events, overlays, comments, playing, speed, speedOptions, connected, ended, frame, catchingUp: source === 'sse' && catchingUp, setPlaying, setSpeed, slowMo, slowMoApplies, setSlowMo, restart, jumpTo, askUrl: SSE_URL ? askUrlFor(SSE_URL) : null };
 }
