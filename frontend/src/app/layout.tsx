@@ -1,11 +1,29 @@
 import type { Metadata } from 'next';
-import { Barlow_Condensed, IBM_Plex_Mono, IBM_Plex_Sans, Noto_Sans_JP } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 
-const barlow = Barlow_Condensed({ variable: '--font-barlow', weight: ['600', '700'], subsets: ['latin'] });
-const plexSans = IBM_Plex_Sans({ variable: '--font-plex-sans', weight: ['400', '500', '600'], subsets: ['latin'] });
-const plexMono = IBM_Plex_Mono({ variable: '--font-plex-mono', weight: ['500'], subsets: ['latin'] });
-const notoJp = Noto_Sans_JP({ variable: '--font-noto-jp', weight: ['400', '700'], subsets: ['latin'], preload: false });
+// Fonts ship with the repo (SIL Open Font License, files from Fontsource): the image build
+// never downloads them, so it cannot fail on a flaky Google Fonts response. Japanese text
+// uses the system font (Hiragino, Yu Gothic, Noto), as it did before.
+const barlow = localFont({
+  variable: '--font-barlow',
+  src: [
+    { path: './fonts/barlow-condensed-latin-600-normal.woff2', weight: '600' },
+    { path: './fonts/barlow-condensed-latin-700-normal.woff2', weight: '700' },
+  ],
+});
+const plexSans = localFont({
+  variable: '--font-plex-sans',
+  src: [
+    { path: './fonts/ibm-plex-sans-latin-400-normal.woff2', weight: '400' },
+    { path: './fonts/ibm-plex-sans-latin-500-normal.woff2', weight: '500' },
+    { path: './fonts/ibm-plex-sans-latin-600-normal.woff2', weight: '600' },
+  ],
+});
+const plexMono = localFont({
+  variable: '--font-plex-mono',
+  src: [{ path: './fonts/ibm-plex-mono-latin-500-normal.woff2', weight: '500' }],
+});
 
 export const metadata: Metadata = {
   title: 'Formline Live Viewer',
@@ -14,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${barlow.variable} ${plexSans.variable} ${plexMono.variable} ${notoJp.variable}`}>
+    <html lang="en" className={`${barlow.variable} ${plexSans.variable} ${plexMono.variable}`}>
       <body>{children}</body>
     </html>
   );

@@ -24,7 +24,7 @@
   --display: var(--font-barlow), 'Arial Narrow', sans-serif;
   --body: var(--font-plex-sans), system-ui, sans-serif;
   --mono: var(--font-plex-mono), ui-monospace, monospace;
-  --ja: var(--font-noto-jp), 'Hiragino Sans', sans-serif;
+  --ja: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', sans-serif;
   color-scheme: dark;
 }
 
