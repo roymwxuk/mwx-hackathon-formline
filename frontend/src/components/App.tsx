@@ -55,7 +55,7 @@ export default function App() {
   const commentStates = useMemo(() => applyComments(stream.comments), [stream.comments]);
   const feed = feedStatus(stream);
 
-  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame, commentStates, catchingUp: stream.catchingUp };
+  const shared = { clockMs: stream.clockMs, store, overlayStates, clubs: league.clubs, players: league.players, frame: stream.frame, commentStates, catchingUp: stream.catchingUp, askUrl: stream.askUrl };
 
   return (
     <div className="app">

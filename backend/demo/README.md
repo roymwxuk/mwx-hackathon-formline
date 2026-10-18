@@ -1,5 +1,11 @@
 # Demo artefacts
 
+`analyst/<match_id>.jsonl` and `analyst/<match_id>.answers.jsonl` (optional): the Match
+Analyst's comments with their suggested follow-up questions, and the answers to those
+questions, precomputed with Microsoft Foundry (`uv run formline-gen analyst` with
+`AZURE_AI_PROJECT_ENDPOINT` set). When present they replace the fake-model ones built into
+the image; `/ask` serves the precomputed answers and calls the model only for anything else.
+
 `overlays/<match_id>.jsonl` (optional): overlays precomputed with Microsoft Foundry
 (`uv run formline-gen overlays` with `AZURE_AI_PROJECT_ENDPOINT` set). When present, the
 container serves them instead of the fake-model overlays built into the image, so the

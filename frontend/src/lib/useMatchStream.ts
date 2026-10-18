@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
+import { askUrlFor } from '@/lib/analyst';
 import { formatClock, timeAfter, type MatchTime } from '@/lib/logic';
 import type { AnalystComment, MatchEvent, Overlay, StreamMessage, TrackingFrameMessage } from '@/lib/types';
 
@@ -34,6 +35,8 @@ export interface MatchStream {
   restart: () => void;
   /** Live mode: replay from a match time (everything before it arrives at once). */
   jumpTo: (to: MatchTime) => void;
+  /** The Analyst's /ask endpoint (live mode only; the mock replay has no backend). */
+  askUrl: string | null;
 }
 
 const SSE_URL: string | undefined = process.env.NEXT_PUBLIC_STREAM_URL;
@@ -275,5 +278,5 @@ export function useMatchStream(): MatchStream {
   const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
   const slowMoApplies = speed > (source === 'sse' ? LIVE_MIN_SLOW_PACE : SLOW_SPEED);
 
-  return { source, clockMs, events, overlays, comments, playing, speed, speedOptions, connected, ended, frame, catchingUp: source === 'sse' && catchingUp, setPlaying, setSpeed, slowMo, slowMoApplies, setSlowMo, restart, jumpTo };
+  return { source, clockMs, events, overlays, comments, playing, speed, speedOptions, connected, ended, frame, catchingUp: source === 'sse' && catchingUp, setPlaying, setSpeed, slowMo, slowMoApplies, setSlowMo, restart, jumpTo, askUrl: SSE_URL ? askUrlFor(SSE_URL) : null };
 }

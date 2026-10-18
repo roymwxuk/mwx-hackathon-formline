@@ -30,6 +30,8 @@ interface Props {
   commentStates: CommentState[];
   /** The stream is replaying the past at once (after a jump or reconnect): no pop-ups. */
   catchingUp: boolean;
+  /** The Analyst's /ask endpoint for follow-up questions (live mode), else null. */
+  askUrl: string | null;
 }
 
 const CORRECTION_HOLD_MS = 4 * 60_000;
@@ -87,7 +89,7 @@ export function Viewer(p: Props) {
         </div>
         {stage}
         {focus && <FocusStrip store={p.store} player={focus} lang={s.lang} />}
-        <AnalystPanel comments={comments} lang={s.lang} limit={2} />
+        <AnalystPanel comments={comments} lang={s.lang} limit={2} askUrl={p.askUrl} />
         <details className="panel">
           <summary>Change this viewer&rsquo;s settings</summary>
           <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} />
@@ -104,7 +106,7 @@ export function Viewer(p: Props) {
         <OverlayLog states={visible} settings={s} players={players} />
       </main>
       <div className="side-column">
-        <AnalystPanel comments={comments} lang={s.lang} />
+        <AnalystPanel comments={comments} lang={s.lang} askUrl={p.askUrl} />
         <aside className="panel side" aria-label="Viewer settings">
           <h2>Make it yours</h2>
           <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} showLangMode={false} />

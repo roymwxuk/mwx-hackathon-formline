@@ -510,8 +510,8 @@ report. Details: [docs/epic-tracking.md](epic-tracking.md).
 
 ## ADR-011: Match Analyst: proactive comments at key events, questions on demand
 
-**Status:** Accepted (2026-10-18). Phase 1 (proactive comments) built; phase 2 (question
-buttons) to be decided. Plan: [docs/plan-match-analyst.md](plan-match-analyst.md).
+**Status:** Accepted (2026-10-18). Phase 1 (proactive comments) and phase 2 (suggested
+follow-up questions) built. Plan: [docs/plan-match-analyst.md](plan-match-analyst.md).
 
 **Context.** The insight cards explain a shot against the shooter's own history, but nothing
 explains *why* a moment turned out as it did, and the viewer has no running voice. An LLM
@@ -545,4 +545,21 @@ cards before their foul, so a card comment waits for its foul. The data does not
 was fouled; the facts say so and the comment says so instead of guessing. A jump or
 reconnect replays the past at once, which made old comments (and the GOAL! flash) briefly
 look fresh; pop-ups are held back until the stream catches up.
+
+**Phase 2: follow-up questions (2026-10-18).** Options for who writes the questions: (a) the
+LLM writes free questions; (b) the LLM picks from a fixed catalog. Chosen: (b). Free
+questions read better but invite questions the data cannot answer (fitness, the referee's
+reasons), which the answer must then refuse; a catalog keeps every offered question
+answerable and verifiable, and it is the same JSON-contract pattern as the Insight Selector.
+A **Question Suggester** agent picks 2–3 of the catalog questions that apply to the moment;
+code rejects unknown or repeated ids, retries once, then uses the moment's default order. For
+answers: (a) live only, (b) precomputed only, (c) a live endpoint whose answers are
+precomputed for every suggested question. Chosen: (c). Demo clicks are instant and cost
+nothing at serving time, while `/ask` still answers live (verified, cached, under the call
+budget) for comments generated live (`live=true`). The endpoint never trusts the client's
+clock: it replays the feed up to the comment's sequence number, so a live answer is built from
+exactly what was known when the comment was written (a test checks it equals the
+precomputed one). Cost note: measured prompt sizes put the Foundry run for comments,
+suggestions and answers at about 430–520 calls, roughly ¥25–50; the "under ¥1" above was too
+low.
 

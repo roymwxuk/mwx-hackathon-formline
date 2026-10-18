@@ -1,20 +1,33 @@
-"""FastAPI entrypoint: replays a generated match feed to the viewer over SSE."""
+"""FastAPI entrypoint: replays a generated match feed to the viewer over SSE, and answers the
+Match Analyst's follow-up questions (`POST /matches/{id}/ask`)."""
 
 import json
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
+from formline.agents.llm import LLMRunner
 from formline.agents.precompute import (
     default_runner,
     make_orchestrator,
     overlays_path,
     read_overlays,
 )
-from formline.analyst.store import comment_message, comments_path, make_writer, read_comments
+from formline.analyst.ask import AskError, AskRequest, answer_question
+from formline.analyst.store import (
+    answers_path,
+    comment_message,
+    comments_path,
+    make_writer,
+    match_context,
+    read_answers,
+    read_comments,
+)
 from formline.chaos import ChaosConfig, inject
 from formline.config import settings
 from formline.engine.bootstrap import bootstrap_history
@@ -120,7 +133,8 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
     async def live_items(messages):
         runner = default_runner(settings.data_dir)
         orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir), runner)
-        analyst = make_writer(settings.data_dir, match_id, runner)
+        analyst = make_writer(settings.data_dir, match_id, runner,
+                              norm=history_engine(settings.data_dir).season_norm)
         # Messages as they arrive, overlays as the orchestrator produces them (including those
         # its idle timeout releases between messages).
         async for at, item in orch.replay(messages):
@@ -156,3 +170,48 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
         yield sse(sent + 1, END_MESSAGE)
 
     return EventSourceResponse(gen())
+
+
+class AskBody(BaseModel):
+    """A follow-up question the viewer clicked: the comment's `ask` plus its choice."""
+
+    moment: str = Field(max_length=80)
+    seq: int = Field(ge=0)
+    question: Literal["situation", "score", "player_tonight", "team_stats"]
+    player_id: str | None = Field(None, max_length=40)
+    lang: Literal["en", "ja"]
+
+
+@lru_cache(maxsize=1)
+def ask_runner(data_dir: Path) -> LLMRunner:
+    """One runner per process: its cache and call budget cover every /ask request."""
+    return default_runner(data_dir)
+
+
+@lru_cache(maxsize=8)
+def _feed(path: Path, mtime: float) -> list[FeedMessage]:
+    return read_feed(path)
+
+
+@lru_cache(maxsize=8)
+def _answers(path: Path, mtime: float) -> dict[str, dict]:
+    return read_answers(path)
+
+
+@app.post("/matches/{match_id}/ask")
+async def ask(match_id: str, body: AskBody) -> dict:
+    """Answer a follow-up question about a comment's moment: the precomputed answer when
+    there is one, otherwise the Analyst agent live (verified, cached, under the budget)."""
+    path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
+    if not path.exists():
+        raise HTTPException(404, f"Unknown match {match_id}")
+    said = answers_path(settings.data_dir, match_id)
+    precomputed = _answers(said, said.stat().st_mtime) if said.exists() else {}
+    req = AskRequest(body.moment, body.seq, body.question, body.player_id, body.lang)
+    try:
+        return await answer_question(req, _feed(path, path.stat().st_mtime),
+                                     match_context(settings.data_dir, match_id),
+                                     ask_runner(settings.data_dir), precomputed,
+                                     norm=history_engine(settings.data_dir).season_norm)
+    except AskError as exc:
+        raise HTTPException(422, str(exc)) from None

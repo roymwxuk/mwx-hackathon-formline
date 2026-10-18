@@ -115,6 +115,32 @@ export interface AnalystComment {
   source: 'llm' | 'template';
   /** A comment on a goal (as known when written): highlighted in red. */
   goal?: boolean;
+  /** Follow-up questions (phase 2): the viewer posts `ask` back to /ask with its choice. */
+  ask?: { moment: string; seq: number };
+  suggestions?: FollowupSuggestion[];
+}
+
+/** The fixed follow-up catalog (backend analyst/followups.py). */
+export type FollowupQuestion = 'situation' | 'score' | 'player_tonight' | 'team_stats';
+
+/** A question offered under a comment; the label's wording comes from the catalog. */
+export interface FollowupSuggestion {
+  question: FollowupQuestion;
+  label: string;
+  player_id: string | null;
+}
+
+/** The Analyst's verified answer to a follow-up question (POST /matches/{id}/ask). */
+export interface FollowupAnswer {
+  question: FollowupQuestion;
+  lang: Lang;
+  headline: string;
+  body: string;
+  evidence: { event_id: string; minute: string; type: string }[];
+  verified: boolean;
+  source: 'llm' | 'template';
+  /** Served from the answers precomputed with the match (no model call). */
+  cached: boolean;
 }
 
 /** One tracking frame (DATA_SCHEMA.md §5.4): shared frame, home attacks toward x = 100. */

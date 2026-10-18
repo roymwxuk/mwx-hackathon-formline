@@ -29,7 +29,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 
 **Could (only if time allows)**
 - [x] Match Analyst phase 1: comments after shots, corners and cards (`docs/plan-match-analyst.md`, ADR-011); Foundry run pending
-- [ ] Match Analyst phase 2: contextual question buttons, live with cache (about 2.5 h)
+- [x] Match Analyst phase 2: LLM-suggested follow-up questions from a fixed catalog, answered by `/ask` (precomputed answers, live otherwise) (ADR-011 update); Foundry run pending
 - [x] Golden tests for viewer personalization on the real demo overlays (`docs/plan-personalization-golden-tests.md`)
 - [x] Epic: synthetic tracking data, all 22 players and the ball (`docs/epic-tracking.md`, ADR-010): done 2026-10-18, checkpoint passed
 - [ ] Infrastructure as code: Bicep + `azd` (M4 task 6)

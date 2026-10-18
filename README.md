@@ -46,7 +46,10 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
 - **Explains key moments as they happen.** A Match Analyst agent writes a short, verified
   comment after every shot, corner and card, in English or Japanese, from the facts the data
   holds (distance, pressure, chance quality, placement, the build-up, fouls tonight) and shows
-  its evidence; it says when the data cannot answer (e.g. who was fouled).
+  its evidence; it says when the data cannot answer (e.g. who was fouled). Under each comment
+  it offers 2–3 follow-up questions ("Why is it 1–0?", "How is Ito doing tonight?", "Compare
+  the teams"), picked by a Suggester agent from a fixed catalog; a click returns a verified
+  answer with its evidence.
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
   set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× and a Jump to menu
@@ -112,6 +115,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 | Overlay Composer | Deterministic | Fills the fixed template catalog; bars and rows come from facts, so numbers are correct by construction |
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
+| Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -231,7 +235,7 @@ uv run formline-gen generate     # writes backend/data/ (seed 2026, ~3 s, ~28 MB
 uv run formline-gen report       # writes docs/realism-report.md
 uv run formline-gen overlays     # runs the agents over the live match, caches its overlays
 uv run formline-gen tracking     # synthetic tracking for the live match (~40 s, 3.8 MB)
-uv run formline-gen analyst      # Match Analyst comments for the live match
+uv run formline-gen analyst      # Match Analyst comments, follow-up questions and answers
 uv run uvicorn formline.api:app --reload
 uv run pytest
 
@@ -260,8 +264,11 @@ kick-off, and all 22 players and the ball (`tracking=false` sends a plain `clock
 slows down around shots (`slow=false`, the viewer's Slow-mo toggle, turns it off). By default
 the stream replays the feed with the overlays cached by `formline-gen overlays`;
 `live=true` runs the engine and the agents during the replay; `chaos=true&chaos_seed=N`
-replays a chaotic feed (and implies live). The agents use Microsoft Foundry when
-`AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
+replays a chaotic feed (and implies live). `POST /matches/{match_id}/ask` answers a
+follow-up question about a comment (`DATA_SCHEMA.md` §5.5): the answer precomputed by
+`formline-gen analyst` when there is one, otherwise the Match Analyst live, verified and
+under the call budget. The agents use Microsoft Foundry when `AZURE_AI_PROJECT_ENDPOINT` is
+set, otherwise a built-in fake model.
 
 ## Deploy to Azure
 
@@ -325,7 +332,7 @@ backend/    Python 3.12 · FastAPI · Pydantic · Microsoft Agent Framework (uv)
   src/formline/engine/      event log, ingestion, shot features, baselines, insights
   src/formline/agents/      catalog, narrators, verifier, selector, workflow, live orchestration
   src/formline/tracking/    synthetic tracking: team shape, event anchors, motion, realism
-  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer
+  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer, follow-ups, suggester, /ask
   data/sample/              committed excerpt of the generated data and example overlays
 frontend/   Next.js · React · TypeScript (pnpm): live viewer UI
 docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI screenshots

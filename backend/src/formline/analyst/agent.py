@@ -19,18 +19,27 @@ MAX_ATTEMPTS = 3
 
 QUESTIONS = {
     "en": {"shot_outcome": "Why did this shot end as it did?", "corner": "What came of this corner?",
-           "card": "Why was this player booked?", "var": "Why was the goal ruled out?"},
+           "card": "Why was this player booked?", "var": "Why was the goal ruled out?",
+           # follow-up questions a viewer asks (analyst/followups.py)
+           "situation": "What is happening in the match so far?",
+           "score": "Why is the score what it is?",
+           "player_tonight": "How is PLAYER doing tonight, compared with his own season norm?",
+           "team_stats": "How do the two teams compare so far?"},
     "ja": {"shot_outcome": "このシュートはなぜこの結果になったのか？", "corner": "このコーナーキックはどうなったか？",
-           "card": "なぜこの選手にカードが出たのか？", "var": "なぜゴールは取り消されたのか？"},
+           "card": "なぜこの選手にカードが出たのか？", "var": "なぜゴールは取り消されたのか？",
+           "situation": "ここまでの試合の流れは？",
+           "score": "なぜこのスコアなのか？",
+           "player_tonight": "今夜のPLAYERの出来は？本人の今季平均と比べてどうか？",
+           "team_stats": "ここまでの両チームの比較は？"},
 }
 
 INSTRUCTIONS = """You are the match analyst for a live football broadcast (synthetic match data).
-Answer QUESTION about one moment using only FACTS. Name players only with the names in NAMES
-(FACTS refer to them by role, e.g. SHOOTER). Explain the one or two facts that matter most
-(e.g. distance, pressure, the goalkeeper, chance quality, placement); do not list every fact.
-Chances and percentages are model estimates: say so. Never state certainty. If FACTS say
-something is not in the data, do not guess it. Write in LANGUAGE ({lang}) for a general
-audience, warm but precise, within LIMITS.
+Answer QUESTION (about one moment, or about the match so far) using only FACTS. Name players
+only with the names in NAMES (FACTS refer to them by role, e.g. SHOOTER). Explain the one or
+two facts that matter most (e.g. distance, pressure, the goalkeeper, chance quality,
+placement); do not list every fact. Chances and percentages are model estimates: say so.
+Never state certainty. If FACTS say something is not in the data, do not guess it. Write in
+LANGUAGE ({lang}) for a general audience, warm but precise, within LIMITS.
 Reply with JSON only: {{"headline": "...", "body": "..."}}"""
 
 
