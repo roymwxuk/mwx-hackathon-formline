@@ -179,7 +179,10 @@ tonight from the history),
 `team_tonight` (club), `player_info` (any squad player: club, shirt number, position,
 preferred foot, season before tonight from the history, involvement tonight),
 `player_tonight` (a player who has shot), `chances`, `discipline`,
-`recent` (last 10 minutes). 429 after 10 typed questions per viewer in 10 minutes.
+`recent` (last 10 minutes); from the past matches: `season_leaders` (both clubs' top
+scorers, assists, shots), `player_recent` (a squad player's last `n` games, 1–5),
+`team_recent` (a club's last `n` games, 1–5). The Router's reply carries `n` for the last
+two. 429 after 10 typed questions per viewer in 10 minutes.
 
 ---
 

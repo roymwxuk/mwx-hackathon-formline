@@ -135,7 +135,7 @@ Typed question ─► POST /ask/free ─► Question Router ─┬─► 1–3 f
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 | Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
-| Question Router | LLM, checked in code | Retrieval for a typed question: picks 1–3 of 10 fact sections (match info and venue with both clubs' season record, match so far, score, team comparison, one team, any player's profile and season, one player's shooting tonight, best chances, fouls and cards, last 10 minutes) and their club or player, or `cannot_answer`; unknown sections, other clubs or non-shooters are rejected, one retry, then decline |
+| Question Router | LLM, checked in code | Retrieval for a typed question: picks 1–3 of 13 fact sections (match info and venue with both clubs' season record, match so far, score, team comparison, one team, any player's profile and season, one player's shooting tonight, best chances, fouls and cards, last 10 minutes; and from the past matches: season leaders, a player's or a team's last 1–5 games) with their club, player and number of games, or `cannot_answer`; unknown sections, other clubs, non-shooters or a number of games outside 1–5 are rejected, one retry, then decline |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -398,7 +398,8 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
-- **Typed questions are answered from 10 fact sections.** A question needing facts outside
+- **Typed questions are answered from 13 fact sections**, including the season before
+  tonight (season leaders, a player's or team's last 1–5 games, from the 30 past matches). A question needing facts outside
   them (team news, a player's age or injuries, the referee's reasons, a time window other
   than the last 10 minutes) gets a partial answer or a decline, never invented facts. Player
   profiles use only public fields (club, shirt number, position, preferred foot); the

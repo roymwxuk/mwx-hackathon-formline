@@ -50,18 +50,29 @@ SECTIONS = {
     "chances": "the best chances of the match so far, both teams, by chance quality",
     "discipline": "fouls and cards per team, and who was booked or sent off",
     "recent": "the last 10 minutes: shots, corners and cards per team, and each shot",
+    # history before tonight (the season so far), from the past matches
+    "season_leaders": "both clubs' season leaders before tonight: top scorers, most assists, "
+                      "most shots",
+    "player_recent": "one player's last n games before tonight (needs player_id and n, 1–5): "
+                     "per game the opponent, result, goals, assists, shots, passes, plus totals",
+    "team_recent": "one team's last n games before tonight (needs club_id and n, 1–5): per "
+                   "game the opponent, home or away, result, score and scorers, plus totals",
 }
+MAX_RECENT = 5  # games back for player_recent and team_recent
 
 LABELS = {
     "en": {"match_info": "Match info", "situation": "Match so far", "score": "Score", "team_stats": "Team comparison",
            "team_tonight": "{club} tonight", "player_tonight": "{player} tonight",
            "player_info": "About {player}",
            "chances": "Best chances", "discipline": "Fouls and cards",
-           "recent": "Last 10 minutes"},
+           "recent": "Last 10 minutes", "season_leaders": "Season leaders",
+           "player_recent": "{player}: last {n} games", "team_recent": "{club}: last {n} games"},
     "ja": {"match_info": "試合情報", "situation": "試合の流れ", "score": "スコア", "team_stats": "両チーム比較",
            "team_tonight": "今夜の{club}", "player_tonight": "今夜の{player}",
            "player_info": "{player}について",
-           "chances": "決定機", "discipline": "ファウルとカード", "recent": "直近10分"},
+           "chances": "決定機", "discipline": "ファウルとカード", "recent": "直近10分",
+           "season_leaders": "今季のチーム内上位", "player_recent": "{player}の直近{n}試合",
+           "team_recent": "{club}の直近{n}試合"},
 }
 
 
@@ -240,7 +251,8 @@ BUILDERS = {"situation": _from_pack(situation_pack), "score": _from_pack(score_p
 def facts_for(sections: list[str], m: Moment, club_id: str | None = None,
               player_id: str | None = None, info: dict | None = None,
               records: dict | None = None, seasons: dict | None = None,
-              norm: Callable[[str], float | None] | None = None) -> FactsPack:
+              norm: Callable[[str], float | None] | None = None,
+              history: list | None = None, n: int | None = None) -> FactsPack:
     """The merged facts of `sections` (one sub-dict each), with one shared roles map."""
     roles = _Roles()
     facts: dict = {}
@@ -252,6 +264,12 @@ def facts_for(sections: list[str], m: Moment, club_id: str | None = None,
             part, src = player_info(m, roles, player_id, seasons or {}, norm or m.norm)
         elif sec == "team_tonight":
             part, src = team_tonight(m, roles, club_id)
+        elif sec == "season_leaders":
+            part, src = season_leaders(m, roles, seasons or {})
+        elif sec == "player_recent":
+            part, src = player_recent(m, roles, player_id, n or 3, history or [])
+        elif sec == "team_recent":
+            part, src = team_recent(m, roles, club_id, n or 3, history or [])
         elif sec == "player_tonight":
             pack = player_tonight_pack(_with_player(m, player_id), roles)
             part, src = pack.facts, pack.source_event_ids
@@ -262,11 +280,96 @@ def facts_for(sections: list[str], m: Moment, club_id: str | None = None,
     return FactsPack("free", m.event, facts, roles.roles, sources)
 
 
+def _game_date(row: dict) -> str:
+    d = datetime.fromisoformat(row["kickoff_at"])
+    return f"{d.day} {d:%b}"
+
+
+def _result(row: dict, club: str) -> tuple[str, int, int, str]:
+    """(won/drawn/lost, goals for, goals against, home/away) for `club` in a past match."""
+    home = row["home"] == club
+    gf, ga = (row["home_goals"], row["away_goals"]) if home else (row["away_goals"], row["home_goals"])
+    return ("won" if gf > ga else "drawn" if gf == ga else "lost"), gf, ga, ("home" if home else "away")
+
+
+def season_leaders(m: Moment, roles: _Roles, seasons: dict) -> tuple[dict, list[str]]:
+    """Each club's top scorers, assists and shots before tonight (ties named together)."""
+    facts: dict = {}
+    for side, club in (("home", m.home), ("away", m.away)):
+        squad = [pid for pid, p in m.players.items() if p.club_id == club]
+
+        def top(stat: str, k: int = 3, squad: list[str] = squad) -> str:
+            ranked = sorted((pid for pid in squad if seasons.get(pid, {}).get(stat)),
+                            key=lambda pid: -seasons[pid][stat])[:k]
+            return ", ".join(f"{roles('PLAYER', pid)} {seasons[pid][stat]}" for pid in ranked) or "none"
+        goals = [seasons.get(pid, {}).get("goals", 0) for pid in squad]
+        best = max(goals, default=0)
+        leaders = [pid for pid in squad if best and seasons.get(pid, {}).get("goals", 0) == best]
+        facts[f"{side}_club"] = m.clubs[club]
+        facts[f"{side}_top_scorer"] = (
+            f"top scorer: {' and '.join(roles('PLAYER', pid) for pid in leaders)} with {best} goal(s)"
+            if leaders else "no goals scored before tonight")
+        facts[f"{side}_goals"] = "most goals: " + top("goals")
+        facts[f"{side}_assists"] = "most assists: " + top("assists")
+        facts[f"{side}_shots"] = "most shots: " + top("shots")
+    facts["period"] = "the season before tonight's match"
+    return facts, []
+
+
+def player_recent(m: Moment, roles: _Roles, pid: str, n: int, history: list[dict]) -> tuple[dict, list[str]]:
+    p = m.players[pid]
+    games = [r for r in history if pid in r["players"]][-n:]
+    facts: dict = {"player": roles("PLAYER", pid), "club": m.clubs[p.club_id]}
+    if not games:
+        facts["games"] = "no appearances before tonight"
+        return facts, []
+    lines, tot = [], {"goals": 0, "assists": 0, "shots": 0, "on_target": 0}
+    for r in games:
+        s = r["players"][pid]
+        res, gf, ga, venue = _result(r, p.club_id)
+        opp = m.clubs[r["away"] if venue == "home" else r["home"]]
+        lines.append(f"{_game_date(r)}: {venue} against {opp}, {res} {gf}–{ga}: {s['goals']} goal(s), "
+                     f"{s['assists']} assist(s), {s['shots']} shot(s), {s['on_target']} on target, "
+                     f"{s['passes_completed']} of {s['passes']} passes completed")
+        for k in tot:
+            tot[k] += s[k]
+    facts["games"] = "; ".join(lines)
+    facts["totals"] = (f"over these {len(games)} game(s): {tot['goals']} goal(s), {tot['assists']} "
+                       f"assist(s), {tot['shots']} shot(s), {tot['on_target']} on target")
+    if len(games) < n:
+        facts["note"] = f"only {len(games)} appearance(s) before tonight"
+    facts["not_in_the_data"] = "minutes played and player ratings are not in the data"
+    return facts, []
+
+
+def team_recent(m: Moment, roles: _Roles, club: str, n: int, history: list[dict]) -> tuple[dict, list[str]]:
+    games = [r for r in history if club in (r["home"], r["away"])][-n:]
+    facts: dict = {"team": m.clubs[club]}
+    if not games:
+        facts["games"] = "no games before tonight"
+        return facts, []
+    lines, tally = [], {"won": 0, "drawn": 0, "lost": 0, "for": 0, "against": 0}
+    for r in games:
+        res, gf, ga, venue = _result(r, club)
+        opp = m.clubs[r["away"] if venue == "home" else r["home"]]
+        scorers = [pid for pid, team, _ in r["scorers"] if team == club]
+        named = ", ".join(roles("PLAYER", pid) for pid in dict.fromkeys(scorers)) or "no scorers"
+        lines.append(f"{_game_date(r)}: {venue} against {opp}, {res} {gf}–{ga} (scorers: {named})")
+        tally[res] += 1
+        tally["for"] += gf
+        tally["against"] += ga
+    facts["games"] = "; ".join(lines)
+    facts["totals"] = (f"over these {len(games)} game(s): {tally['won']} won, {tally['drawn']} drawn, "
+                       f"{tally['lost']} lost, goals {tally['for']} for and {tally['against']} against")
+    return facts, []
+
+
 def _with_player(m: Moment, player_id: str | None) -> Moment:
     return replace(m, player_id=player_id, _shots=None)
 
 
-def label(sections: list[str], lang: str, club: str | None, player: str | None) -> str:
+def label(sections: list[str], lang: str, club: str | None, player: str | None,
+          n: int | None = None) -> str:
     """e.g. "Northgate Rovers tonight · Best chances"."""
-    return " · ".join(LABELS[lang][s].format(club=club or "", player=player or "")
+    return " · ".join(LABELS[lang][s].format(club=club or "", player=player or "", n=n or 3)
                       for s in sections)

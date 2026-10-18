@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from formline.agents.llm import LLMRunner
 from formline.agents.selector import strip_fences
 from formline.analyst.followups import Moment
-from formline.analyst.sections import MAX_SECTIONS, SECTIONS
+from formline.analyst.sections import MAX_RECENT, MAX_SECTIONS, SECTIONS
 from formline.prompts import load
 
 MAX_TEXT = 200
@@ -32,6 +32,7 @@ class Route:
     player_id: str | None
     source: str  # "llm" or "rule" (declined after failed attempts)
     attempts: int
+    n: int | None = None  # games back, for player_recent and team_recent
 
 
 def shooters(m: Moment) -> list[str]:
@@ -64,6 +65,14 @@ def check_route(reply: object, m: Moment) -> str | None:
         return f"player_info needs a player_id from PLAYERS, got {reply.get('player_id')!r}"
     if "player_info" in secs and "player_tonight" in secs:
         return "use player_info or player_tonight, not both"
+    if "player_recent" in secs and reply.get("player_id") not in squad(m):
+        return f"player_recent needs a player_id from PLAYERS, got {reply.get('player_id')!r}"
+    if "team_recent" in secs and reply.get("club_id") not in (m.home, m.away):
+        return f"team_recent needs club_id {m.home} or {m.away}"
+    if {"player_recent", "team_recent"} & set(secs):
+        n = reply.get("n", 3)
+        if not isinstance(n, int) or isinstance(n, bool) or not 1 <= n <= MAX_RECENT:
+            return f"n must be a whole number of games from 1 to {MAX_RECENT}, got {n!r}"
     return None
 
 
@@ -145,17 +154,21 @@ async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str
             if reply.get("cannot_answer") is True:
                 return Route([], None, None, "llm", attempt)
             secs = reply["sections"]
-            needs_player = "player_tonight" in secs or "player_info" in secs
-            return Route(secs, reply.get("club_id") if "team_tonight" in secs else None,
-                         reply.get("player_id") if needs_player else None, "llm", attempt)
+            needs_player = bool({"player_tonight", "player_info", "player_recent"} & set(secs))
+            needs_club = bool({"team_tonight", "team_recent"} & set(secs))
+            recent = bool({"player_recent", "team_recent"} & set(secs))
+            return Route(secs, reply.get("club_id") if needs_club else None,
+                         reply.get("player_id") if needs_player else None, "llm", attempt,
+                         reply.get("n", 3) if recent else None)
     return Route([], None, None, "rule", MAX_ATTEMPTS)
 
 
 DECLINE = {
     "en": "I can only answer from this match's data: the fixture, venue, weather, crowd and "
           "referee, goals, shots and "
-          "chances, a team or a player (profile, season, tonight), fouls and cards, corners, the "
-          "last 10 minutes, and both clubs' season so far.",
+          "chances, a team or a player (profile, season, tonight, last 1–5 games), the clubs' "
+          "season leaders, fouls and cards, corners, the last 10 minutes, and both clubs' "
+          "season so far.",
     "ja": "答えられるのはこの試合のデータだけです：試合情報（会場・天気・観客・審判）、ゴール、シュートと決定機、チームや"
-          "選手（プロフィール・今季・今夜）、ファウルとカード、コーナー、直近10分、両チームの今季成績。",
+          "選手（プロフィール・今季・今夜・直近1〜5試合）、今季のチーム内上位、ファウルとカード、コーナー、直近10分、両チームの今季成績。",
 }

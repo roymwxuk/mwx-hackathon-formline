@@ -16,6 +16,8 @@ NUMBER = re.compile(r"\d+")
 
 
 ROUTE_WORDS = (
+    ("season_leaders", ("top scorer", "top score", "leading scorer", "most goals", "leaders",
+                        "得点王", "得点ランキング")),
     ("match_info", ("where", "venue", "stadium", "kick-off", "when", "season", "weather",
                     "attendance", "crowd", "referee", "どこ", "会場", "スタジアム", "今季", "天気",
                     "観客", "審判")),
@@ -50,17 +52,22 @@ def fake_route(p: dict) -> dict:
         matches = [pl for pl in matches if pl["club"] == club_name]
     if len(matches) > 1:
         return {"cannot_answer": True}
+    recent = re.search(r"(?:last|past|recent)\s*(\d+)?\s*(?:games?|matches?)|直近(\d+)?|最近(\d+)?", text)
+    n = next((int(g) for g in recent.groups() if g), 1 if "last game" in text else 3) if recent else None
+    if recent and club and not matches:  # "Northgate's last 5 games"
+        sections = ["team_recent"]
     if matches:
         pl = matches[0]
         shooting = pl.get("has_shot", True) and not any(w in text for w in about)
-        sections = sections + ["player_tonight" if shooting else "player_info"]
+        sections = sections + ["player_recent" if recent else
+                               "player_tonight" if shooting else "player_info"]
         player = pl["id"]
     sections += [q for q, words in ROUTE_WORDS if any(w in text for w in words)
-                 and not (player and q == "match_info")]
+                 and not (player and q == "match_info") and not (recent and q == "recent")]
     sections = list(dict.fromkeys(sections))[:3]
     if not sections:
         return {"cannot_answer": True}
-    return {"sections": sections, "club_id": club, "player_id": player}
+    return {"sections": sections, "club_id": club, "player_id": player, "n": n}
 
 
 @dataclass

@@ -135,13 +135,14 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     if not r.sections:
         return {"retrieved": None, "answer": None, "declined": DECLINE[lang]}
     pack = facts_for(r.sections, m, r.club_id, r.player_id, ctx.info, ctx.records,
-                     ctx.player_seasons, norm)
+                     ctx.player_seasons, norm, history=ctx.history, n=r.n)
     player = None
     if r.player_id:
         en, ja = ctx.league.players[r.player_id]
         player = en.split()[-1] if lang == "en" else ja.split("・")[-1]
     retrieved = {"sections": r.sections, "club_id": r.club_id, "player_id": r.player_id,
-                 "label": section_label(r.sections, lang, ctx.clubs.get(r.club_id), player)}
+                 "label": section_label(r.sections, lang, ctx.clubs.get(r.club_id), player,
+                                        r.n)}
     a = await answer_verified(pack, lang, runner, ctx.league, (ctx.home, ctx.away),
                               viewer_question=text[:MAX_TEXT])
     if a.coverage == "none":

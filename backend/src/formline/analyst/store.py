@@ -43,6 +43,7 @@ class MatchContext:
     info: dict = field(default_factory=dict)
     records: dict = field(default_factory=dict)
     player_seasons: dict = field(default_factory=dict)  # player id -> season before tonight
+    history: list = field(default_factory=list)  # past matches, oldest first (history_rows)
 
 
 def match_context(data_dir: Path, match_id: str) -> MatchContext:
@@ -52,7 +53,7 @@ def match_context(data_dir: Path, match_id: str) -> MatchContext:
     return MatchContext(league_names(players, clubs), {p.player_id: p for p in players},
                         {c.club_id: c.name for c in clubs}, match["home_club_id"],
                         match["away_club_id"], info=match, records=_records(data_dir),
-                        player_seasons=_player_seasons(data_dir))
+                        player_seasons=_player_seasons(data_dir), history=_history(data_dir))
 
 
 def season_records(results: Iterable[tuple[str, str, int, int]]) -> dict[str, dict]:
@@ -98,6 +99,52 @@ def player_season_stats(matches: Iterable[list]) -> dict[str, dict]:
     return stats
 
 
+def history_rows(matches: Iterable[tuple[dict, list]]) -> list[dict]:
+    """One row per past match, oldest first: who played whom, the score, the scorers and each
+    player's numbers (goals, assists, shots, on target, passes). From (match, events) pairs,
+    the same events the season stats count."""
+    rows = []
+    for match, events in matches:
+        by_id = {e.event_id: e for e in events}
+        players: dict[str, dict] = {}
+
+        def row(pid: str, players: dict = players) -> dict:
+            return players.setdefault(pid, {"goals": 0, "assists": 0, "shots": 0, "on_target": 0,
+                                            "passes": 0, "passes_completed": 0})
+        scorers = []
+        for e in events:
+            for pid in (getattr(e, "player_id", None), getattr(e, "player_on_id", None)):
+                if pid:
+                    row(pid)
+            if e.type == "pass" and e.player_id:
+                row(e.player_id)["passes"] += 1
+                row(e.player_id)["passes_completed"] += e.outcome == "complete"
+            if e.type != "shot":
+                continue
+            r = row(e.player_id)
+            r["shots"] += 1
+            r["on_target"] += e.outcome in ("goal", "saved")
+            if e.outcome == "goal":
+                r["goals"] += 1
+                scorers.append((e.player_id, e.team_id, e.match_clock_ms // 60_000 + 1))
+                kp = by_id.get(e.key_pass_event_id or "")
+                if kp is not None and kp.player_id:
+                    row(kp.player_id)["assists"] += 1
+        home, away = match["home_club_id"], match["away_club_id"]
+        rows.append({"match_id": match["match_id"], "kickoff_at": str(match["kickoff_at"]),
+                     "home": home, "away": away,
+                     "home_goals": sum(t == home for _, t, _ in scorers),
+                     "away_goals": sum(t == away for _, t, _ in scorers),
+                     "scorers": scorers, "players": players})
+    return sorted(rows, key=lambda r: r["kickoff_at"])
+
+
+@cache
+def _history(data_dir: Path) -> list[dict]:
+    return history_rows(_history_events(data_dir))
+
+
+@cache
 def _history_events(data_dir: Path) -> list[tuple[dict, list]]:
     from formline.engine.log import current_events
     from formline.generator.output import read_feed

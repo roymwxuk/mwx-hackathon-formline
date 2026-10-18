@@ -146,6 +146,12 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   Matches now carry match-day `conditions` (weather, temperature, attendance, a fictional
   referee) from a per-match random stream (events byte-identical), so "how was the
   weather?" is answered from `match_info`.
+  History questions (no generator change): one pass over the 30 past feeds
+  (`store.history_rows`) gives per-game rows (opponent, score, scorers, each player's goals,
+  assists, shots, passes). Three sections use them: `season_leaders` (each club's top
+  scorers, assists, shots), `player_recent` and `team_recent` (last `n` games, n 1–5, checked
+  in code). "Top scorer this season for these two teams" and "Reyner's last 3 games" were
+  declined before.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are
