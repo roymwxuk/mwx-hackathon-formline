@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { freshGoal } from '@/lib/goal';
+import { freshGoal, freshRestart } from '@/lib/goal';
 import type { MatchEvent } from '@/lib/types';
 
 const shot = (id: string, clock: number, outcome: string): MatchEvent =>
@@ -22,5 +22,19 @@ describe('freshGoal', () => {
   it('ignores shots that were not goals, and a goal overturned later', () => {
     expect(freshGoal([shot('s', 1000, 'saved')], 1500, new Set())).toBeUndefined();
     expect(freshGoal([shot('g', 1000, 'off_target')], 1500, new Set())).toBeUndefined(); // VAR v2
+  });
+});
+
+describe('freshRestart', () => {
+  const restart = (id: string, clock: number, pass_type: MatchEvent['pass_type']): MatchEvent =>
+    ({ event_id: id, version: 1, type: 'pass', period: 1, match_clock_ms: clock, team_id: 'h', player_id: 'p', x: 50, y: 100, pass_type } as MatchEvent);
+  it('labels a set piece that just happened, once', () => {
+    const events = [restart('t', 10_000, 'throw_in')];
+    expect(freshRestart(events, 10_500, new Set())?.pass_type).toBe('throw_in');
+    expect(freshRestart(events, 10_500, new Set(['t']))).toBeUndefined();
+  });
+  it('does not label a restart once open play has followed, or an old one', () => {
+    expect(freshRestart([restart('c', 10_000, 'corner'), restart('o', 12_000, 'open_play')], 12_500, new Set())).toBeUndefined();
+    expect(freshRestart([restart('g', 10_000, 'goal_kick')], 90_000, new Set())).toBeUndefined();
   });
 });

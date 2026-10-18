@@ -94,6 +94,13 @@ details.panel[open] summary { margin-bottom: 8px; }
   100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .goal-flash { animation: none; } }
+.restart-tag { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); pointer-events: none;
+  font: 700 15px/1 var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: #fff;
+  background: rgba(13, 17, 23, 0.7); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 999px; padding: 7px 14px;
+  animation: restart-in 1.8s ease-out forwards; }
+.restart-tag:lang(ja) { text-transform: none; font-family: var(--ja, var(--body)); }
+@keyframes restart-in { 0% { opacity: 0; transform: translate(-50%, -6px); } 12% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .restart-tag { animation: none; } }
 .overlay-card { background: rgba(13, 17, 23, 0.94); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 9px; animation: card-in 0.35s ease-out; }
 .overlay-card.waiting { display: inline-flex; padding: 7px 12px; font-size: 13px; color: rgba(230, 237, 243, 0.75);
   background: rgba(13, 17, 23, 0.4); border-color: rgba(255, 255, 255, 0.12); backdrop-filter: blur(2px); }

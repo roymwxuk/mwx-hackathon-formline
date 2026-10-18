@@ -56,6 +56,7 @@ export interface MatchEvent {
   tracking?: { shot_speed_kmh?: number };
   related_event_ids?: string[];
   recipient_id?: string | null;
+  pass_type?: 'open_play' | 'corner' | 'free_kick' | 'goal_kick' | 'throw_in' | 'kick_off';
 }
 
 export type TemplateId =

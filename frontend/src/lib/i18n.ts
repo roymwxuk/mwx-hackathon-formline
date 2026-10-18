@@ -21,6 +21,7 @@ const dict = {
     waiting: 'Waiting for the first insight…',
     favorite: 'Favorite',
     goal: 'GOAL!',
+    restart: { throw_in: 'Throw-in', corner: 'Corner', goal_kick: 'Goal kick', free_kick: 'Free kick', kick_off: 'Kick-off' },
   },
   ja: {
     focusTitle: '選手フォーカス',
@@ -41,9 +42,10 @@ const dict = {
     source: 'ソース',
     waiting: '最初のインサイトを待っています…',
     goal: 'ゴール！',
+    restart: { throw_in: 'スローイン', corner: 'コーナーキック', goal_kick: 'ゴールキック', free_kick: 'フリーキック', kick_off: 'キックオフ' },
     favorite: '推し',
   },
-} satisfies Record<Lang, Record<string, string>>;
+} satisfies Record<Lang, Record<string, string | Record<string, string>>>;
 
 export type Strings = (typeof dict)['en'];
 export const t = (lang: Lang): Strings => dict[lang];
