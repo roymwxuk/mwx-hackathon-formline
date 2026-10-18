@@ -101,8 +101,22 @@ async def answer_question(req: AskRequest, feed: list[FeedMessage], ctx: MatchCo
     return await _answer(req.question, req.lang, m, known, ctx, runner, precomputed)
 
 
-async def answer_free(moment_id: str, seq: int, text: str, lang: str, feed: list[FeedMessage],
-                      ctx: MatchContext, runner: LLMRunner,
+def moment_as_of(event_id: str, version: int, feed: list[FeedMessage], ctx: MatchContext,
+                 norm: Callable[[str], float | None] | None) -> tuple[Moment, dict[str, object]]:
+    """The match as known when the viewer received this event version: the feed replayed up
+    to that message (the viewer names an event it has, never a clock)."""
+    msg = next((m for m in feed if m.event_id == event_id and m.version == version), None)
+    if msg is None or msg.event is None:
+        raise AskError(f"no event {event_id} v{version} in this match")
+    known = known_events(feed, msg.sequence)
+    events = sorted(known.values(), key=lambda e: (e.period, e.match_clock_ms))
+    event = known[event_id]
+    return Moment("free", event, events, getattr(event, "player_id", None), ctx.home, ctx.away,
+                  ctx.clubs, ctx.players, norm), known
+
+
+async def answer_free(event_id: str, version: int, text: str, lang: str,
+                      feed: list[FeedMessage], ctx: MatchContext, runner: LLMRunner,
                       norm: Callable[[str], float | None] | None = None,
                       short_names: Mapping[str, str] | None = None) -> dict:
     """A typed question, "RAG over computed facts": the Router retrieves 1–3 fact sections,
@@ -112,7 +126,7 @@ async def answer_free(moment_id: str, seq: int, text: str, lang: str, feed: list
     "answer": {..., coverage} | None, "declined": message | None}."""
     if not text.strip():
         raise AskError("empty question")
-    m, known = _moment(moment_id, seq, feed, ctx, norm)
+    m, known = moment_as_of(event_id, version, feed, ctx, norm)
     r = await route(text, lang, m, ctx.league.players, dict(short_names or {}), runner)
     if not r.sections:
         return {"retrieved": None, "answer": None, "declined": DECLINE[lang]}

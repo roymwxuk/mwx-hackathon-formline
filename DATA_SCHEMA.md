@@ -166,8 +166,9 @@ comment's language. The viewer posts `{moment, seq, question, player_id, lang}` 
 verified, source, cached}` (`cached`: precomputed with the match). Unknown moments, questions
 that do not apply to the moment, or a `player_id` other than the moment's player get a 422.
 
-Typed questions: `POST /matches/{match_id}/ask/free` with `{moment, seq, text (1–200
-chars), lang}` returns `{retrieved {sections[], club_id, player_id, label} | null, answer
+Typed questions: `POST /matches/{match_id}/ask/free` with `{event_id, version, text (1–200
+chars), lang}` (the latest event the viewer has received: the backend replays the feed up to
+that message, so a question can be asked from kick-off and never trusts a clock) returns `{retrieved {sections[], club_id, player_id, label} | null, answer
 {question: "free", lang, headline, body, coverage (full / partial), evidence[], verified,
 source, cached} | null, declined | null}`. Sections: `situation`, `score`, `team_stats`,
 `team_tonight` (club), `player_tonight` (a player who has shot), `chances`, `discipline`,

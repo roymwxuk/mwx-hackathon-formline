@@ -293,8 +293,9 @@ the stream replays the feed with the overlays cached by `formline-gen overlays`;
 replays a chaotic feed (and implies live). `POST /matches/{match_id}/ask` answers a
 follow-up question about a comment (`DATA_SCHEMA.md` §5.5): the answer precomputed by
 `formline-gen analyst` when there is one, otherwise the Match Analyst live, verified and
-under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question
-(`{moment, seq, text, lang}`, at most 200 characters, 10 per viewer per 10 minutes) and
+under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question any time
+from kick-off (`{event_id, version, text, lang}`: as of the latest event the viewer has
+received; at most 200 characters, 10 per viewer per 10 minutes) and
 returns `{retrieved, answer (with coverage), declined}`. The agents use Microsoft Foundry when
 `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 

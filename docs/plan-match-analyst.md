@@ -134,6 +134,9 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   player; the Analyst (`prompts/analyst_free.md`) answers the viewer's own question from them
   with `coverage` full / partial / none (none → decline); the verifier is unchanged. The
   viewer shows *Based on: Northgate Rovers tonight · Score*. Chip answers are unchanged.
+  Typed questions are asked "as of" the latest event the viewer has received (`event_id`,
+  `version`; the backend replays the feed to that message), so they work from kick-off,
+  before any comment, and always reflect the current minute.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are

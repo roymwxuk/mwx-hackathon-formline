@@ -1,5 +1,5 @@
 import type { CommentState } from '@/lib/logic';
-import type { AnalystComment, FollowupAnswer, FollowupSuggestion, FreeAnswer, Lang } from '@/lib/types';
+import type { AnalystComment, FollowupAnswer, FollowupSuggestion, FreeAnswer, Lang, MatchEvent } from '@/lib/types';
 
 /** How recent (match time) a comment must be to pop up: comments replayed at once after a
  *  jump or a reconnect are older than this when they arrive, so they only go to the panel. */
@@ -54,14 +54,21 @@ export function latestAskable(states: CommentState[]): CommentState | undefined 
 /** The Analyst's rate limit for typed questions was reached (HTTP 429). */
 export class AskLimited extends Error {}
 
-/** Ask a typed question in the context of a comment's moment; the backend routes it to a
- *  catalog question or declines. */
-export async function askFree(url: string, c: AnalystComment, text: string, signal?: AbortSignal): Promise<FreeAnswer> {
-  if (!c.ask) throw new Error('this comment has no follow-up questions');
+/** The latest event the viewer has received: typed questions are asked "as of" it. */
+export interface AsOf { event_id: string; version: number; minute: string }
+
+export function asOfLatest(events: MatchEvent[]): AsOf | null {
+  const e = events[events.length - 1];
+  return e ? { event_id: e.event_id, version: e.version, minute: `${Math.floor(e.match_clock_ms / 60_000) + 1}'` } : null;
+}
+
+/** Ask a typed question about the match as of the latest event the viewer has (the backend
+ *  replays the feed up to it, never trusting a clock), any time from kick-off. */
+export async function askFree(url: string, asOf: AsOf, text: string, lang: Lang, signal?: AbortSignal): Promise<FreeAnswer> {
   const res = await fetch(`${url}/free`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ...c.ask, text, lang: c.lang }),
+    body: JSON.stringify({ event_id: asOf.event_id, version: asOf.version, text, lang }),
     signal,
   });
   if (res.status === 429) throw new AskLimited('too many questions');

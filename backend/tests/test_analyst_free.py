@@ -44,11 +44,13 @@ def match():
     return gm, ctx, goal, short
 
 
-def ask(match, text, lang="en", responder=None):
+def ask(match, text, lang="en", responder=None, as_of=None):
+    """Ask as of `as_of` (event id, version); by default Ito's goal at 22:30."""
     gm, ctx, goal, short = match
     runner = make_runner(LLMConfig(), fake_responder=responder or FakeAgents())
-    return asyncio.run(answer_free(goal["ask"]["moment"], goal["ask"]["seq"], text, lang,
-                                   gm.feed, ctx, runner, short_names=short))
+    event_id, version = as_of or (moment_kind(goal["ask"]["moment"])[1], 1)
+    return asyncio.run(answer_free(event_id, version, text, lang, gm.feed, ctx, runner,
+                                   short_names=short))
 
 
 def moment(match) -> Moment:
@@ -184,14 +186,23 @@ def test_coverage_is_checked(match):
     assert not verify_answer(ok, catalog, ctx.league).ok  # chips: no coverage key
 
 
-def test_an_empty_question_or_unknown_moment_is_rejected(match):
-    gm, ctx, goal, _ = match
+def test_questions_can_be_asked_from_kick_off_before_any_comment(match):
+    gm = match[0]
+    first = next(m for m in gm.feed if m.event is not None)
+    out = ask(match, "what's happening so far?", as_of=(first.event_id, first.version))
+    assert out["retrieved"]["sections"] == ["situation"]
+    assert "no goals yet" in out["answer"]["body"]
+
+
+def test_an_empty_question_or_unknown_event_is_rejected(match):
+    gm, ctx, _, _ = match
     runner = make_runner(LLMConfig(), fake_responder=FakeAgents())
     with pytest.raises(AskError):
-        asyncio.run(answer_free(goal["ask"]["moment"], goal["ask"]["seq"], "  ", "en", gm.feed,
-                                ctx, runner))
+        ask(match, "  ")
     with pytest.raises(AskError):
-        asyncio.run(answer_free("penalty_evt_1", 5, "score?", "en", gm.feed, ctx, runner))
+        asyncio.run(answer_free("evt_nope", 1, "score?", "en", gm.feed, ctx, runner))
+    with pytest.raises(AskError):  # a version the feed never sent
+        ask(match, "score?", as_of=(next(m.event_id for m in gm.feed if m.event), 9))
 
 
 def test_the_rate_limit_allows_n_per_window_per_client():
@@ -220,7 +231,8 @@ def client(tmp_path_factory):
 
 def test_the_free_ask_endpoint_answers_declines_and_limits(client, match):
     goal = match[2]
-    body = {**goal["ask"], "text": "why nor score nothing today", "lang": "en"}
+    body = {"event_id": moment_kind(goal["ask"]["moment"])[1], "version": 1,
+            "text": "why nor score nothing today", "lang": "en"}
     r = client.post(f"/matches/{LIVE}/ask/free", json=body)
     assert r.status_code == 200
     out = r.json()

@@ -7,6 +7,7 @@ import { CorrectionBanner, OverlayCard } from './OverlayCard';
 import { commentsFor } from '@/lib/analyst';
 import type { CommentState } from '@/lib/logic';
 import { AnalystPanel, CommentBubble } from './Analyst';
+import { asOfLatest } from '@/lib/analyst';
 import { GoalFlash } from './GoalFlash';
 import { RestartTag } from './RestartTag';
 import { FocusStrip, OverlayLog, ScoreBug } from './Panels';
@@ -39,6 +40,7 @@ const CORRECTION_HOLD_MS = 4 * 60_000;
 export function Viewer(p: Props) {
   const { settings: s, clubs, players } = p;
   const events = useMemo(() => orderedEvents(p.store), [p.store]);
+  const asOf = useMemo(() => asOfLatest(events), [events]); // typed questions: "as of now"
   const visible = useMemo(() => personalize(p.overlayStates, s, players), [p.overlayStates, s, players]);
   const cards = visible.filter((v) => v.overlay.template_id !== 'correction_banner');
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
@@ -89,7 +91,7 @@ export function Viewer(p: Props) {
         </div>
         {stage}
         {focus && <FocusStrip store={p.store} player={focus} lang={s.lang} />}
-        <AnalystPanel comments={comments} lang={s.lang} limit={2} askUrl={p.askUrl} />
+        <AnalystPanel comments={comments} lang={s.lang} limit={2} askUrl={p.askUrl} asOf={asOf} />
         <details className="panel">
           <summary>Change this viewer&rsquo;s settings</summary>
           <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} />
@@ -106,7 +108,7 @@ export function Viewer(p: Props) {
         <OverlayLog states={visible} settings={s} players={players} />
       </main>
       <div className="side-column">
-        <AnalystPanel comments={comments} lang={s.lang} askUrl={p.askUrl} />
+        <AnalystPanel comments={comments} lang={s.lang} askUrl={p.askUrl} asOf={asOf} />
         <aside className="panel side" aria-label="Viewer settings">
           <h2>Make it yours</h2>
           <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} showLangMode={false} />

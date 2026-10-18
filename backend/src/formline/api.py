@@ -220,10 +220,10 @@ async def ask(match_id: str, body: AskBody) -> dict:
 
 
 class AskFreeBody(BaseModel):
-    """A question the viewer typed, asked in the context of the latest comment's moment."""
+    """A question the viewer typed, about the match as of the latest event it has received."""
 
-    moment: str = Field(max_length=80)
-    seq: int = Field(ge=0)
+    event_id: str = Field(max_length=40)
+    version: int = Field(ge=1)
     text: str = Field(min_length=1, max_length=MAX_TEXT)
     lang: Literal["en", "ja"]
 
@@ -254,7 +254,7 @@ async def ask_free(match_id: str, body: AskFreeBody, request: Request) -> dict:
     if not FREE_QUESTIONS.allow(client_key(request)):
         raise HTTPException(429, "Too many questions; try again in a few minutes.")
     try:
-        return await answer_free(body.moment, body.seq, body.text, body.lang,
+        return await answer_free(body.event_id, body.version, body.text, body.lang,
                                  _feed(path, path.stat().st_mtime),
                                  match_context(settings.data_dir, match_id),
                                  ask_runner(settings.data_dir),
