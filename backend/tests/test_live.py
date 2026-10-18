@@ -144,3 +144,25 @@ def test_secondary_cards_are_corrected_like_any_shown_card(clean_run):
     for o in overlays:
         if o.op in ("correct", "retract") and o.template_id != "correction_banner":
             assert o.secondary == by_id[o.supersedes_overlay_id].secondary, o.overlay_id
+
+
+def test_cards_do_not_wait_for_the_next_message(season, live_feed):
+    """After a goal there can be half a minute with no events; the idle timeout releases
+    the shot so its card follows within the reorder window, not with the next event."""
+    orch = orchestrator(season)
+    emitted = {m.event_id: m.emitted_at for m in live_feed}
+    window = orch.pipeline.ingestor.window
+
+    async def collect():
+        return [(at, item) async for at, item in orch.replay(live_feed)]
+
+    from formline.schema.overlay import Overlay
+    rows = [(at, o) for at, o in asyncio.run(collect()) if isinstance(o, Overlay)]
+    shows = [(at, o) for at, o in rows if o.op == "show" and o.template_id != "correction_banner"]
+    assert shows
+    for at, o in shows:
+        shot_at = emitted[o.source_event_ids[0]]
+        assert at - shot_at <= window + window, (o.overlay_id, at - shot_at)
+    goal = [at - emitted[o.source_event_ids[0]] for at, o in shows if o.match_clock_ms // 1000 == 63 * 60 + 44]
+    assert goal and max(goal).total_seconds() <= 10  # was about 29 s (it waited for the VAR start)
+

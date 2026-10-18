@@ -101,10 +101,36 @@ class LiveOrchestrator:
         await self._handle(self.pipeline.flush())
         return self.overlays[start:]
 
-    async def run(self, feed: list[FeedMessage]) -> list[Overlay]:
+    async def advance_to(self, now) -> list[Overlay]:
+        start = len(self.overlays)
+        await self._handle(self.pipeline.advance_to(now))
+        return self.overlays[start:]
+
+    async def replay(self, feed: list[FeedMessage]):
+        """Yield (emitted_at, item) for a feed in arrival order, as a live system would: each
+        message as it arrives, then the overlays it produced.
+
+        When no message arrives for the reorder window, an idle timeout releases what is
+        buffered (so a goal's card does not wait for the next event, which can be half a
+        minute away); those overlays are timed at that moment.
+        """
+        idle = self.pipeline.ingestor.window
+        prev = None
         for msg in feed:
-            await self.process(msg)
-        await self.flush()
+            if prev is not None and msg.emitted_at - prev > idle:
+                at = prev + idle
+                for o in await self.advance_to(at):
+                    yield at, o
+            yield msg.emitted_at, msg
+            for o in await self.process(msg):
+                yield msg.emitted_at, o
+            prev = msg.emitted_at if prev is None else max(prev, msg.emitted_at)
+        for o in await self.flush():
+            yield prev, o
+
+    async def run(self, feed: list[FeedMessage]) -> list[Overlay]:
+        async for _ in self.replay(feed):
+            pass
         return self.overlays
 
     async def _handle(self, changes: list[InsightChange]) -> None:

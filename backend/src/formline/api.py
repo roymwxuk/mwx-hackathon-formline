@@ -27,6 +27,7 @@ from formline.replay import (
     parse_clock,
     to_stream_message,
 )
+from formline.schema.feed import FeedMessage
 from formline.schema.overlay import overlay_message
 from formline.schema.tracking import tracking_path
 from formline.tracking.frames import frames_for
@@ -118,14 +119,14 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
     async def live_items(messages):
         orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
                                  default_runner(settings.data_dir))
-        for msg in messages:
-            if (payload := to_stream_message(msg)) is not None:
-                yield msg.emitted_at, payload
-            for overlay in await orch.process(msg):
-                yield msg.emitted_at, overlay_message(overlay)
-        last = messages[-1].emitted_at if messages else None
-        for overlay in await orch.flush():
-            yield last, overlay_message(overlay)
+        # Messages as they arrive, overlays as the orchestrator produces them (including those
+        # its idle timeout releases between messages).
+        async for at, item in orch.replay(messages):
+            if isinstance(item, FeedMessage):
+                if (payload := to_stream_message(item)) is not None:
+                    yield at, payload
+            else:
+                yield at, overlay_message(item)
 
     async def gen():
         if live or chaos:
