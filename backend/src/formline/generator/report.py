@@ -118,6 +118,40 @@ def compute(data: Path) -> tuple[list[Check], dict]:
     return checks, extra
 
 
+def render_tracking(checks: list[Check], extra: dict) -> str:
+    """The informational tracking section (see formline.tracking.realism)."""
+    rows = "\n".join(
+        f"| {c.metric} | {c.fmt.format(c.value)} | {c.fmt.format(c.lo)}–{c.fmt.format(c.hi)} "
+        f"| {c.reference} | {'✅' if c.ok else ('⬇️ below' if c.value < c.lo else '⬆️ above')} |"
+        for c in checks
+    )
+    lo, hi = extra["distance_range"]
+    inside = sum(c.ok for c in checks)
+    return f"""
+## Tracking (live match, informational)
+
+Synthetic tracking for all 22 players and the ball at 10 Hz, derived from the live match's
+events (ADR-010): {extra['frames']:,} frames, {extra['players']} players on the pitch for at
+least 45 minutes. {inside} of {len(checks)} checks are within range. These rows are reported,
+not enforced.
+
+| Metric | Generated | Typical range | Reference | Verdict |
+|---|---|---|---|---|
+{rows}
+
+Outfield distance per 90 ranges from {lo:.1f} to {hi:.1f} km by player.
+
+**Why players run less than in real football.** Movement is a team shape plus event
+anchors, eased so players do not dart out and straight back (a turnover eases the shape over
+4 s, players drift back to position over about 20 s). That keeps the pitch readable, but the
+model has none of the constant small off-ball runs, checks and recoveries of real players,
+so distance and high-speed running come out low. Event spots and team shape are realistic.
+Peak speeds sit at the model's 9.5 m/s cap for most players: an event anchor occasionally
+forces a short sprint to reach the event spot. Speeds are measured over 0.5 s, as positions
+are stored to about 10 cm.
+"""
+
+
 def render(checks: list[Check], extra: dict, seed: int | None = None) -> str:
     rows = "\n".join(
         f"| {c.metric} | {c.fmt.format(c.value)} | {c.fmt.format(c.lo)}–{c.fmt.format(c.hi)} "

@@ -55,7 +55,9 @@ box(76,192,330,262,'a · Ingest',GREEN,[
  '  out-of-order and corrected events',
  'Append-only event log',
  '  idempotent on event_id',
- '  reorder window by event time',
+ '  reorder window + idle timeout',
+ 'Synthetic tracking, 10 Hz:',
+ '  22 players + ball, from events',
  ('Pass, shot, tackle, VAR... events',MUTED),
 ])
 box(426,192,340,262,'b · Interpret',GREEN,[
@@ -116,6 +118,7 @@ box(910,476,210,358,'d · Render',GREEN,[
  'SSE stream',
  '  resumable (event ids)',
  '  speed · start=mm:ss',
+ '  + tracking frames 4/s',
 ])
 arrow([(874,632),(904,632)],GREEN)
 
@@ -123,7 +126,8 @@ arrow([(874,632),(904,632)],GREEN)
 rect(1160,140,330,712,stroke=BORDER,fill='#10151c',r=14)
 text(1180,172,'formline-web',20,TEXT,700); text(1318,172,'Next.js · 0.25 vCPU',15,MUTED)
 box(1180,192,290,642,'e · Personalize',GOLD,[
- '2D pitch replaying the feed',
+ '2D pitch: 22 tracked players',
+ '  and the ball',
  'Timed overlay cards',
  '',
  ('Viewer settings',MUTED),
@@ -139,7 +143,8 @@ box(1180,192,290,642,'e · Personalize',GOLD,[
  'Live viewer',
  'Two viewers side by side',
  '',
- 'Speed · pause · restart',
+ 'Speed · pause · jump to moment',
+ 'GOAL! · set-piece labels',
  'VAR correction banner',
 ],size=15)
 arrow([(1120,700),(1174,700)],GOLD,sw=2.5); text(1147,690,'SSE',12.5,GOLD,700,'middle')

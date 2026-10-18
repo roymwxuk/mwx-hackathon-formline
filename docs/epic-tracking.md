@@ -1,8 +1,8 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** In progress. Done: T0–T5, T7 and T8 (the viewer draws all 22 players from
-streamed frames). Left: T6 realism checks in the report, T9 size check, T10 docs. Moving
-preview outside the app: `docs/tracking/preview.html`.
+**Status:** Done (2026-10-18). T0–T10 complete; the Oct 21 checkpoint was reviewed early and
+passed (ADR-010 outcome). Image size and build time come from CI. Moving preview:
+`docs/tracking/preview.html`.
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.
@@ -121,6 +121,11 @@ in the buffer. Stretch task S1 starts only if everything above is done early.
   (20 s). Result: trips of 12–20 m fell from 54 to 14 per half (20+ m from 4 to 2) with
   99.5% of anchors still met. Trade-off: players now run less than in real football, about
   8 km per match and about 12 s above 7 m/s (real: 10–11 km, 30–40 s).
+- **Resources (T9, 2026-10-18):** the local backend with the live match's frames loaded uses
+  150 MB; five simultaneous streams (20x and 120x) add nothing measurable (149 MB peak) and
+  use 1–5% of one core, the same as with `tracking=false`. The container has 1 GiB and
+  0.5 vCPU. The tracking file adds about 4 MB to the image and `formline-gen tracking` about
+  40 s to the Docker build; CI's image job reports the exact numbers.
 - **Generator quirk:** one pass (57:56) is credited to a player substituted off at 56:53. The
   anchors skip actions by players not on the pitch rather than fixing the generator, which
   would re-randomize the rest of the match and invalidate the Foundry-narrated overlays.

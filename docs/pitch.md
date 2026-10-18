@@ -47,8 +47,10 @@ Formline is a live insight engine for studio and streaming. As a match unfolds, 
   events are absorbed. When VAR overturns a goal, every dependent card is corrected or
   withdrawn through its lineage, and the baselines are rebuilt from the event log.
 
-A 2D pitch replays the synthetic match with the cards on top, and a two-viewer page shows
-the same moment for a Japanese casual fan and an English analyst side by side.
+A 2D pitch shows the match as it unfolds: all 22 players and the ball from synthetic 10 Hz
+tracking, the cards on top, a GOAL! flash and set-piece labels, speeds from 1× to 120× and a
+Jump to menu for the key moments. A two-viewer page shows the same moment for a Japanese
+casual fan and an English analyst side by side.
 
 ### How it works
 
@@ -57,7 +59,9 @@ The five stages of the brief, end to end:
 1. **Ingest.** A seeded generator produces a fictional league (6 clubs, 30 past matches and
    a live match) and replays it as a live feed. A chaos injector adds duplicates,
    reordering, late messages and corrections. Events go into an append-only, idempotent
-   event log.
+   event log with a reorder window (and an idle timeout, so a goal's card never waits for
+   the next event). Synthetic tracking for all 22 players and the ball is derived from the
+   events: a team-shape model, with every player exactly on his event spots.
 2. **Interpret.** A deterministic engine, with no LLM, computes shot features and
    incremental personal baselines with like-for-like buckets and shrinkage.
 3. **Explain.** Detectors find notable shots, each citing its source events. A
@@ -113,10 +117,12 @@ The repository measures its own claims:
   Property-based tests run the same check in CI.
 - **Shrinkage:** **30%** lower error than raw personal averages, **45%** for players with
   1–4 shots, measured against the generator's hidden ground truth.
-- **Realism:** **14 / 14** checks within range of public league aggregates.
+- **Realism:** **14 / 14** event-data checks within range of public league aggregates.
+  Tracking puts **99.5%** of players on their event spots; the report also shows honestly
+  where it falls short (players cover about 8 km per 90, against 10–12 km in real football).
 - **Agents in practice:** **80 / 80** Foundry-written card texts for the demo match passed
   the verifier, with no template fallbacks; about ¥21 in model costs for every run so far.
-- **Engineering:** 194 backend and 19 frontend tests, nine design decision records, CI on
+- **Engineering:** 233 backend and 41 frontend tests, ten design decision records, CI on
   every push.
 
 ### Production readiness and impact

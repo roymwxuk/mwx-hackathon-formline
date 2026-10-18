@@ -114,6 +114,10 @@ and `end`, CORS, and live narration via managed identity. Apps stopped afterward
 **Open:** redeploy with the resumable stream (task 7), confirm long streams survive the suspected
 ~4-minute ingress cutoff, measure the cold start.
 
+**Resources with tracking (2026-10-18, local):** 150 MB memory with the live match's
+frames loaded, no growth with five simultaneous streams, 1–5% of one core; well inside the
+backend's 1 GiB and 0.5 vCPU. Details: `docs/epic-tracking.md`.
+
 ### Task 4: managed identity for Foundry (SHOULD) ✅ Done
 
 - The backend container app gets a system-assigned managed identity with the right role on the
