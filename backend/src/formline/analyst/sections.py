@@ -10,6 +10,7 @@ player placeholders, so SCORER_A means the same player everywhere.
 
 from collections.abc import Callable
 from dataclasses import replace
+from datetime import datetime
 
 from formline.analyst.facts import OUTCOME, FactsPack
 from formline.analyst.followups import (
@@ -30,6 +31,8 @@ MAX_SECTIONS = 3
 
 # What each section holds: the Router reads these to choose.
 SECTIONS = {
+    "match_info": "the fixture: competition, season and matchday, the venue, the kick-off time, "
+                  "which team is at home, both clubs' season record before tonight",
     "situation": "the score, the goals and the shots so far, the last 10 minutes in brief, cards",
     "score": "why the score is what it is: goals and their chance quality, the best missed "
              "chances, the goalkeepers' saves",
@@ -44,11 +47,11 @@ SECTIONS = {
 }
 
 LABELS = {
-    "en": {"situation": "Match so far", "score": "Score", "team_stats": "Team comparison",
+    "en": {"match_info": "Match info", "situation": "Match so far", "score": "Score", "team_stats": "Team comparison",
            "team_tonight": "{club} tonight", "player_tonight": "{player} tonight",
            "chances": "Best chances", "discipline": "Fouls and cards",
            "recent": "Last 10 minutes"},
-    "ja": {"situation": "試合の流れ", "score": "スコア", "team_stats": "両チーム比較",
+    "ja": {"match_info": "試合情報", "situation": "試合の流れ", "score": "スコア", "team_stats": "両チーム比較",
            "team_tonight": "今夜の{club}", "player_tonight": "今夜の{player}",
            "chances": "決定機", "discipline": "ファウルとカード", "recent": "直近10分"},
 }
@@ -131,6 +134,32 @@ def recent(m: Moment, roles: _Roles) -> tuple[dict, list[str]]:
     return facts, [s.event_id for s in shots]
 
 
+def _record_text(club: str, r: dict | None) -> str:
+    if not r:
+        return f"{club}: no matches before tonight"
+    return (f"{club}: {r['played']} played, {r['won']} won, {r['drawn']} drawn, {r['lost']} lost, "
+            f"goals {r['goals_for']} for and {r['goals_against']} against")
+
+
+def match_info(m: Moment, info: dict, records: dict) -> tuple[dict, list[str]]:
+    """The fixture, from the match list (not the events), and both clubs' season so far."""
+    home, away = m.clubs[m.home], m.clubs[m.away]
+    kickoff = datetime.fromisoformat(str(info["kickoff_at"]))
+    now = max(m.events, key=_key)
+    facts = {
+        "competition": "a synthetic league of six fictional clubs",
+        "season": f"season {info['season']}, matchday {info['matchday']}",
+        "fixture": f"{home} (home) against {away} (away)",
+        "venue": f"played at {info['venue']}, the home ground of {home}",
+        "kick_off": f"kick-off {kickoff:%H:%M} UTC on {kickoff.day} {kickoff:%B %Y}",
+        "now": f"minute {_minute(now)}, {'first' if now.period == 1 else 'second'} half",
+        "season_so_far": "before tonight: " + "; ".join(
+            _record_text(m.clubs[c], records.get(c)) for c in (m.home, m.away)),
+        "not_in_the_data": "attendance, weather, the referee and team news are not in the data",
+    }
+    return facts, []
+
+
 def _from_pack(build: Callable[..., FactsPack]):
     def section(m: Moment, roles: _Roles) -> tuple[dict, list[str]]:
         pack = build(m, roles)
@@ -144,13 +173,16 @@ BUILDERS = {"situation": _from_pack(situation_pack), "score": _from_pack(score_p
 
 
 def facts_for(sections: list[str], m: Moment, club_id: str | None = None,
-              player_id: str | None = None) -> FactsPack:
+              player_id: str | None = None, info: dict | None = None,
+              records: dict | None = None) -> FactsPack:
     """The merged facts of `sections` (one sub-dict each), with one shared roles map."""
     roles = _Roles()
     facts: dict = {}
     sources: list[str] = []
     for sec in sections:
-        if sec == "team_tonight":
+        if sec == "match_info":
+            part, src = match_info(m, info or {}, records or {})
+        elif sec == "team_tonight":
             part, src = team_tonight(m, roles, club_id)
         elif sec == "player_tonight":
             pack = player_tonight_pack(_with_player(m, player_id), roles)

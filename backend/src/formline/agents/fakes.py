@@ -16,6 +16,8 @@ NUMBER = re.compile(r"\d+")
 
 
 ROUTE_WORDS = (
+    ("match_info", ("where", "venue", "stadium", "kick-off", "when", "season", "どこ", "会場",
+                    "スタジアム", "今季")),
     ("recent", ("last 10", "recently", "直近")),
     ("discipline", ("card", "foul", "booked", "カード", "ファウル")),
     ("chances", ("chance", "most shots", "best shot", "決定機", "チャンス")),

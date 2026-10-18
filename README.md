@@ -135,7 +135,7 @@ Typed question ─► POST /ask/free ─► Question Router ─┬─► 1–3 f
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 | Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
-| Question Router | LLM, checked in code | Retrieval for a typed question: picks 1–3 of 8 fact sections (match so far, score, team comparison, one team, one player, best chances, fouls and cards, last 10 minutes) and their club or player, or `cannot_answer`; unknown sections, other clubs or non-shooters are rejected, one retry, then decline |
+| Question Router | LLM, checked in code | Retrieval for a typed question: picks 1–3 of 9 fact sections (match info and venue with both clubs' season record, match so far, score, team comparison, one team, one player, best chances, fouls and cards, last 10 minutes) and their club or player, or `cannot_answer`; unknown sections, other clubs or non-shooters are rejected, one retry, then decline |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -395,9 +395,9 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
-- **Typed questions are answered from 8 fact sections.** A question needing facts outside
-  them (a pass map, a player who has not shot, a time window other than the last 10 minutes)
-  gets a partial answer or a decline, never invented facts. Suggested chips come from a
+- **Typed questions are answered from 9 fact sections.** A question needing facts outside
+  them (attendance, weather, the referee, a player who has not shot, a time window other than
+  the last 10 minutes) gets a partial answer or a decline, never invented facts. Suggested chips come from a
   catalog of four questions. Club names stay in their FACTS spelling in Japanese answers,
   since the league has no official Japanese names the verifier could check.
 

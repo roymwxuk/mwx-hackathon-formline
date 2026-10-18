@@ -170,7 +170,9 @@ Typed questions: `POST /matches/{match_id}/ask/free` with `{event_id, version, t
 chars), lang}` (the latest event the viewer has received: the backend replays the feed up to
 that message, so a question can be asked from kick-off and never trusts a clock) returns `{retrieved {sections[], club_id, player_id, label} | null, answer
 {question: "free", lang, headline, body, coverage (full / partial), evidence[], verified,
-source, cached} | null, declined | null}`. Sections: `situation`, `score`, `team_stats`,
+source, cached} | null, declined | null}`. Sections: `match_info` (season, matchday,
+venue, kick-off, home and away, both clubs' record before tonight from the history),
+`situation`, `score`, `team_stats`,
 `team_tonight` (club), `player_tonight` (a player who has shot), `chances`, `discipline`,
 `recent` (last 10 minutes). 429 after 10 typed questions per viewer in 10 minutes.
 

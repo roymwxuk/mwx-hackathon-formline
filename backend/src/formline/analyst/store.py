@@ -5,9 +5,10 @@ Follow-up answers precomputed with them live next to the comments
 """
 
 import json
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from datetime import datetime
+from functools import cache
 from pathlib import Path
 
 from formline.agents.llm import LLMRunner
@@ -38,6 +39,9 @@ class MatchContext:
     clubs: dict[str, str]  # club id -> name
     home: str
     away: str
+    # the fixture (season, matchday, kick-off, venue) and each club's record before tonight
+    info: dict = field(default_factory=dict)
+    records: dict = field(default_factory=dict)
 
 
 def match_context(data_dir: Path, match_id: str) -> MatchContext:
@@ -46,7 +50,40 @@ def match_context(data_dir: Path, match_id: str) -> MatchContext:
     match = next(m for m in matches if m["match_id"] == match_id)
     return MatchContext(league_names(players, clubs), {p.player_id: p for p in players},
                         {c.club_id: c.name for c in clubs}, match["home_club_id"],
-                        match["away_club_id"])
+                        match["away_club_id"], info=match, records=_records(data_dir))
+
+
+def season_records(results: Iterable[tuple[str, str, int, int]]) -> dict[str, dict]:
+    """club id -> {played, won, drawn, lost, goals_for, goals_against} from (home, away,
+    home goals, away goals) results."""
+    rec: dict[str, dict] = {}
+    for home, away, hg, ag in results:
+        for club, gf, ga in ((home, hg, ag), (away, ag, hg)):
+            r = rec.setdefault(club, {"played": 0, "won": 0, "drawn": 0, "lost": 0,
+                                      "goals_for": 0, "goals_against": 0})
+            r["played"] += 1
+            r["won" if gf > ga else "drawn" if gf == ga else "lost"] += 1
+            r["goals_for"] += gf
+            r["goals_against"] += ga
+    return rec
+
+
+@cache
+def _records(data_dir: Path) -> dict[str, dict]:
+    """Season records from the generated history (every match but the live one)."""
+    from formline.engine.log import current_events
+    from formline.generator.output import read_feed
+
+    matches = json.loads((data_dir / "matches.json").read_text(encoding="utf-8"))
+    results = []
+    for m in matches:
+        if m["is_live_demo"]:
+            continue
+        goals = [e.team_id for e in current_events(read_feed(data_dir / "feeds" / f"{m['match_id']}.jsonl"))
+                 if e.type == "shot" and e.outcome == "goal"]
+        results.append((m["home_club_id"], m["away_club_id"], goals.count(m["home_club_id"]),
+                        goals.count(m["away_club_id"])))
+    return season_records(results)
 
 
 def make_writer(data_dir: Path, match_id: str, runner: LLMRunner,

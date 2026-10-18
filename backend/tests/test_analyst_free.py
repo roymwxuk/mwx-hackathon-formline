@@ -15,10 +15,11 @@ from formline.analyst.ask import AskError, answer_free, known_events
 from formline.analyst.followups import Moment, moment_kind
 from formline.analyst.router import check_route, shooters
 from formline.analyst.sections import facts_for
-from formline.analyst.store import MatchContext
+from formline.analyst.store import MatchContext, season_records
 from formline.analyst.verify import AnswerContext, verify_answer
 from formline.analyst.writer import AnalystWriter, write_comments
 from formline.config import settings
+from formline.engine.log import current_events
 from formline.generator.output import write_season
 from formline.generator.season import generate_season
 from formline.ratelimit import SlidingWindowLimiter
@@ -34,8 +35,15 @@ def match():
     players = {p.player_id: p for p in season.league.players}
     clubs = {c.club_id: c.name for c in season.league.clubs}
     short = {c.club_id: c.short_name for c in season.league.clubs}
+    history = [g for g in season.matches if not g.match.is_live_demo]
+    results = []
+    for g in history:
+        goals = [e.team_id for e in current_events(g.feed) if e.type == "shot" and e.outcome == "goal"]
+        results.append((g.match.home_club_id, g.match.away_club_id,
+                        goals.count(g.match.home_club_id), goals.count(g.match.away_club_id)))
     ctx = MatchContext(league_names(season.league.players, season.league.clubs), players, clubs,
-                       gm.match.home_club_id, gm.match.away_club_id)
+                       gm.match.home_club_id, gm.match.away_club_id,
+                       info=gm.match.model_dump(), records=season_records(results))
     w = AnalystWriter(make_runner(LLMConfig(), fake_responder=FakeAgents()), ctx.league,
                       ctx.players, ctx.clubs, ctx.home, ctx.away)
     rows = asyncio.run(write_comments(gm.feed, w))
@@ -103,6 +111,23 @@ def test_questions_between_the_old_categories_get_their_own_facts(match):
     assert "chances" in most["retrieved"]["sections"] and most["answer"]["coverage"] == "full"
     cards = ask(match, "who got booked?")
     assert cards["retrieved"]["sections"] == ["discipline"]
+
+
+def test_where_the_match_is_played_comes_from_the_match_info(match):
+    """Reported: "where is this game host" was declined; the fixture is in the match list."""
+    _, ctx, _, _ = match
+    out = ask(match, "where is this game hosted?")
+    assert out["retrieved"]["sections"] == ["match_info"]
+    assert "Quayside Park" in out["answer"]["body"] and out["answer"]["verified"]
+    ja = ask(match, "この試合の会場はどこ？", "ja")
+    assert ja["retrieved"]["sections"] == ["match_info"]
+    info = facts_for(["match_info"], moment(match), info=ctx.info, records=ctx.records).facts["match_info"]
+    assert info["venue"] == "played at Quayside Park, the home ground of Harbourside Athletic"
+    assert info["season"] == "season 2026-27, matchday 11"
+    assert "not in the data" in info["not_in_the_data"]
+    rec = ctx.records[ctx.home]
+    assert rec["played"] == rec["won"] + rec["drawn"] + rec["lost"] > 0
+    assert f"{rec['played']} played, {rec['won']} won" in info["season_so_far"]
 
 
 def test_questions_the_data_cannot_answer_are_declined(match):
