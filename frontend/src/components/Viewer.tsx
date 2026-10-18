@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { FEATURES } from '@/lib/features';
 import { t } from '@/lib/i18n';
 import { isFavoriteOverlay, orderedEvents, personalize, pickCard, score, type OverlayState } from '@/lib/logic';
 import type { Club, MatchEvent, Player, TrackingFrameMessage, ViewerSettings } from '@/lib/types';
@@ -38,7 +39,11 @@ export function Viewer(p: Props) {
   const events = useMemo(() => orderedEvents(p.store), [p.store]);
   const visible = useMemo(() => personalize(p.overlayStates, s, players), [p.overlayStates, s, players]);
   const cards = visible.filter((v) => v.overlay.template_id !== 'correction_banner');
-  const current = pickCard(cards, s, players, p.clockMs);
+  const [closed, setClosed] = useState<Set<string>>(() => new Set());
+  const picked = pickCard(cards, s, players, p.clockMs);
+  // A card the viewer closed stays hidden; the next card appears as usual.
+  const current = picked && !closed.has(picked.overlay.overlay_id) ? picked : undefined;
+  const close = (id: string) => setClosed((prev) => new Set(prev).add(id));
   const correction = [...visible].reverse().find((v) => v.overlay.template_id === 'correction_banner');
   const showCorrection = correction && p.clockMs - correction.overlay.match_clock_ms < CORRECTION_HOLD_MS;
   const focus = players.find((pl) => pl.player_id === s.focusPlayer);
@@ -55,10 +60,13 @@ export function Viewer(p: Props) {
       </div>
       <ScoreBug clubs={clubs} score={score(p.store, [clubs[0].club_id, clubs[1].club_id])} clockMs={p.clockMs} />
       <div className="card-slot">
-        <CommentBubble comments={comments} clockMs={p.clockMs} lang={s.lang} paused={p.catchingUp} />
+        {FEATURES.analystBubble && (
+          <CommentBubble comments={comments} clockMs={p.clockMs} lang={s.lang} paused={p.catchingUp} />
+        )}
         {current ? (
-          <OverlayCard key={current.overlay.overlay_id} state={current} favorite={isFavoriteOverlay(current.overlay, s, players)} />
-        ) : (
+          <OverlayCard key={current.overlay.overlay_id} state={current} favorite={isFavoriteOverlay(current.overlay, s, players)}
+            onClose={() => close(current.overlay.overlay_id)} />
+        ) : picked ? null : (
           <div className="overlay-card waiting" lang={s.lang}>{str.waiting}</div>
         )}
       </div>

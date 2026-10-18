@@ -4,9 +4,11 @@ import type { OverlayState } from '@/lib/logic';
 interface Props {
   state: OverlayState;
   favorite: boolean;
+  /** Shows a × that hides this card (the next card still appears). */
+  onClose?: () => void;
 }
 
-export function OverlayCard({ state, favorite }: Props) {
+export function OverlayCard({ state, favorite, onClose }: Props) {
   const { overlay: o, retracted } = state;
   const s = o.slots;
   const str = t(o.lang);
@@ -18,6 +20,9 @@ export function OverlayCard({ state, favorite }: Props) {
       lang={o.lang}
       aria-live="polite"
     >
+      {onClose && (
+        <button type="button" className="card-close" aria-label="Close" title="Close" onClick={onClose}>×</button>
+      )}
       <div className="overlay-tagline">
         {retracted ? <span className="badge danger">{str.withdrawn}</span> : <span className="overlay-tag">{s.tag}</span>}
         {favorite && !retracted && <span className="badge fav">★ {str.favorite}</span>}

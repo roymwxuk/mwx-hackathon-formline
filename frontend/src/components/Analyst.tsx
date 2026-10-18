@@ -27,6 +27,7 @@ export function CommentBubble({ comments, clockMs, lang, paused = false }: { com
   const c = current.comment;
   return (
     <div key={c.comment_id} className="comment-bubble" role="status" lang={lang}>
+      <button type="button" className="card-close" aria-label="Close" title="Close" onClick={() => setCurrent(null)}>×</button>
       <span className="comment-tag">{t(lang).analyst} · {t(lang).question[c.question as Q]}</span>
       <strong className={`comment-headline${c.goal ? ' goal' : ''}`}>{c.headline}</strong>
       <p className="comment-body">{c.body}</p>
