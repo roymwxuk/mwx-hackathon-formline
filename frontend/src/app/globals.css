@@ -49,6 +49,8 @@ h2, h3 { margin: 0; }
 .source.on::before { content: '● '; color: var(--ok); }
 .source.off::before { content: '● '; color: var(--danger); }
 .source.idle::before { content: '● '; color: var(--muted); }
+/* The feed badge keeps one width for every label (longest: Connecting…), so Play/Pause never shifts the controls. */
+.source.feed { box-sizing: border-box; width: 9.5em; white-space: nowrap; }
 .clock-big { font-family: var(--mono); font-size: 20px; color: var(--accent-soft); min-width: 64px; }
 .ctl { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
 .ctl:hover { border-color: var(--accent); }

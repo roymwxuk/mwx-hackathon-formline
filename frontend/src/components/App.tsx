@@ -75,7 +75,7 @@ export default function App() {
               {league.status === 'loading' ? 'Loading squads…' : 'Squads unavailable'}
             </span>
           )}
-          <span className={`source ${feed.tone}`} title={feed.title}>{feed.label}</span>
+          <span className={`source feed ${feed.tone}`} title={feed.title}>{feed.label}</span>
           <span className="clock-big">{formatClock(stream.clockMs)}</span>
           <button type="button" className="ctl" onClick={() => stream.setPlaying(!stream.playing)}>
             {stream.playing ? 'Pause' : 'Play'}
