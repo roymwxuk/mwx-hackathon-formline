@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { answerKey, askAnalyst, freshComment, latestAskable } from '@/lib/analyst';
+import { AskLimited, answerKey, askAnalyst, askFree, freshComment, latestAskable } from '@/lib/analyst';
 import { t } from '@/lib/i18n';
 import type { CommentState } from '@/lib/logic';
 import type { AnalystComment, FollowupAnswer, FollowupSuggestion, Lang } from '@/lib/types';
@@ -35,15 +35,26 @@ export function CommentBubble({ comments, clockMs, lang, paused = false }: { com
   );
 }
 
-type Asked = { status: 'loading' } | { status: 'done'; answer: FollowupAnswer } | { status: 'error' };
+type Asked =
+  | { status: 'loading' }
+  | { status: 'done'; answer: FollowupAnswer; routedAs?: string }
+  | { status: 'declined'; message: string }
+  | { status: 'limited' }
+  | { status: 'error' };
+/** One question asked in the Ask tab: a suggested one (`label`) or typed (`label` = the text). */
 interface AskedItem { key: string; lang: Lang; label: string; minute: string; state: Asked }
+
+const MAX_TEXT = 200; // backend analyst/router.py MAX_TEXT
 
 /** "Ask the analyst": the latest moment's suggested questions, and the answers asked so far. */
 function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; askUrl: string; lang: Lang; limit?: number }) {
   const str = t(lang);
   const latest = latestAskable(comments)?.comment;
   const [items, setItems] = useState<AskedItem[]>([]);
+  const [text, setText] = useState('');
   const mine = items.filter((i) => i.lang === lang);
+  const settle = (key: string, state: Asked) => setItems((list) => list.map((i) => (i.key === key ? { ...i, state } : i)));
+  const failed = (key: string) => (err: unknown) => settle(key, err instanceof AskLimited ? { status: 'limited' } : { status: 'error' });
 
   const ask = (c: AnalystComment, s: FollowupSuggestion) => {
     const key = answerKey(c, s);
@@ -52,10 +63,21 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
       ? existing // asked before: bring it back to the top
       : { key, lang: c.lang, label: s.label, minute: c.evidence[0]?.minute ?? '', state: { status: 'loading' } };
     setItems((list) => [item, ...list.filter((i) => i.key !== key)]);
-    if (item !== existing) {
-      const settle = (state: Asked) => setItems((list) => list.map((i) => (i.key === key ? { ...i, state } : i)));
-      askAnalyst(askUrl, c, s).then((answer) => settle({ status: 'done', answer })).catch(() => settle({ status: 'error' }));
-    }
+    if (item !== existing) askAnalyst(askUrl, c, s).then((answer) => settle(key, { status: 'done', answer })).catch(failed(key));
+  };
+
+  const askTyped = (c: AnalystComment) => {
+    const question = text.trim().slice(0, MAX_TEXT);
+    if (!question) return;
+    const key = `free|${c.ask?.moment}|${question}|${c.lang}`;
+    setText('');
+    setItems((list) => [{ key, lang: c.lang, label: question, minute: c.evidence[0]?.minute ?? '', state: { status: 'loading' } },
+      ...list.filter((i) => i.key !== key)]);
+    askFree(askUrl, c, question)
+      .then((r) => settle(key, r.answer && r.routed_as
+        ? { status: 'done', answer: r.answer, routedAs: r.routed_as.label }
+        : { status: 'declined', message: r.declined ?? '' }))
+      .catch(failed(key));
   };
 
   return (
@@ -73,6 +95,11 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
               </button>
             ))}
           </div>
+          <form className="ask-form" onSubmit={(e) => { e.preventDefault(); askTyped(latest); }}>
+            <input type="text" value={text} maxLength={MAX_TEXT} placeholder={str.askPlaceholder}
+              aria-label={str.askPlaceholder} onChange={(e) => setText(e.target.value)} />
+            <button type="submit" className="ctl" disabled={!text.trim()}>{str.askSend}</button>
+          </form>
         </div>
       )}
       {mine.length > 0 && (
@@ -82,8 +109,11 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
               <span className="comment-tag ask-q">{i.minute} · {i.label}</span>
               {i.state.status === 'loading' && <p className="muted">{str.thinking}</p>}
               {i.state.status === 'error' && <p className="danger-text">{str.askError}</p>}
+              {i.state.status === 'limited' && <p className="danger-text">{str.askLimited}</p>}
+              {i.state.status === 'declined' && <p className="comment-body muted">{i.state.message}</p>}
               {i.state.status === 'done' && (
                 <>
+                  {i.state.routedAs && <span className="muted ask-routed">{str.answeredAs}: {i.state.routedAs}</span>}
                   <strong className="comment-headline">{i.state.answer.headline}</strong>
                   <p className="comment-body">{i.state.answer.body}</p>
                   {limit === undefined && i.state.answer.evidence.length > 0 && (

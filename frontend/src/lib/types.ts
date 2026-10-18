@@ -130,6 +130,14 @@ export interface FollowupSuggestion {
   player_id: string | null;
 }
 
+/** The answer to a typed question (POST /matches/{id}/ask/free): routed to a catalog
+ *  question and answered, or declined when the data cannot answer it. */
+export interface FreeAnswer {
+  routed_as: { question: FollowupQuestion; player_id: string | null; label: string } | null;
+  answer: FollowupAnswer | null;
+  declined: string | null;
+}
+
 /** The Analyst's verified answer to a follow-up question (POST /matches/{id}/ask). */
 export interface FollowupAnswer {
   question: FollowupQuestion;

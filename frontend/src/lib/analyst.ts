@@ -1,5 +1,5 @@
 import type { CommentState } from '@/lib/logic';
-import type { AnalystComment, FollowupAnswer, FollowupSuggestion, Lang } from '@/lib/types';
+import type { AnalystComment, FollowupAnswer, FollowupSuggestion, FreeAnswer, Lang } from '@/lib/types';
 
 /** How recent (match time) a comment must be to pop up: comments replayed at once after a
  *  jump or a reconnect are older than this when they arrive, so they only go to the panel. */
@@ -49,4 +49,22 @@ export function latestAskable(states: CommentState[]): CommentState | undefined 
     if (!s.retracted && s.comment.ask && (s.comment.suggestions?.length ?? 0) > 0) return s;
   }
   return undefined;
+}
+
+/** The Analyst's rate limit for typed questions was reached (HTTP 429). */
+export class AskLimited extends Error {}
+
+/** Ask a typed question in the context of a comment's moment; the backend routes it to a
+ *  catalog question or declines. */
+export async function askFree(url: string, c: AnalystComment, text: string, signal?: AbortSignal): Promise<FreeAnswer> {
+  if (!c.ask) throw new Error('this comment has no follow-up questions');
+  const res = await fetch(`${url}/free`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ...c.ask, text, lang: c.lang }),
+    signal,
+  });
+  if (res.status === 429) throw new AskLimited('too many questions');
+  if (!res.ok) throw new Error(`ask failed: ${res.status}`);
+  return (await res.json()) as FreeAnswer;
 }

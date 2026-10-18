@@ -5,10 +5,14 @@ comment's `ask` field), the question and the language. A precomputed answer is s
 is; otherwise the events known at that sequence are replayed from the feed, the question is
 checked against the catalog (it must apply to that moment), and the Analyst agent answers
 it live from the facts pack, verified, under the runner's cache and call budget.
+
+A question the viewer typed (`answer_free`) goes through the Question Router first
+(`analyst/router.py`), which maps it to a catalog question or declines; from there it is the
+same path, and a precomputed answer is still served when the route matches one.
 """
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from formline.agents.llm import LLMRunner
 from formline.analyst.agent import answer_verified
@@ -17,8 +21,10 @@ from formline.analyst.followups import (
     answer_key,
     applicable,
     followup_pack,
+    label,
     moment_kind,
 )
+from formline.analyst.router import CANNOT, DECLINE, route
 from formline.analyst.store import MatchContext
 from formline.analyst.writer import answer_payload
 from formline.schema.feed import FeedMessage
@@ -50,29 +56,70 @@ def known_events(feed: list[FeedMessage], seq: int) -> dict[str, object]:
     return known
 
 
+def _moment(moment_id: str, seq: int, feed: list[FeedMessage], ctx: MatchContext,
+            norm: Callable[[str], float | None] | None) -> tuple[Moment, dict[str, object]]:
+    """The comment's moment as known at feed sequence `seq` (and the known events by id)."""
+    parsed = moment_kind(moment_id)
+    if parsed is None:
+        raise AskError(f"unknown moment {moment_id!r}")
+    kind, event_id = parsed
+    known = known_events(feed, seq)
+    event = known.get(event_id)
+    if event is None:
+        raise AskError(f"no event {event_id} in this match at sequence {seq}")
+    events = sorted(known.values(), key=lambda e: (e.period, e.match_clock_ms))
+    return Moment(kind, event, events, event.player_id, ctx.home, ctx.away, ctx.clubs,
+                  ctx.players, norm), known
+
+
+async def _answer(q: str, lang: str, m: Moment, known: Mapping[str, object], ctx: MatchContext,
+                  runner: LLMRunner, precomputed: Mapping[str, dict]) -> dict:
+    pid = m.player_id if q == "player_tonight" else None
+    key = answer_key(m.id, q, pid, lang)
+    if key in precomputed:
+        return {**precomputed[key], "cached": True}
+    if not applicable(q, m):
+        raise AskError(f"{q!r} does not apply to this moment")
+    pack = followup_pack(q, m)
+    answer = await answer_verified(pack, lang, runner, ctx.league, (ctx.home, ctx.away))
+    return {**answer_payload(q, lang, answer, pack, known), "cached": False}
+
+
 async def answer_question(req: AskRequest, feed: list[FeedMessage], ctx: MatchContext,
                           runner: LLMRunner, precomputed: Mapping[str, dict],
                           norm: Callable[[str], float | None] | None = None) -> dict:
-    parsed = moment_kind(req.moment)
-    if parsed is None:
+    if moment_kind(req.moment) is None:
         raise AskError(f"unknown moment {req.moment!r}")
     pid = req.player_id if req.question == "player_tonight" else None
     key = answer_key(req.moment, req.question, pid, req.lang)
-    if key in precomputed:
+    if key in precomputed:  # the demo's suggested questions: no replay, no model call
         return {**precomputed[key], "cached": True}
-
-    kind, event_id = parsed
-    known = known_events(feed, req.seq)
-    event = known.get(event_id)
-    if event is None:
-        raise AskError(f"no event {event_id} in this match at sequence {req.seq}")
-    if req.question == "player_tonight" and pid != event.player_id:
+    m, known = _moment(req.moment, req.seq, feed, ctx, norm)
+    if req.question == "player_tonight" and pid != m.player_id:
         raise AskError("player_tonight asks about the player of the moment")
-    events = sorted(known.values(), key=lambda e: (e.period, e.match_clock_ms))
-    m = Moment(kind, event, events, event.player_id, ctx.home, ctx.away, ctx.clubs,
-               ctx.players, norm)
-    if not applicable(req.question, m):
-        raise AskError(f"{req.question!r} does not apply to this moment")
-    pack = followup_pack(req.question, m)
-    answer = await answer_verified(pack, req.lang, runner, ctx.league, (ctx.home, ctx.away))
-    return {**answer_payload(req.question, req.lang, answer, pack, known), "cached": False}
+    return await _answer(req.question, req.lang, m, known, ctx, runner, precomputed)
+
+
+async def answer_free(moment_id: str, seq: int, text: str, lang: str, feed: list[FeedMessage],
+                      ctx: MatchContext, runner: LLMRunner, precomputed: Mapping[str, dict],
+                      norm: Callable[[str], float | None] | None = None) -> dict:
+    """A typed question: route it to a catalog question (or decline), then answer that.
+
+    Returns {"routed_as": {question, player_id, label} | None, "answer": {...} | None,
+    "declined": message | None}."""
+    if not text.strip():
+        raise AskError("empty question")
+    m, known = _moment(moment_id, seq, feed, ctx, norm)
+    r = await route(text, lang, m, ctx.league.players, ctx.clubs, runner)
+    if r.question == CANNOT:
+        return {"routed_as": None, "answer": None, "declined": DECLINE[lang]}
+    if r.question == "player_tonight":
+        m = replace(m, player_id=r.player_id, _shots=None)
+    name = None
+    if r.player_id:
+        en, ja = ctx.league.players[r.player_id]
+        name = en.split()[-1] if lang == "en" else ja.split("・")[-1]
+    answer = await _answer(r.question, lang, m, known, ctx, runner, precomputed)
+    return {"routed_as": {"question": r.question, "player_id": r.player_id,
+                          "label": label(r.question, lang, m, name)},
+            "answer": answer, "declined": None}

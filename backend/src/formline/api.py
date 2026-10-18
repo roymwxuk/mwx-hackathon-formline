@@ -1,5 +1,5 @@
 """FastAPI entrypoint: replays a generated match feed to the viewer over SSE, and answers the
-Match Analyst's follow-up questions (`POST /matches/{id}/ask`)."""
+Match Analyst's follow-up questions (`POST /matches/{id}/ask`, typed: `/ask/free`)."""
 
 import json
 from functools import lru_cache
@@ -18,7 +18,8 @@ from formline.agents.precompute import (
     overlays_path,
     read_overlays,
 )
-from formline.analyst.ask import AskError, AskRequest, answer_question
+from formline.analyst.ask import AskError, AskRequest, answer_free, answer_question
+from formline.analyst.router import MAX_TEXT
 from formline.analyst.store import (
     answers_path,
     comment_message,
@@ -33,6 +34,7 @@ from formline.config import settings
 from formline.engine.bootstrap import bootstrap_history
 from formline.engine.engine import BaselineEngine
 from formline.generator.output import read_feed
+from formline.ratelimit import SlidingWindowLimiter
 from formline.replay import (
     END_MESSAGE,
     match_time,
@@ -213,5 +215,43 @@ async def ask(match_id: str, body: AskBody) -> dict:
                                      match_context(settings.data_dir, match_id),
                                      ask_runner(settings.data_dir), precomputed,
                                      norm=history_engine(settings.data_dir).season_norm)
+    except AskError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+
+class AskFreeBody(BaseModel):
+    """A question the viewer typed, asked in the context of the latest comment's moment."""
+
+    moment: str = Field(max_length=80)
+    seq: int = Field(ge=0)
+    text: str = Field(min_length=1, max_length=MAX_TEXT)
+    lang: Literal["en", "ja"]
+
+
+FREE_QUESTIONS = SlidingWindowLimiter(limit=10, window_s=600)  # per viewer, every one is a model call
+
+
+def client_key(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return forwarded or (request.client.host if request.client else "unknown")
+
+
+@app.post("/matches/{match_id}/ask/free")
+async def ask_free(match_id: str, body: AskFreeBody, request: Request) -> dict:
+    """Answer a typed question: the Question Router maps it to a catalog question (or
+    declines), then the Analyst answers that, verified. Limited per viewer."""
+    path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
+    if not path.exists():
+        raise HTTPException(404, f"Unknown match {match_id}")
+    if not FREE_QUESTIONS.allow(client_key(request)):
+        raise HTTPException(429, "Too many questions; try again in a few minutes.")
+    said = answers_path(settings.data_dir, match_id)
+    precomputed = _answers(said, said.stat().st_mtime) if said.exists() else {}
+    try:
+        return await answer_free(body.moment, body.seq, body.text, body.lang,
+                                 _feed(path, path.stat().st_mtime),
+                                 match_context(settings.data_dir, match_id),
+                                 ask_runner(settings.data_dir), precomputed,
+                                 norm=history_engine(settings.data_dir).season_norm)
     except AskError as exc:
         raise HTTPException(422, str(exc)) from None

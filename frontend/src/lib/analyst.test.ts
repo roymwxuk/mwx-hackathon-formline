@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { answerKey, askAnalyst, askUrlFor, commentsFor, freshComment, latestAskable } from '@/lib/analyst';
+import { AskLimited, answerKey, askAnalyst, askFree, askUrlFor, commentsFor, freshComment, latestAskable } from '@/lib/analyst';
 import { applyComments } from '@/lib/logic';
 import type { AnalystComment } from '@/lib/types';
 
@@ -73,6 +73,21 @@ describe('follow-up questions', () => {
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe('http://x/matches/m1/ask');
     expect(JSON.parse(init.body)).toEqual({ ...ask, question: 'player_tonight', player_id: 'ply_0203', lang: 'ja' });
+  });
+
+  it('sends a typed question to /ask/free with the moment and the language', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ routed_as: null, answer: null, declined: 'no' }) });
+    vi.stubGlobal('fetch', fetch);
+    const out = await askFree('http://x/matches/m1/ask', c('a', 0, 'ja', { ask }), 'レイナーは？');
+    expect(out.declined).toBe('no');
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe('http://x/matches/m1/ask/free');
+    expect(JSON.parse(init.body)).toEqual({ ...ask, text: 'レイナーは？', lang: 'ja' });
+  });
+
+  it('tells the rate limit apart from other errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429 }));
+    await expect(askFree('http://x/ask', c('a', 0, 'en', { ask }), 'score?')).rejects.toBeInstanceOf(AskLimited);
   });
 
   it('fails on an error status, so the panel can offer a retry', async () => {

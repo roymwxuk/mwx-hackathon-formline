@@ -567,3 +567,16 @@ wording); after tightening the prompt (explicit limits and markers, one example 
 language) the full run took 296 calls: 96/96 comments, 190/192 answers and 48/48 picks by
 the model. The verifier did its job both times: nothing unverified reached the files.
 
+**Typed questions (2026-10-18).** The owner asked for free questions alongside the two
+suggestions. Options: (a) one broad "match so far" facts pack the Analyst answers anything
+from; (b) a **Question Router** agent that maps the text to a catalog question (or declines),
+then the usual path. Chosen: (b), the NL→SQL pattern with the catalog as the schema. (a)
+covers more questions, but with every player in one pack the verifier cannot catch a fact
+attributed to the wrong player, and the viewer's text would sit inside the answering
+prompt. With (b) the text reaches only the Router, whose output is checked in code, so the
+worst a hostile prompt can do is pick another valid question; answers stay exactly as
+verifiable as a click, and a route that matches a suggested question is served precomputed.
+Typed questions are live model calls, so they are capped (200 characters, 10 per viewer per
+10 minutes); the limiter is in memory and trusts `X-Forwarded-For`, a cost guard rather than
+abuse protection.
+

@@ -15,6 +15,25 @@ from dataclasses import dataclass, field
 NUMBER = re.compile(r"\d+")
 
 
+ROUTE_WORDS = (
+    ("team_stats", ("compare", "stats", "teams", "比較", "スタッツ")),
+    ("score", ("score", "why is it", "スコア", "なぜ")),
+    ("situation", ("happening", "so far", "going on", "流れ", "状況")),
+)
+
+
+def fake_route(p: dict) -> dict:
+    """Route a typed question like a careful model would: a named player first, then words."""
+    text = p["VIEWER_TEXT"].lower()
+    for player in p["PLAYERS"]:
+        if player["name"].split()[-1].lower() in text or player["name_ja"].split("・")[-1] in text:
+            return {"question": "player_tonight", "player_id": player["id"]}
+    for q, words in ROUTE_WORDS:
+        if any(w in text for w in words):
+            return {"question": q, "player_id": None}
+    return {"question": "cannot_answer", "player_id": None}
+
+
 @dataclass
 class FakeAgents:
     bad_first_attempts: int = 0
@@ -23,6 +42,8 @@ class FakeAgents:
 
     def __call__(self, texts: list[str]) -> str:
         payload = json.loads(texts[-1])
+        if "VIEWER_TEXT" in payload:  # the Question Router: keyword routing
+            return json.dumps(fake_route(payload))
         if "OPTIONS" in payload:  # the Question Suggester: the first options (best first)
             return json.dumps({"pick": list(payload["OPTIONS"])[:3]})
         if "QUESTION_ID" in payload:  # the Match Analyst: answer like the template, from FACTS
