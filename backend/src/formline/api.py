@@ -27,7 +27,10 @@ from formline.replay import (
     parse_clock,
     to_stream_message,
 )
+from formline.schema.feed import FeedMessage
 from formline.schema.overlay import overlay_message
+from formline.schema.tracking import tracking_path
+from formline.tracking.frames import frames_for
 from formline.viewer import UnknownMatch, match_league
 
 CLOCK = r"^\d{1,3}:\d{2}$"  # mm:ss
@@ -72,7 +75,7 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
                  live: bool = False, chaos: bool = False, chaos_seed: int = 0,
                  start: str | None = Query(None, pattern=CLOCK),
                  until: str | None = Query(None, pattern=CLOCK),
-                 slow: bool = True) -> EventSourceResponse:
+                 slow: bool = True, tracking: bool = True) -> EventSourceResponse:
     """Each SSE `data:` line is one StreamMessage as JSON (the viewer's live mode).
 
     Default: replays the feed together with the precomputed overlays
@@ -84,8 +87,11 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
 
     Playback controls: `speed` (feed seconds per real second); `start=mm:ss` delivers
     everything before that match time at once, then plays on; `until=mm:ss` stops there;
-    `slow=true` (default) plays about 6x slower around shots and cards. During gaps between
-    events, `{"kind": "clock"}` messages (no SSE id) carry the running match time every 0.25 s. Minutes above 45 mean the
+    `slow=true` (default) plays about 6x slower around shots and cards, but not below 3x
+    (or the chosen speed, if slower). During gaps between
+    events, `{"kind": "clock"}` messages (no SSE id) carry the running match time every 0.25 s
+    of real time; when the match has tracking data (and `tracking=true`, the default) they
+    are `{"kind": "frame"}` messages instead, which add the ball and all players. Minutes above 45 mean the
     second half. Every message has an SSE id, and a reconnecting client resumes after its
     `Last-Event-ID` instead of restarting the match (proxies may cut long streams).
     """
@@ -99,22 +105,28 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
     resume_after = int(last_id) if last_id.isdigit() else 0
     key_times = [m.emitted_at for m in feed if m.event is not None and m.event.type == "shot"]
 
+    frames = frames_for(tracking_path(settings.data_dir, match_id)) if tracking else None
+
     def sse(idx: int | None, payload: dict) -> dict:
+        if idx is None and frames is not None and payload.get("kind") == "clock":
+            frame = frames.message(payload["period"], payload["match_clock_ms"])
+            if frame is not None:
+                return {"data": frame}
         data = json.dumps(payload, ensure_ascii=False)
-        # Clock messages carry no id, so Last-Event-ID always names a real message.
+        # Clock and frame messages carry no id, so Last-Event-ID always names a real message.
         return {"data": data} if idx is None else {"id": str(idx), "data": data}
 
     async def live_items(messages):
         orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
                                  default_runner(settings.data_dir))
-        for msg in messages:
-            if (payload := to_stream_message(msg)) is not None:
-                yield msg.emitted_at, payload
-            for overlay in await orch.process(msg):
-                yield msg.emitted_at, overlay_message(overlay)
-        last = messages[-1].emitted_at if messages else None
-        for overlay in await orch.flush():
-            yield last, overlay_message(overlay)
+        # Messages as they arrive, overlays as the orchestrator produces them (including those
+        # its idle timeout releases between messages).
+        async for at, item in orch.replay(messages):
+            if isinstance(item, FeedMessage):
+                if (payload := to_stream_message(item)) is not None:
+                    yield at, payload
+            else:
+                yield at, overlay_message(item)
 
     async def gen():
         if live or chaos:

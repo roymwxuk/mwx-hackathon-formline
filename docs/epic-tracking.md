@@ -1,6 +1,8 @@
 # Epic: synthetic tracking data (all 22 players and the ball)
 
-**Status:** Planned (2026-10-17). Not started.
+**Status:** In progress. Done: T0–T5, T7 and T8 (the viewer draws all 22 players from
+streamed frames). Left: T6 realism checks in the report, T9 size check, T10 docs. Moving
+preview outside the app: `docs/tracking/preview.html`.
 **Goal:** the 2D pitch shows all 22 players and the ball moving continuously, from
 synthetic **optical-tracking-style data** consistent with the event feed, the way
 professional providers deliver tracking alongside events.
@@ -96,6 +98,32 @@ in the buffer. Stretch task S1 starts only if everything above is done early.
 | Time: the deadline is Oct 26 with the video and redeploy still to do | Built on its own branch; the MVP cut line; if it isn't convincing by about Oct 21, it is shelved and the ball path (already built) stays |
 | Stream volume at high speed | Frames are sampled at 4 per second of real time regardless of playback speed; the client interpolates |
 | Image and memory size | Live match only, gzip on disk, frames loaded per period |
+
+## Findings so far
+
+- **Anchors are reachable (T3):** the live match yields 2,230 anchors (933 passers, 776
+  receivers, 337 other actors, 34 shooters, 150 freeze-frame spots). Between a player's
+  consecutive anchors the needed speed has a median of 0.5 m/s and a 99th percentile of
+  6.4 m/s; only 0.2% exceed a sprint (9.5 m/s), which the motion model (T4) softens.
+- **Motion is realistic (T4):** 57,651 frames for the live match (3.8 MB gzipped, about 38 s to
+  build). 99.4% of anchors met within 0.5 m; outfield starters cover a median 9.3 km (max
+  11.5 km; real football about 10–11 km); a median 37 s per player above 7 m/s (real high-speed
+  running about 30–40 s); peak speed 9.5 m/s. A 4 s anchor ramp forced sprints and missed
+  anchors (93%), and stronger personal drift inflated distance; 8 s and 0.5 m fixed both.
+- **Players went back and forth (T8 review):** at 1× players visibly ran out and straight back.
+  Measured as trips of more than 5 m out and back to within 2 m in 10 s. Three causes, found
+  by measuring rather than guessing: (1) at every turnover both teams switched instantly
+  between their attacking and defending shapes (about 20 m for a winger), and brief
+  turnovers then sent players out and back; (2) the shape followed every pass; (3) after an
+  event the pull back to formation took only 8 s. Now shapes ease over 4 s after a turnover,
+  follow the ball smoothed over 2 s, players near the ball are drawn toward it, and after an
+  event a player goes straight on to his next anchor (within 30 s) or drifts back slowly
+  (20 s). Result: trips of 12–20 m fell from 54 to 14 per half (20+ m from 4 to 2) with
+  99.5% of anchors still met. Trade-off: players now run less than in real football, about
+  8 km per match and about 12 s above 7 m/s (real: 10–11 km, 30–40 s).
+- **Generator quirk:** one pass (57:56) is credited to a player substituted off at 56:53. The
+  anchors skip actions by players not on the pitch rather than fixing the generator, which
+  would re-randomize the rest of the match and invalidate the Foundry-narrated overlays.
 
 ## Out of scope
 

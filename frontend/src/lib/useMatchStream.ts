@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
 import { formatClock, timeAfter, type MatchTime } from '@/lib/logic';
-import type { MatchEvent, Overlay, StreamMessage } from '@/lib/types';
+import type { MatchEvent, Overlay, StreamMessage, TrackingFrameMessage } from '@/lib/types';
 
 export type StreamSource = 'mock' | 'sse';
 
@@ -17,13 +17,17 @@ export interface MatchStream {
   connected: boolean;
   /** Live mode: the backend sent its final message (full time). */
   ended: boolean;
+  /** Latest tracking frame (live mode, when the match has tracking), else null. */
+  frame: TrackingFrameMessage | null;
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
   restart: () => void;
+  /** Live mode: replay from a match time (everything before it arrives at once). */
+  jumpTo: (to: MatchTime) => void;
 }
 
 const SSE_URL: string | undefined = process.env.NEXT_PUBLIC_STREAM_URL;
-const LIVE_SPEEDS = [10, 20, 60, 120];
+const LIVE_SPEEDS = [1, 5, 10, 20, 60, 120];
 const MOCK_SPEEDS = [30, 60, 120];
 const HALF_MS = 45 * 60_000;
 
@@ -50,6 +54,21 @@ export function initialLiveSpeed(base: string): number {
   return Number.isFinite(speed) && speed > 0 ? speed : 20;
 }
 
+/** Key moments of the live demo match, a few seconds before each happens. */
+export const MOMENTS: { label: string; at: MatchTime }[] = [
+  { label: '12:00 · Reyner 101 km/h', at: { period: 1, clockMs: 12 * 60_000 } },
+  { label: '22:20 · Ito goal', at: { period: 1, clockMs: 22 * 60_000 + 20_000 } },
+  { label: '40:05 · Reyner placement (my metric)', at: { period: 1, clockMs: 40 * 60_000 + 5_000 } },
+  { label: '52:35 · Reyner fastest header', at: { period: 2, clockMs: 52 * 60_000 + 35_000 } },
+  { label: '63:30 · Reyner 118 km/h goal', at: { period: 2, clockMs: 63 * 60_000 + 30_000 } },
+  { label: '64:05 · VAR review', at: { period: 2, clockMs: 64 * 60_000 + 5_000 } },
+];
+
+/** Frames only move forward in match time; an older one (a stale stream) is ignored. */
+export function isNewerFrame(prev: TrackingFrameMessage | null, next: TrackingFrameMessage): boolean {
+  return prev === null || next.p > prev.p || (next.p === prev.p && next.t > prev.t);
+}
+
 /** Identity of a message, to ignore what a reconnect sends again. */
 function messageKey(msg: StreamMessage): string {
   if (msg.kind === 'event') return `e:${msg.event.event_id}:${msg.event.version}`;
@@ -74,10 +93,13 @@ export function useMatchStream(): MatchStream {
   );
 
   const [clockMs, setClockMs] = useState(0);
+  const [frame, setFrame] = useState<TrackingFrameMessage | null>(null);
   const [playing, setPlayingState] = useState(true);
   const [speed, setSpeedState] = useState(() => (SSE_URL ? initialLiveSpeed(SSE_URL) : 60));
   const [connectKey, setConnectKey] = useState(0);
   const timeRef = useRef<MatchTime>({ period: 1, clockMs: 0 });
+  const frameRef = useRef<TrackingFrameMessage | null>(null); // latest frame shown
+  const esRef = useRef<EventSource | null>(null); // the one open stream
   const startRef = useRef<MatchTime | null>(null);
   const seenRef = useRef<Set<string>>(new Set());
   const [received, setReceived] = useState<StreamMessage[]>([]);
@@ -112,7 +134,9 @@ export function useMatchStream(): MatchStream {
   // time). Messages already received are ignored, so a reconnect never duplicates cards.
   useEffect(() => {
     if (source !== 'sse' || !SSE_URL || !playing) return;
+    esRef.current?.close(); // never two streams at once (e.g. one left behind by a hot reload)
     const es = new EventSource(liveStreamUrl(SSE_URL, speed, startRef.current));
+    esRef.current = es;
     es.onopen = () => setConnected(true);
     es.onerror = () => setConnected(false); // EventSource reconnects and resumes after its last id
     es.onmessage = (ev) => {
@@ -124,7 +148,11 @@ export function useMatchStream(): MatchStream {
           setPlayingState(false);
           return;
         }
-        if (msg.kind !== 'clock') {  // clock messages only move the time; nothing to store
+        if (msg.kind === 'frame' && isNewerFrame(frameRef.current, msg)) {
+          frameRef.current = msg; // an older frame would move every player backwards at once
+          setFrame(msg);
+        }
+        if (msg.kind !== 'clock' && msg.kind !== 'frame') {  // these only move the time here
           const key = messageKey(msg);
           if (seenRef.current.has(key)) return;
           seenRef.current.add(key);
@@ -136,15 +164,21 @@ export function useMatchStream(): MatchStream {
         // Ignore malformed messages rather than breaking the viewer.
       }
     };
-    return () => es.close();
+    return () => {
+      es.close();
+      if (esRef.current === es) esRef.current = null;
+    };
   }, [source, playing, speed, connectKey]);
 
-  const liveRestart = useCallback(() => {
+  /** Start over, from kick-off or from a match time (the backend sends the past at once). */
+  const liveRestart = useCallback((from: MatchTime | null = null) => {
     timeRef.current = { period: 1, clockMs: 0 };
-    startRef.current = null;
+    startRef.current = from;
     seenRef.current = new Set();
     setReceived([]);
     setClockMs(0);
+    frameRef.current = null;
+    setFrame(null);
     setEnded(false);
     setPlayingState(true);
     setConnectKey((k) => k + 1);
@@ -165,6 +199,7 @@ export function useMatchStream(): MatchStream {
   );
 
   const restart = useCallback(() => (source === 'sse' ? liveRestart() : seek(0)), [source, liveRestart, seek]);
+  const jumpTo = useCallback((to: MatchTime) => liveRestart(to), [liveRestart]);
 
   const setSpeed = useCallback((value: number) => {
     if (source === 'sse') startRef.current = timeRef.current; // resume from here at the new speed
@@ -197,5 +232,5 @@ export function useMatchStream(): MatchStream {
 
   const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
 
-  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, setPlaying, setSpeed, restart };
+  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, frame, setPlaying, setSpeed, restart, jumpTo };
 }

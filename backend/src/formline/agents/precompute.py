@@ -54,12 +54,9 @@ async def precompute(data_dir: Path, match_id: str, history: BaselineEngine,
     feed = read_feed(data_dir / "feeds" / f"{match_id}.jsonl")
     orch = make_orchestrator(data_dir, history, runner)
     rows: list[dict] = []
-    for msg in feed:
-        for o in await orch.process(msg):
-            rows.append({"emitted_at": msg.emitted_at.isoformat(), "overlay": overlay_json(o)})
-    last = feed[-1].emitted_at.isoformat() if feed else None
-    for o in await orch.flush():
-        rows.append({"emitted_at": last, "overlay": overlay_json(o)})
+    async for at, item in orch.replay(feed):
+        if isinstance(item, Overlay):
+            rows.append({"emitted_at": at.isoformat(), "overlay": overlay_json(item)})
     path = overlays_path(data_dir, match_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:

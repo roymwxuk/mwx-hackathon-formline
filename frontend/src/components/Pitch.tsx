@@ -1,5 +1,8 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { ballAt } from '@/lib/ball';
-import type { Club, Lang, MatchEvent, Player } from '@/lib/types';
+import { FrameInterpolator } from '@/lib/interpolate';
+import { labelledPlayers, trackedMarkers } from '@/lib/tracking';
+import type { Club, Lang, MatchEvent, Player, TrackingFrameMessage } from '@/lib/types';
 
 interface Props {
   events: MatchEvent[]; // event-time order, latest versions only
@@ -9,11 +12,19 @@ interface Props {
   lang: Lang;
   /** Analyst view adds the shot cone and the nearest-defender distance. */
   detailed: boolean;
+  /** Latest tracking frame: all 22 players and the ball. Without it, the pitch shows the
+   *  event actors and a ball path reconstructed from events. */
+  frame?: TrackingFrameMessage | null;
+  focusPlayer?: string | null;
 }
 
 const W = 1050;
 const H = 680;
 const SHOT_HOLD_MS = 25_000; // keep a shot on screen for 25 match seconds
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
 
 /** Each team's coordinates attack left→right; flip the away side so both share one pitch. */
 function toScreen(x: number, y: number, flip: boolean): [number, number] {
@@ -22,7 +33,64 @@ function toScreen(x: number, y: number, flip: boolean): [number, number] {
   return [dx * (W / 100), dy * (H / 100)];
 }
 
-export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props) {
+export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null }: Props) {
+  const tracked = frame ? trackedMarkers(frame, clubs, players) : null;
+  const named = tracked ? labelledPlayers(events, clockMs, focusPlayer) : null;
+
+  // Tracked markers move by JavaScript interpolation in an animation loop, not CSS
+  // transitions (Firefox restarts interrupted SVG transitions from a stale position, so
+  // every player stuttered backwards). React only adds and removes markers.
+  const interp = useRef<FrameInterpolator | null>(null);
+  interp.current ??= new FrameInterpolator(prefersReducedMotion());
+  const lastFrame = useRef<TrackingFrameMessage | null | undefined>(undefined);
+  if (frame !== lastFrame.current) { // a new frame: blend from what is drawn now
+    if (frame) interp.current.set(frame, performance.now());
+    else interp.current.reset();
+    lastFrame.current = frame;
+  }
+  const nodes = useRef(new Map<string, SVGGElement>());
+  const ballNode = useRef<{ g: SVGGElement | null; shadow: SVGEllipseElement | null; ball: SVGCircleElement | null }>(
+    { g: null, shadow: null, ball: null });
+  const place = useCallback((now: number) => {
+    const pos = interp.current!.at(now);
+    for (const [key, node] of nodes.current) {
+      const isLabel = key.startsWith('label-');
+      const p = pos.get(isLabel ? key.slice(6) : key);
+      if (!p) continue;
+      const [sx, y] = toScreen(p.x, p.y, false);
+      const x = isLabel ? Math.min(Math.max(sx, 60), W - 60) : sx; // keep names inside the pitch
+      node.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    }
+    const b = pos.get('ball');
+    const { g, shadow, ball: circle } = ballNode.current;
+    if (b && g && shadow && circle) {
+      const [x, y] = toScreen(b.x, b.y, false);
+      const lift = (b.z ?? 0) * 4; // height in meters, drawn as a lift above its shadow
+      g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+      shadow.setAttribute('visibility', lift > 1 ? 'visible' : 'hidden');
+      circle.setAttribute('cy', (-lift).toFixed(1));
+      circle.setAttribute('r', (7 + lift / 12).toFixed(1));
+    }
+  }, []);
+  const hasFrame = frame != null;
+  useEffect(() => {
+    if (!hasFrame) return;
+    let raf = 0;
+    const tick = () => {
+      place(performance.now());
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [hasFrame, place]);
+  const track = (key: string) => (el: SVGGElement | null) => {
+    if (el) {
+      nodes.current.set(key, el);
+      place(performance.now()); // a new marker starts at its spot, not at the corner
+    } else {
+      nodes.current.delete(key);
+    }
+  };
   const away = clubs[1].club_id;
   const clubById = new Map(clubs.map((c) => [c.club_id, c]));
   const playerById = new Map(players.map((p) => [p.player_id, p]));
@@ -33,7 +101,7 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props
   const showShot = lastShot && clockMs - lastShot.match_clock_ms < SHOT_HOLD_MS && lastShot === last;
   const trail = onBall.filter((e) => e.type === 'pass').slice(-4);
 
-  // Ball path reconstructed from event data (see lib/ball.ts); already in the shared frame.
+  // The ball: from tracking when there is a frame, else reconstructed from events (lib/ball.ts).
   const ballPoint = ballAt(events, clockMs, away);
   const ball = toScreen(ballPoint.x, ballPoint.y, false);
 
@@ -72,7 +140,7 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props
           return (
             <g key={e.event_id} opacity={isLast ? 1 : 0.35}>
               <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--accent-soft)" strokeWidth={3} strokeDasharray="10 8" />
-              {isLast && club && (
+              {isLast && club && !tracked && (
                 <>
                   <circle cx={x1} cy={y1} r={14} fill={club.color} stroke="#fff" strokeWidth={2} />
                   <text x={x1} y={y1 - 22} textAnchor="middle" className="pitch-label">{label(e.player_id)}</text>
@@ -109,7 +177,7 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props
               strokeWidth={5}
               strokeDasharray={disallowed ? '12 8' : undefined}
             />
-            {(lastShot.freeze_frame ?? []).map((p, i) => {
+            {!tracked && (lastShot.freeze_frame ?? []).map((p, i) => {
               const [px, py] = toScreen(p.x, p.y, flip);
               const fill = p.goalkeeper ? 'var(--keeper)' : p.teammate ? shooterClub?.color : opponent?.color;
               return (
@@ -123,19 +191,48 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed }: Props
               const [nx, ny] = toScreen(nearest.p.x, nearest.p.y, flip);
               return <text x={nx} y={ny + 32} textAnchor="middle" className="pitch-metric">{nearest.d.toFixed(1)} m</text>;
             })()}
-            <circle cx={sx} cy={sy} r={17} fill={shooterClub?.color} stroke="var(--accent)" strokeWidth={4} />
-            <text x={sx} y={sy + 6} textAnchor="middle" className="pitch-number" fill={shooterClub?.text_color}>
-              {playerById.get(lastShot.player_id ?? '')?.shirt_number}
-            </text>
-            <text x={sx} y={sy - 28} textAnchor="middle" className="pitch-label">{label(lastShot.player_id)}</text>
+            {!tracked && (
+              <>
+                <circle cx={sx} cy={sy} r={17} fill={shooterClub?.color} stroke="var(--accent)" strokeWidth={4} />
+                <text x={sx} y={sy + 6} textAnchor="middle" className="pitch-number" fill={shooterClub?.text_color}>
+                  {playerById.get(lastShot.player_id ?? '')?.shirt_number}
+                </text>
+                <text x={sx} y={sy - 28} textAnchor="middle" className="pitch-label">{label(lastShot.player_id)}</text>
+              </>
+            )}
           </g>
         );
       })()}
 
-      {/* Positioned by transform so CSS can glide between updates (clock ticks every 0.25 s). */}
-      <g className="ball" style={{ transform: `translate(${ball[0]}px, ${ball[1]}px)` }}>
-        <circle r={7} fill="#fff" stroke="#111" strokeWidth={2} />
-      </g>
+      {/* Tracking: every player, keyed by side and shirt; positioned by the animation loop. */}
+      {tracked?.map((m) => {
+        const focus = m.player && m.player.player_id === focusPlayer;
+        return (
+          <g key={m.key} ref={track(m.key)} className="track-player">
+            <circle r={focus ? 15 : 13} fill={m.club.color} stroke={focus ? 'var(--accent)' : m.club.text_color}
+              strokeWidth={focus ? 4 : 2} />
+            <text y={5} textAnchor="middle" className="pitch-number" fill={m.club.text_color}>{m.player?.shirt_number}</text>
+          </g>
+        );
+      })}
+      {/* Names in their own layer, so no marker drawn later can cover them. */}
+      {tracked?.filter((m) => m.player && named?.has(m.player.player_id)).map((m) => (
+        <g key={`label-${m.key}`} ref={track(`label-${m.key}`)} className="track-label">
+          <text y={-22} textAnchor="middle" className="pitch-label">{label(m.player!.player_id)}</text>
+        </g>
+      ))}
+
+      {tracked ? (
+        <g ref={(el) => { ballNode.current.g = el; }}>
+          <ellipse ref={(el) => { ballNode.current.shadow = el; }} rx={7} ry={3} fill="rgba(0,0,0,0.35)" visibility="hidden" />
+          <circle ref={(el) => { ballNode.current.ball = el; }} r={7} fill="#fff" stroke="#111" strokeWidth={2} />
+        </g>
+      ) : (
+        /* Event-only mode: positioned by transform so CSS can glide between clock ticks. */
+        <g className="ball" style={{ transform: `translate(${ball[0]}px, ${ball[1]}px)` }}>
+          <circle r={7} fill="#fff" stroke="#111" strokeWidth={2} />
+        </g>
+      )}
     </svg>
   );
 }

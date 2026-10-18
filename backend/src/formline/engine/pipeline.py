@@ -20,6 +20,10 @@ class LivePipeline:
     def flush(self) -> list[InsightChange]:
         return [ic for change in self.ingestor.flush() for ic in self._handle(change)]
 
+    def advance_to(self, now) -> list[InsightChange]:
+        """Idle timeout (see Ingestor.advance_to)."""
+        return [ic for change in self.ingestor.advance_to(now) for ic in self._handle(change)]
+
     def run(self, feed: list[FeedMessage]) -> list[InsightChange]:
         out = [ic for msg in feed for ic in self.process(msg)]
         return out + self.flush()

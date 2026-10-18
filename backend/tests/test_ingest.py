@@ -66,6 +66,21 @@ def test_events_wait_for_the_watermark(creates):
     assert first.event_id in released and later.event_id not in released
 
 
+def test_idle_timeout_releases_without_a_next_message(creates):
+    ing = Ingestor(window=timedelta(seconds=5))
+    first = creates[0]
+    assert ing.ingest(first) == []
+    t = first.event.event_time
+    assert ing.advance_to(t + timedelta(seconds=3)) == []  # still inside the window
+    assert applied_ids(ing.advance_to(t + timedelta(seconds=6))) == [first.event_id]
+    # an older event arriving after the timeout is applied late, as usual
+    older = msg(creates[1], event=creates[1].event.model_copy(
+        update={"event_time": t - timedelta(seconds=1)}), event_id="evt_older",
+        message_id="m_older")
+    older = older.model_copy(update={"event": older.event.model_copy(update={"event_id": "evt_older"})})
+    assert ing.ingest(older) == [Applied(older.event, late=True)]
+
+
 def test_event_after_watermark_is_applied_late(creates):
     early, rest = creates[0], creates[1:]
     ing = Ingestor()

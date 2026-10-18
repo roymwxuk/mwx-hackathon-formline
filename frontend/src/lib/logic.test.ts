@@ -155,5 +155,17 @@ describe('clock messages', () => {
     t = timeAfter(t, { kind: 'clock', period: 2, match_clock_ms: 2_705_000 });
     expect(t).toEqual({ period: 2, clockMs: 2_705_000 });
     expect(timeAfter(t, { kind: 'end' })).toBe(t);
+    const frame = { kind: 'frame' as const, p: 2, t: 2_710_000, b: [50, 50, 0] as [number, number, number], h: [], a: [] };
+    expect(timeAfter(t, frame)).toEqual({ period: 2, clockMs: 2_710_000 });
+  });
+});
+
+describe('key moments', () => {
+  it('jump a few seconds before each moment, in the right half', async () => {
+    const { MOMENTS, liveStreamUrl } = await import('@/lib/useMatchStream');
+    const base = 'http://localhost:8000/matches/m/stream?speed=20';
+    const starts = MOMENTS.map((m) => new URL(liveStreamUrl(base, 20, m.at)).searchParams.get('start'));
+    expect(starts).toEqual(['12:00', '22:20', '40:05', '52:35', '63:30', '64:05']);
+    expect(MOMENTS.filter((m) => m.at.period === 2).map((m) => m.label.slice(0, 5))).toEqual(['52:35', '63:30', '64:05']);
   });
 });

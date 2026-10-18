@@ -127,6 +127,18 @@ class Ingestor:
         """End of stream: release everything still buffered."""
         return self._release(None)
 
+    def advance_to(self, now: datetime) -> list[Change]:
+        """Idle timeout: no message has arrived for a while, so time moves on anyway.
+
+        Without this the watermark only moves when the next message arrives, and after a
+        goal (no events for half a minute) its insight would wait for whatever comes next.
+        The watermark advances to `now` minus the window; events still buffered behind it
+        are released, and anything older that arrives later is flagged late as usual.
+        """
+        if self._max_event_time is None or now > self._max_event_time:
+            self._max_event_time = now
+        return self._release(self.watermark)
+
     def _release(self, upto: datetime | None) -> list[Change]:
         ready = [e for e in self._buffer.values() if upto is None or e.event_time <= upto]
         ready.sort(key=lambda e: (e.event_time, e.event_id))

@@ -49,6 +49,7 @@ export function advanceTime(t: MatchTime, period: number | undefined, clockMs: n
 export function timeAfter(t: MatchTime, msg: StreamMessage): MatchTime {
   if (msg.kind === 'event') return advanceTime(t, msg.event.period, msg.event.match_clock_ms);
   if (msg.kind === 'clock') return advanceTime(t, msg.period, msg.match_clock_ms);
+  if (msg.kind === 'frame') return advanceTime(t, msg.p, msg.t);
   if (msg.kind === 'overlay') return advanceTime(t, undefined, msg.overlay.match_clock_ms);
   return t;
 }

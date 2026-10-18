@@ -1,5 +1,6 @@
 import asyncio
 import json
+from itertools import pairwise
 
 import pytest
 from fastapi.testclient import TestClient
@@ -185,11 +186,11 @@ def test_pacing_slows_down_around_key_moments(monkeypatch):
     got = asyncio.run(run())
     assert [i for i, _ in got] == [1, 2, 3, 4, 5, 6]
     assert [w for _, w in got[1:4]] == [1.0, 1.0, 1.0]  # 10 s of feed at 10x
-    assert got[-1][1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))  # near the shot: slower
+    assert got[-1][1] == pytest.approx(10 / rp.MIN_SLOW_PACE)  # near the shot: slower (3x)
     assert [w for _, w in asyncio.run(run(slow=False))[1:]] == [1.0] * 5
     got = asyncio.run(run(start=(1, 30_000)))
     assert [w for _, w in got][:5] == [0, 0, 0, 0, 1.0]  # the past arrived at once
-    assert got[-1][1] == pytest.approx(10 / (10 / rp.SLOW_FACTOR))
+    assert got[-1][1] == pytest.approx(10 / rp.MIN_SLOW_PACE)
 
 
 def test_gaps_carry_clock_messages_with_the_running_match_time(monkeypatch):
@@ -205,10 +206,28 @@ def test_gaps_carry_clock_messages_with_the_running_match_time(monkeypatch):
     assert ids == [1, 2, 3]  # clock messages take no id
     assert all(p["kind"] == "clock" and p["period"] == 1 for p in ticks)
     times = [p["match_clock_ms"] for p in ticks]
-    assert len(times) == 5  # every 0.25 s within the 1.35 s gap (3 s gap: none)
-    assert times == sorted(times) and times[0] == 5_000 and times[-1] <= 27_000
+    assert len(times) == 6  # every 0.25 s of real time: 5 in the 1.35 s gap, 1 in the next
+    assert times == sorted(times) and times[0] == 5_000 and times[-1] <= 30_000
     first_after_gap = next(n for n, (i, _) in enumerate(out) if i == 2)
-    assert all(i is None for i, _ in out[1:first_after_gap])  # ticks sit inside the gap
+    gap_ticks = [p["match_clock_ms"] for i, p in out[1:first_after_gap]]
+    assert len(gap_ticks) == 5 and max(gap_ticks) <= 27_000  # never past the next event
+
+
+def test_ticks_keep_a_steady_rate_when_events_are_frequent(monkeypatch):
+    rp, state = _fake_clock(monkeypatch)
+    items = _events([2 * i for i in range(51)])  # every 2 s of feed: 0.1 s apart at 20x
+
+    async def run():
+        out = []
+        async for i, p in rp.paced(items, 20.0, slow=False):
+            out.append((i, p, state["now"]))
+        return out
+
+    out = asyncio.run(run())
+    ticks = [now for i, _, now in out if i is None]
+    assert len(ticks) == 20  # 5 s of real time, one tick every 0.25 s
+    gaps = [b - a for a, b in pairwise(ticks)]
+    assert all(abs(g - 0.25) < 1e-6 for g in gaps)
 
 
 def test_no_clock_messages_while_the_clock_is_stopped(monkeypatch):
@@ -241,3 +260,114 @@ def test_clock_messages_carry_no_sse_id(client, monkeypatch):
     ids = [int(line[3:].strip()) for b in blocks for line in b.splitlines()
            if line.startswith("id:")]
     assert ids == list(range(1, len(ids) + 1))
+
+
+@pytest.fixture(scope="module")
+def tracked(data_dir):
+    """Tracking for the first 4 minutes of each half, written into the test data."""
+    from formline.engine.log import current_events
+    from formline.schema.tracking import tracking_path, write_tracking
+    from formline.tracking.motion import build_frames
+
+    season = generate_season(2026)
+    gm = next(g for g in season.matches if g.match.is_live_demo)
+    players = {p.player_id: p for p in season.league.players}
+    frames = build_frames(current_events(gm.feed), gm.match.home_club_id, players,
+                          season.league.starters, limit_ms=4 * 60_000)
+    path = tracking_path(data_dir, LIVE)
+    write_tracking(path, frames)
+    yield path
+    path.unlink()
+
+
+def _stream_blocks(client, query):
+    with client.stream("GET", f"/matches/{LIVE}/stream?{query}") as r:
+        raw = r.read().decode()
+    return [b for b in raw.split("\r\n\r\n") if "data:" in b]
+
+
+def _data(block):
+    return json.loads(next(line[5:] for line in block.splitlines() if line.startswith("data:")))
+
+
+def test_ticks_become_tracking_frames_when_the_match_has_tracking(client, tracked, monkeypatch):
+    _fake_clock(monkeypatch)
+    blocks = _stream_blocks(client, "speed=20&until=03:00&slow=false")
+    frames = [(b, _data(b)) for b in blocks if '"kind":"frame"' in b]
+    assert frames and not any('"kind": "clock"' in b for b in blocks)
+    assert all("id:" not in b for b, _ in frames)  # resume ids stay on real messages
+    times = [d["t"] for _, d in frames]
+    assert times == sorted(times) and times[-1] <= 180_000
+    first = frames[0][1]
+    assert set(first) == {"kind", "p", "t", "b", "h", "a"}
+    assert len(first["h"]) == 11 and len(first["a"]) == 11 and len(first["b"]) == 3
+
+
+def test_tracking_can_be_turned_off(client, tracked, monkeypatch):
+    _fake_clock(monkeypatch)
+    blocks = _stream_blocks(client, "speed=20&until=01:00&slow=false&tracking=false")
+    assert any('"kind": "clock"' in b for b in blocks)
+    assert not any('"kind":"frame"' in b for b in blocks)
+
+
+def test_slow_down_never_drops_below_3x_or_above_the_chosen_speed():
+    from formline import replay as rp
+
+    assert rp._slow_pace(20) == pytest.approx(20 / 6)
+    assert rp._slow_pace(10) == rp._slow_pace(5) == 3.0
+    assert rp._slow_pace(1) == 1.0
+    assert rp._slow_pace(1e9) == pytest.approx(1e9 / 6)  # tests' instant replays stay instant
+
+
+
+def _timed_events(spec, period=1, kick=None):
+    """Events (clock_s, send_delay_s): event_time = kick-off + clock, sent `delay` later."""
+    from datetime import datetime, timedelta
+
+    kick = kick or datetime(2026, 10, 24, 19, 0)
+    return [(kick + timedelta(seconds=c + d),
+             {"kind": "event", "event": {"period": period, "match_clock_ms": int(c * 1000),
+                                         "type": "pass",
+                                         "event_time": (kick + timedelta(seconds=c)).isoformat()}})
+            for c, d in spec]
+
+
+def _ticks(rp, items, speed):
+    async def run():
+        return [p for i, p in [x async for x in rp.paced(items, speed, slow=False)] if i is None]
+    return asyncio.run(run())
+
+
+def test_clock_ticks_evenly_whatever_each_events_send_delay(monkeypatch):
+    rp, _ = _fake_clock(monkeypatch)
+    # passes every 3 s, sent alternately 0.3 s and 0.9 s late (the feed's real spread)
+    items = _timed_events([(3 * i, 0.3 if i % 2 == 0 else 0.9) for i in range(9)])
+    times = [p["match_clock_ms"] for p in _ticks(rp, items, 1.0)]
+    steps = {b - a for a, b in pairwise(times)}
+    assert steps == {250}  # one quarter second per quarter second: real time at 1x
+    assert times[0] == 550  # true match time (the first pass was sent 0.3 s after 0:00)
+
+
+def test_a_late_event_does_not_stall_the_clock(monkeypatch):
+    rp, _ = _fake_clock(monkeypatch)
+    spec = [(3 * i, 0.4) for i in range(8)]
+    spec.insert(4, (1.0, 10.0))  # happened at 0:01, arrives about 11 s in (chaos-style)
+    items = sorted(_timed_events(spec), key=lambda x: x[0])
+    times = [p["match_clock_ms"] for p in _ticks(rp, items, 1.0)]
+    assert {b - a for a, b in pairwise(times)} == {250}
+
+
+def test_kick_off_is_fixed_per_half(monkeypatch):
+    from datetime import datetime, timedelta
+
+    rp, _ = _fake_clock(monkeypatch)
+    first_kick = datetime(2026, 10, 24, 19, 0)
+    first = _timed_events([(2697, 0.5), (2700, 0.5)], kick=first_kick)
+    first[-1][1]["event"]["type"] = "half_end"
+    second_kick = first_kick + timedelta(minutes=63)  # 45:00 + break, so a new kick-off
+    second = _timed_events([(2700, 0.5), (2703, 0.5), (2706, 0.5)], period=2,
+                           kick=second_kick - timedelta(seconds=2700))
+    times = [(p["period"], p["match_clock_ms"]) for p in _ticks(rp, first + second, 1.0)]
+    second_half = [ms for per, ms in times if per == 2]
+    assert second_half and all(2_700_000 < ms <= 2_706_500 for ms in second_half)  # + send delay
+    assert {b - a for a, b in pairwise(second_half)} == {250}

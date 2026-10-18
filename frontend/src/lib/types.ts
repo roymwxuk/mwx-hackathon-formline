@@ -55,6 +55,8 @@ export interface MatchEvent {
   freeze_frame?: FreezeFramePlayer[];
   tracking?: { shot_speed_kmh?: number };
   related_event_ids?: string[];
+  recipient_id?: string | null;
+  pass_type?: 'open_play' | 'corner' | 'free_kick' | 'goal_kick' | 'throw_in' | 'kick_off';
 }
 
 export type TemplateId =
@@ -96,10 +98,21 @@ export interface OverlaySlots {
 }
 
 /** One message on the live stream (SSE `data:` payload). */
+/** One tracking frame (DATA_SCHEMA.md §5.4): shared frame, home attacks toward x = 100. */
+export interface TrackingFrameMessage {
+  kind: 'frame';
+  p: number; // period
+  t: number; // match clock, ms
+  b: [number, number, number]; // ball x, y, height (m)
+  h: [number, number, number][]; // home: [shirt, x, y]
+  a: [number, number, number][]; // away: [shirt, x, y]
+}
+
 export type StreamMessage =
   | { kind: 'event'; event: MatchEvent }
   | { kind: 'overlay'; overlay: Overlay }
   | { kind: 'clock'; period: number; match_clock_ms: number } // running match time during gaps
+  | TrackingFrameMessage // like clock, plus the ball and every player (when the match has tracking)
   | { kind: 'end' }; // the match feed is over
 
 export interface ViewerSettings {
