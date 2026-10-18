@@ -77,7 +77,7 @@ export default function App() {
           )}
           <span className={`source feed ${feed.tone}`} title={feed.title}>{feed.label}</span>
           <span className="clock-big">{formatClock(stream.clockMs)}</span>
-          <button type="button" className="ctl" onClick={() => stream.setPlaying(!stream.playing)}>
+          <button type="button" className="ctl play-toggle" onClick={() => stream.setPlaying(!stream.playing)}>
             {stream.playing ? 'Pause' : 'Play'}
           </button>
           <button type="button" className="ctl" onClick={stream.restart}>Restart</button>

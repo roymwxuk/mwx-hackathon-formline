@@ -54,6 +54,8 @@ h2, h3 { margin: 0; }
 .clock-big { font-family: var(--mono); font-size: 20px; color: var(--accent-soft); min-width: 64px; }
 .ctl { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
 .ctl:hover { border-color: var(--accent); }
+/* One width for Play and Pause, so toggling never shifts Restart and the menus. */
+.ctl.play-toggle { box-sizing: border-box; width: 84px; }
 .speed { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .speed select, .settings select { min-height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); padding: 0 8px; }
 
