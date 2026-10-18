@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { answerKey, askAnalyst, freshComment } from '@/lib/analyst';
+import { answerKey, askAnalyst, freshComment, latestAskable } from '@/lib/analyst';
 import { t } from '@/lib/i18n';
 import type { CommentState } from '@/lib/logic';
 import type { AnalystComment, FollowupAnswer, FollowupSuggestion, Lang } from '@/lib/types';
@@ -36,68 +36,99 @@ export function CommentBubble({ comments, clockMs, lang, paused = false }: { com
 }
 
 type Asked = { status: 'loading' } | { status: 'done'; answer: FollowupAnswer } | { status: 'error' };
+interface AskedItem { key: string; lang: Lang; label: string; minute: string; state: Asked }
 
-/** The comment's suggested questions as chips; a click asks the Analyst and shows the answer. */
-function FollowUps({ comment: c, askUrl, lang }: { comment: AnalystComment; askUrl: string; lang: Lang }) {
+/** "Ask the analyst": the latest moment's suggested questions, and the answers asked so far. */
+function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; askUrl: string; lang: Lang; limit?: number }) {
   const str = t(lang);
-  const [open, setOpen] = useState<FollowupSuggestion | null>(null);
-  const [asked, setAsked] = useState<Record<string, Asked>>({});
-  const suggestions = c.suggestions ?? [];
-  if (!c.ask || suggestions.length === 0) return null;
+  const latest = latestAskable(comments)?.comment;
+  const [items, setItems] = useState<AskedItem[]>([]);
+  const mine = items.filter((i) => i.lang === lang);
 
-  const choose = (s: FollowupSuggestion) => {
+  const ask = (c: AnalystComment, s: FollowupSuggestion) => {
     const key = answerKey(c, s);
-    if (open && answerKey(c, open) === key) return setOpen(null); // a second click closes it
-    setOpen(s);
-    if (asked[key] && asked[key].status !== 'error') return; // asked before: show it again
-    setAsked((a) => ({ ...a, [key]: { status: 'loading' } }));
-    askAnalyst(askUrl, c, s)
-      .then((answer) => setAsked((a) => ({ ...a, [key]: { status: 'done', answer } })))
-      .catch(() => setAsked((a) => ({ ...a, [key]: { status: 'error' } })));
+    const existing = items.find((i) => i.key === key);
+    const item: AskedItem = existing && existing.state.status !== 'error'
+      ? existing // asked before: bring it back to the top
+      : { key, lang: c.lang, label: s.label, minute: c.evidence[0]?.minute ?? '', state: { status: 'loading' } };
+    setItems((list) => [item, ...list.filter((i) => i.key !== key)]);
+    if (item !== existing) {
+      const settle = (state: Asked) => setItems((list) => list.map((i) => (i.key === key ? { ...i, state } : i)));
+      askAnalyst(askUrl, c, s).then((answer) => settle({ status: 'done', answer })).catch(() => settle({ status: 'error' }));
+    }
   };
-  const current = open ? asked[answerKey(c, open)] : undefined;
 
   return (
-    <div className="followups">
-      <div className="followup-chips" role="group" aria-label={str.ask}>
-        {suggestions.map((s) => (
-          <button key={s.question} type="button" className="followup-chip"
-            aria-pressed={open?.question === s.question} onClick={() => choose(s)}>
-            {s.label}
-          </button>
-        ))}
-      </div>
-      {open && current && (
-        <div className="followup-answer" aria-live="polite">
-          {current.status === 'loading' && <p className="muted">{str.thinking}</p>}
-          {current.status === 'error' && <p className="danger-text">{str.askError}</p>}
-          {current.status === 'done' && (
-            <>
-              <strong className="comment-headline">{current.answer.headline}</strong>
-              <p className="comment-body">{current.answer.body}</p>
-              {current.answer.evidence.length > 0 && (
-                <p className="analyst-evidence muted">
-                  {str.evidence}: {current.answer.evidence.map((e) => `${e.type.replace('_', ' ')} ${e.minute}`).join(' · ')}
-                </p>
-              )}
-            </>
-          )}
+    <div className="ask-tab">
+      {!latest && <p className="muted">{str.askEmpty}</p>}
+      {latest && (
+        <div className="ask-moment">
+          <span className="comment-tag">{str.askAbout} · {latest.evidence[0]?.minute ?? ''}</span>
+          <strong className={`comment-headline${latest.goal ? ' goal' : ''}`}>{latest.headline}</strong>
+          <div className="followup-chips" role="group" aria-label={str.ask}>
+            {(latest.suggestions ?? []).map((s) => (
+              <button key={s.question} type="button" className="followup-chip"
+                aria-pressed={mine[0]?.key === answerKey(latest, s)} onClick={() => ask(latest, s)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
+      )}
+      {mine.length > 0 && (
+        <ul className="analyst-list">
+          {mine.slice(0, limit).map((i) => (
+            <li key={i.key} className="followup-answer" aria-live="polite">
+              <span className="comment-tag ask-q">{i.minute} · {i.label}</span>
+              {i.state.status === 'loading' && <p className="muted">{str.thinking}</p>}
+              {i.state.status === 'error' && <p className="danger-text">{str.askError}</p>}
+              {i.state.status === 'done' && (
+                <>
+                  <strong className="comment-headline">{i.state.answer.headline}</strong>
+                  <p className="comment-body">{i.state.answer.body}</p>
+                  {limit === undefined && i.state.answer.evidence.length > 0 && (
+                    <p className="analyst-evidence muted">
+                      {str.evidence}: {i.state.answer.evidence.map((e) => `${e.type.replace('_', ' ')} ${e.minute}`).join(' · ')}
+                    </p>
+                  )}
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
 }
 
-/** Every comment so far, newest first, with its evidence; withdrawn ones struck through.
- *  With `askUrl` (live mode), each comment offers its follow-up questions. */
+type Tab = 'comments' | 'ask';
+
+/** Two tabs: the commentary (every comment so far, newest first, with its evidence; withdrawn
+ *  ones struck through) and, in live mode (`askUrl`), "Ask the analyst". A dot on the Ask tab
+ *  says the latest moment has new questions. */
 export function AnalystPanel({ comments, lang, limit, askUrl = null }: { comments: CommentState[]; lang: Lang; limit?: number; askUrl?: string | null }) {
   const str = t(lang);
   const items = [...comments].reverse().slice(0, limit);
+  const [tab, setTab] = useState<Tab>('comments');
+  const latestMoment = latestAskable(comments)?.comment.ask?.moment;
+  const [seen, setSeen] = useState<string | undefined>();
+  useEffect(() => { if (tab === 'ask') setSeen(latestMoment); }, [tab, latestMoment]);
+  const fresh = askUrl !== null && tab !== 'ask' && latestMoment !== undefined && latestMoment !== seen;
+  const showAsk = askUrl !== null && tab === 'ask';
   return (
     <section className="panel analyst" lang={lang} aria-label={str.analyst}>
       <div className="panel-head"><h2>{str.analyst}</h2></div>
-      {items.length === 0 && <p className="muted">{str.analystEmpty}</p>}
-      <ul className="analyst-list">
+      {askUrl && (
+        <div className="panel-tabs" role="tablist" aria-label={str.analyst}>
+          <button type="button" role="tab" aria-selected={tab === 'comments'} onClick={() => setTab('comments')}>{str.tabCommentary}</button>
+          <button type="button" role="tab" aria-selected={tab === 'ask'} onClick={() => setTab('ask')}>
+            {str.ask}{fresh && <span className="tab-dot" title={str.newQuestions} aria-label={str.newQuestions} />}
+          </button>
+        </div>
+      )}
+      {askUrl && <div hidden={!showAsk}><AskTab comments={comments} askUrl={askUrl} lang={lang} limit={limit} /></div>}
+      {!showAsk && items.length === 0 && <p className="muted">{str.analystEmpty}</p>}
+      <ul className="analyst-list" hidden={showAsk}>
         {items.map(({ comment: c, retracted }) => (
           <li key={c.comment_id} className={retracted ? 'retracted' : ''}>
             <div className="analyst-meta">
@@ -112,7 +143,6 @@ export function AnalystPanel({ comments, lang, limit, askUrl = null }: { comment
                 {str.evidence}: {c.evidence.map((e) => `${e.type.replace('_', ' ')} ${e.minute}`).join(' · ')}
               </p>
             )}
-            {askUrl && !retracted && <FollowUps comment={c} askUrl={askUrl} lang={lang} />}
           </li>
         ))}
       </ul>

@@ -113,8 +113,10 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   `data/analyst/<match>.answers.jsonl`; `POST /matches/{id}/ask` serves those and otherwise
   replays the feed up to the comment's sequence and answers live (same facts, same verifier).
   The comment carries `ask {moment, seq}` and `suggestions[]` (`DATA_SCHEMA.md` §5.5).
-- **Viewer**: chips under each comment in the Match analyst panel (both pages, live mode
-  only); a click shows "Thinking…", then the answer with its evidence; a second click closes it.
+- **Viewer**: the Match analyst panel has two tabs (owner's choice, 2026-10-18): *Commentary*
+  (the comments) and *Ask the analyst*: the latest moment's 2–3 question chips, and below them
+  every answer asked so far, newest first, with its evidence ("Thinking…" while it loads, a
+  retry on error). A dot on the tab marks new questions. Both pages; live mode only.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are

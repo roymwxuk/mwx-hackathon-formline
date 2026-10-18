@@ -115,8 +115,17 @@ details.panel[open] summary { margin-bottom: 8px; }
 .analyst-list li.retracted .comment-headline, .analyst-list li.retracted .comment-body { text-decoration: line-through; opacity: 0.6; }
 .analyst-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; }
 .analyst-evidence { margin: 0; font-size: 11.5px; }
-/* Follow-up questions under a comment (Match Analyst phase 2). */
-.followups { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+[hidden] { display: none !important; } /* beat display: flex on hidden panels */
+/* Match analyst tabs: Commentary | Ask the analyst. */
+.panel-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.panel-tabs button { position: relative; min-height: 36px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent;
+  color: var(--muted); font-size: 13.5px; cursor: pointer; margin-bottom: -1px; }
+.panel-tabs button[aria-selected='true'] { color: var(--text); border-bottom-color: var(--analyst); }
+.tab-dot { display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--analyst); vertical-align: 2px; }
+.ask-tab { display: flex; flex-direction: column; gap: 12px; }
+.comment-tag.ask-q { text-transform: none; letter-spacing: 0; font-size: 12px; }
+.ask-moment { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+/* Follow-up questions (Match Analyst phase 2). */
 .followup-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .followup-chip { min-height: 32px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--analyst); background: transparent;
   color: var(--analyst); font-size: 12.5px; cursor: pointer; text-align: left; }

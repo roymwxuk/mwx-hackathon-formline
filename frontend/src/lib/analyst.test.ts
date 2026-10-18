@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { answerKey, askAnalyst, askUrlFor, commentsFor, freshComment } from '@/lib/analyst';
+import { answerKey, askAnalyst, askUrlFor, commentsFor, freshComment, latestAskable } from '@/lib/analyst';
 import { applyComments } from '@/lib/logic';
 import type { AnalystComment } from '@/lib/types';
 
@@ -37,6 +37,23 @@ describe('follow-up questions', () => {
   const score = { question: 'score' as const, label: 'Why is it 1–0?', player_id: null };
 
   afterEach(() => vi.unstubAllGlobals());
+
+  it('asks about the newest comment that has questions, never a withdrawn one', () => {
+    const suggestions = [score];
+    const states = applyComments([
+      c('a', 1_000, 'en', { ask, suggestions }),
+      c('b', 2_000, 'en', { ask: { moment: 'corner_evt_9', seq: 400 }, suggestions }),
+      c('old', 3_000), // no questions
+    ]);
+    expect(latestAskable(states)?.comment.comment_id).toBe('b');
+    const withdrawn = applyComments([
+      c('a', 1_000, 'en', { ask, suggestions }),
+      c('b', 2_000, 'en', { ask: { moment: 'corner_evt_9', seq: 400 }, suggestions }),
+      c('b_retract', 4_000, 'en', { op: 'retract', supersedes_comment_id: 'b' }),
+    ]);
+    expect(latestAskable(withdrawn)?.comment.comment_id).toBe('a');
+    expect(latestAskable([])).toBeUndefined();
+  });
 
   it('posts to /ask next to the stream URL', () => {
     expect(askUrlFor('http://localhost:8000/matches/m1/stream?speed=20&slow=false'))

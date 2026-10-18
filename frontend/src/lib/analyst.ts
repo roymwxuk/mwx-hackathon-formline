@@ -41,3 +41,12 @@ export async function askAnalyst(url: string, c: AnalystComment, s: FollowupSugg
   if (!res.ok) throw new Error(`ask failed: ${res.status}`);
   return (await res.json()) as FollowupAnswer;
 }
+
+/** The newest comment that offers follow-up questions (withdrawn ones do not). */
+export function latestAskable(states: CommentState[]): CommentState | undefined {
+  for (let i = states.length - 1; i >= 0; i -= 1) {
+    const s = states[i];
+    if (!s.retracted && s.comment.ask && (s.comment.suggestions?.length ?? 0) > 0) return s;
+  }
+  return undefined;
+}

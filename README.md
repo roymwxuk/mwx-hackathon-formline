@@ -46,10 +46,12 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
 - **Explains key moments as they happen.** A Match Analyst agent writes a short, verified
   comment after every shot, corner and card, in English or Japanese, from the facts the data
   holds (distance, pressure, chance quality, placement, the build-up, fouls tonight) and shows
-  its evidence; it says when the data cannot answer (e.g. who was fouled). Under each comment
+  its evidence; it says when the data cannot answer (e.g. who was fouled). For each comment
   it offers 2–3 follow-up questions ("Why is it 1–0?", "How is Ito doing tonight?", "Compare
   the teams"), picked by a Suggester agent from a fixed catalog; a click returns a verified
   answer with its evidence.
+  The panel has two tabs: *Commentary* and *Ask the analyst* (the latest moment's questions
+  and the answers asked so far; a dot marks new questions).
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
   set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× with an optional
