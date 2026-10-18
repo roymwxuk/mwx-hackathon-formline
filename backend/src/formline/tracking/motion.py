@@ -71,15 +71,18 @@ def _smoothstep(u: float) -> float:
 # ---------- ball ----------
 
 def ball_keys(events: Iterable, home_club_id: str, period: int) -> list[BallKey]:
+    events = [e for e in events if e.period == period]
     keys: list[BallKey] = []
-    for e in events:
-        if e.period != period or e.type not in ON_BALL or e.x is None:
+    for i, e in enumerate(events):
+        if e.type not in ON_BALL or e.x is None:
             continue
         home = e.team_id == home_club_id
         sx, sy = to_shared((e.x, e.y), home)
         t = e.match_clock_ms
         if e.type in ("pass", "shot") and e.end_x is not None:
             ex, ey = to_shared((e.end_x, e.end_y), home)
+            if e.type == "pass" and getattr(e, "outcome", None) == "out":
+                ex, ey = _out_of_play_spot(events[i + 1:], home_club_id, (ex, ey))
             loft = LOFT_M.get(getattr(e, "height", "ground") or "ground", 0.0)
             keys.append(BallKey(t, sx, sy, 0.0, loft))
             end_z = (getattr(e, "end_z", None) or 0.0) if e.type == "shot" else 0.0
@@ -88,6 +91,27 @@ def ball_keys(events: Iterable, home_club_id: str, period: int) -> list[BallKey]
             keys.append(BallKey(t, sx, sy, 0.0))
     keys.sort(key=lambda k: k.t)
     return keys
+
+
+RESTARTS = {"throw_in", "corner", "goal_kick"}
+
+
+def _out_of_play_spot(after: list, home_club_id: str,
+                      end: tuple[float, float]) -> tuple[float, float]:
+    """Where a pass that went out crossed the line (shared frame).
+
+    The feed often records an out pass ending inside the pitch, so the ball would stop in
+    midfield and then jump to the restart. The next on-ball event tells which line it crossed:
+    a throw-in is taken where the ball crossed the side line; for a corner or a goal kick it
+    crossed the goal line at the pass's width."""
+    nxt = next((e for e in after if e.type in ON_BALL and e.x is not None), None)
+    if nxt is None or nxt.type != "pass" or getattr(nxt, "pass_type", None) not in RESTARTS:
+        return end
+    rx, ry = to_shared((nxt.x, nxt.y), nxt.team_id == home_club_id)
+    if nxt.pass_type == "throw_in":
+        return rx, ry
+    goal_line = 0.0 if rx < 50 else 100.0
+    return goal_line, min(100.0, max(0.0, end[1]))
 
 
 def ball_at(keys: list[BallKey], times: list[int], t: int) -> Ball:

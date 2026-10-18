@@ -80,3 +80,28 @@ def test_same_seed_same_tracking(match):
     assert [f.to_row() for f in one] == [f.to_row() for f in two]
     other = build_frames(*args, limit_ms=30_000, seed=7)
     assert [f.to_row() for f in other] != [f.to_row() for f in one]  # drift is seeded
+
+
+def test_a_pass_that_went_out_reaches_the_line_of_the_restart(match):
+    from formline.tracking.motion import ball_keys
+    from formline.tracking.shape import to_shared
+
+    (events, home, _, _), _ = match
+    first = sorted((e for e in events if e.period == 1), key=lambda e: e.match_clock_ms)
+    keys = {k.t: k for k in ball_keys(first, home, 1)}
+    checked = 0
+    for i, e in enumerate(first):
+        if e.type != "pass" or e.outcome != "out":
+            continue
+        nxt = next((n for n in first[i + 1:] if n.type in ("pass", "shot", "duel", "interception",
+                                                           "ball_recovery") and n.x is not None), None)
+        if nxt is None or nxt.type != "pass" or nxt.pass_type not in ("throw_in", "corner", "goal_kick"):
+            continue
+        end = keys[e.match_clock_ms + max(1, e.duration_ms or 1000)]
+        rx, ry = to_shared((nxt.x, nxt.y), nxt.team_id == home)
+        if nxt.pass_type == "throw_in":
+            assert (end.x, end.y) == (rx, ry)
+        else:
+            assert end.x in (0.0, 100.0) and abs(end.x - rx) < 10
+        checked += 1
+    assert checked >= 5
