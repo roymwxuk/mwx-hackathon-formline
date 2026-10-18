@@ -22,6 +22,14 @@ class FakeAgents:
 
     def __call__(self, texts: list[str]) -> str:
         payload = json.loads(texts[-1])
+        if "QUESTION_ID" in payload:  # the Match Analyst: answer like the template, from FACTS
+            from formline.analyst.facts import FactsPack
+            from formline.analyst.templates import template_answer
+
+            pack = FactsPack(payload["QUESTION_ID"], None, payload["FACTS"],
+                             {r: r for r in payload["NAMES"]})
+            return json.dumps(template_answer(pack, payload["LANGUAGE"], payload["NAMES"]),
+                              ensure_ascii=False)
         if "candidates" in payload:
             best = max(payload["candidates"], key=lambda c: (c["salience"], c["id"]))
             return json.dumps({"show": best["id"], "reason": "largest gap from his own norm"})

@@ -40,12 +40,13 @@ def to_stream_message(msg: FeedMessage) -> dict | None:
 END_MESSAGE = {"kind": "end"}  # last StreamMessage: the match feed is over
 
 
-def merge_stream(feed: list[FeedMessage], overlays: list[tuple[datetime, object]]
-                 ) -> list[tuple[datetime, dict]]:
-    """Events and precomputed overlays as one timed list of StreamMessages.
+def merge_stream(feed: list[FeedMessage], overlays: list[tuple[datetime, object]],
+                 comments: list[tuple[datetime, dict]] = ()) -> list[tuple[datetime, dict]]:
+    """Events, precomputed overlays and Analyst comments as one timed list of StreamMessages.
 
-    An overlay is placed right after the message that triggered it (same emission time,
-    events first), which is where the live pipeline would have produced it.
+    Overlays and comments are placed right after the message that triggered them (same
+    emission time; events, then overlays, then comments), where the live pipeline would
+    have produced them.
     """
     from formline.schema.overlay import overlay_message
 
@@ -56,6 +57,8 @@ def merge_stream(feed: list[FeedMessage], overlays: list[tuple[datetime, object]
             items.append((msg.emitted_at, 0, i, payload))
     for i, (at, overlay) in enumerate(overlays):
         items.append((at, 1, i, overlay_message(overlay)))
+    for i, (at, comment) in enumerate(comments):
+        items.append((at, 2, i, {"kind": "comment", "comment": comment}))
     items.sort(key=lambda x: (x[0], x[1], x[2]))
     return [(at, payload) for at, _, _, payload in items]
 

@@ -371,3 +371,25 @@ def test_kick_off_is_fixed_per_half(monkeypatch):
     second_half = [ms for per, ms in times if per == 2]
     assert second_half and all(2_700_000 < ms <= 2_706_500 for ms in second_half)  # + send delay
     assert {b - a for a, b in pairwise(second_half)} == {250}
+
+
+def test_the_stream_carries_analyst_comments_with_ids(client, data_dir, monkeypatch):
+    from formline.agents.fakes import FakeAgents
+    from formline.agents.llm import LLMConfig, make_runner
+    from formline.analyst.store import comments_path, make_writer, write_comments_file
+    from formline.analyst.writer import write_comments
+
+    feed = read_feed(data_dir / "feeds" / f"{LIVE}.jsonl")
+    writer = make_writer(data_dir, LIVE, make_runner(LLMConfig(), fake_responder=FakeAgents()))
+    path = comments_path(data_dir, LIVE)
+    write_comments_file(path, asyncio.run(write_comments(feed, writer)))
+    try:
+        blocks = _stream_blocks(client, "speed=1e9&until=20:00")
+        comments = [b for b in blocks if '"kind": "comment"' in b]
+        assert comments and all("id:" in b for b in comments)  # resumable like overlays
+        first = _data(comments[0])["comment"]
+        assert first["question"] == "shot_outcome" and first["evidence"]
+        ids = [int(line[3:].strip()) for b in blocks for line in b.splitlines() if line.startswith("id:")]
+        assert ids == list(range(1, len(ids) + 1))
+    finally:
+        path.unlink()
