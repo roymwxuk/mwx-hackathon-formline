@@ -18,15 +18,41 @@ class FrameIndex:
         self.periods = lines_by_period  # period -> (first frame's ms, lines)
 
     def message(self, period: int, match_clock_ms: int) -> str | None:
-        """The stream message for the frame nearest this match time, or None."""
+        """The stream message for this match time, or None outside the tracking.
+
+        Frames are stored every 100 ms but clock messages fall anywhere in between; the two
+        neighbouring frames are blended to the exact time, so at 1x consecutive frames step
+        exactly 0.25 s of match time (the nearest frame alternated 0.2 and 0.3 s, a visible
+        speed wobble)."""
         entry = self.periods.get(period)
         if entry is None:
             return None
         start, lines = entry
-        i = round((match_clock_ms - start) / FRAME_MS)
+        pos = (match_clock_ms - start) / FRAME_MS
+        i = int(pos // 1)
         if not 0 <= i < len(lines):
             return None
-        return '{"kind":"frame",' + lines[i][1:]
+        u = pos - i
+        if u < 1e-6 or i + 1 >= len(lines):
+            return '{"kind":"frame",' + lines[i][1:]
+        a, b = json.loads(lines[i]), json.loads(lines[i + 1])
+        return json.dumps({"kind": "frame", "p": period, "t": match_clock_ms,
+                           "b": _lerp(a["b"], b["b"], u),
+                           "h": _lerp_side(a["h"], b["h"], u),
+                           "a": _lerp_side(a["a"], b["a"], u)}, separators=(",", ":"))
+
+
+def _lerp(a: list, b: list, u: float) -> list:
+    return [round(x + (y - x) * u, 1) for x, y in zip(a, b, strict=True)]
+
+
+def _lerp_side(a: list, b: list, u: float) -> list:
+    """Blend [shirt, x, y] rows by shirt; a player only in one frame (a substitution) is
+    taken from the nearer frame."""
+    nxt = {row[0]: row for row in b}
+    if u >= 0.5 and {row[0] for row in a} != set(nxt):
+        return b
+    return [[r[0], *_lerp(r[1:], nxt[r[0]][1:], u)] if r[0] in nxt else r for r in a]
 
 
 def load_frames(path: Path) -> FrameIndex:

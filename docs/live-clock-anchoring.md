@@ -1,6 +1,6 @@
 # Live clock: anchoring to kick-off time instead of the last event
 
-**Status:** Proposed (2026-10-18). Not implemented yet.
+**Status:** Implemented (2026-10-18), see "Result" below.
 **Context:** at 1× the viewer's clock did not feel like real seconds. The tracking frames are
 picked by the same clock, so player movement at 1× had the same slight unevenness.
 
@@ -100,6 +100,21 @@ that delay instead.
 About 30 minutes, backend only (`backend/src/formline/replay.py`), local, ¥0. Tests: even
 clock messages at 1× with varying delays; a late event (chaos) does not stall the clock; the
 kick-off anchor is fixed per half; fallback without `event_time`; ids and resume unchanged.
+
+## Result
+
+- Clock messages count from each half's kick-off, fixed once per half; a half without
+  `event_time` falls back to counting from the last event.
+- The "never past the next event" cap became too strict for the true clock (which leads the
+  next event by its send delay, so it kept stalling): with kick-off anchoring the cap is the
+  next event plus 15 s (bad data only), and clock messages never go backwards.
+- A second unevenness surfaced in the same measurement: each clock message picked the nearest
+  stored tracking frame (every 100 ms), so at 1x frames stepped 0.2 s, 0.3 s, 0.2 s of match
+  time. The backend now blends the two neighbouring frames to the exact time.
+- Measured on the real stream at 1x: every displayed second lasts 1.01 s (was 0.76–1.26 s),
+  and every frame steps exactly 0.25 s of match time (38 of 38).
+- Tests: even ticks with varying send delays, a late event does not stall the clock, the
+  kick-off is fixed per half, frame blending.
 
 ## Related: high speeds feel slower than selected (question 2)
 

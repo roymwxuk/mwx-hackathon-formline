@@ -318,3 +318,56 @@ def test_slow_down_never_drops_below_3x_or_above_the_chosen_speed():
     assert rp._slow_pace(1) == 1.0
     assert rp._slow_pace(1e9) == pytest.approx(1e9 / 6)  # tests' instant replays stay instant
 
+
+
+def _timed_events(spec, period=1, kick=None):
+    """Events (clock_s, send_delay_s): event_time = kick-off + clock, sent `delay` later."""
+    from datetime import datetime, timedelta
+
+    kick = kick or datetime(2026, 10, 24, 19, 0)
+    return [(kick + timedelta(seconds=c + d),
+             {"kind": "event", "event": {"period": period, "match_clock_ms": int(c * 1000),
+                                         "type": "pass",
+                                         "event_time": (kick + timedelta(seconds=c)).isoformat()}})
+            for c, d in spec]
+
+
+def _ticks(rp, items, speed):
+    async def run():
+        return [p for i, p in [x async for x in rp.paced(items, speed, slow=False)] if i is None]
+    return asyncio.run(run())
+
+
+def test_clock_ticks_evenly_whatever_each_events_send_delay(monkeypatch):
+    rp, _ = _fake_clock(monkeypatch)
+    # passes every 3 s, sent alternately 0.3 s and 0.9 s late (the feed's real spread)
+    items = _timed_events([(3 * i, 0.3 if i % 2 == 0 else 0.9) for i in range(9)])
+    times = [p["match_clock_ms"] for p in _ticks(rp, items, 1.0)]
+    steps = {b - a for a, b in pairwise(times)}
+    assert steps == {250}  # one quarter second per quarter second: real time at 1x
+    assert times[0] == 550  # true match time (the first pass was sent 0.3 s after 0:00)
+
+
+def test_a_late_event_does_not_stall_the_clock(monkeypatch):
+    rp, _ = _fake_clock(monkeypatch)
+    spec = [(3 * i, 0.4) for i in range(8)]
+    spec.insert(4, (1.0, 10.0))  # happened at 0:01, arrives about 11 s in (chaos-style)
+    items = sorted(_timed_events(spec), key=lambda x: x[0])
+    times = [p["match_clock_ms"] for p in _ticks(rp, items, 1.0)]
+    assert {b - a for a, b in pairwise(times)} == {250}
+
+
+def test_kick_off_is_fixed_per_half(monkeypatch):
+    from datetime import datetime, timedelta
+
+    rp, _ = _fake_clock(monkeypatch)
+    first_kick = datetime(2026, 10, 24, 19, 0)
+    first = _timed_events([(2697, 0.5), (2700, 0.5)], kick=first_kick)
+    first[-1][1]["event"]["type"] = "half_end"
+    second_kick = first_kick + timedelta(minutes=63)  # 45:00 + break, so a new kick-off
+    second = _timed_events([(2700, 0.5), (2703, 0.5), (2706, 0.5)], period=2,
+                           kick=second_kick - timedelta(seconds=2700))
+    times = [(p["period"], p["match_clock_ms"]) for p in _ticks(rp, first + second, 1.0)]
+    second_half = [ms for per, ms in times if per == 2]
+    assert second_half and all(2_700_000 < ms <= 2_706_500 for ms in second_half)  # + send delay
+    assert {b - a for a, b in pairwise(second_half)} == {250}

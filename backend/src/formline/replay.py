@@ -61,6 +61,7 @@ def merge_stream(feed: list[FeedMessage], overlays: list[tuple[datetime, object]
 
 
 TICK_SECONDS = 0.25  # during a gap, send the match time this often (real seconds)
+MAX_SEND_DELAY_MS = 15_000  # true time may lead the next event by its send delay; more is bad data
 PERIOD_ENDS = {"half_end"}  # the match clock stops here: no clock messages until play resumes
 
 SLOW_FACTOR = 6.0  # around shots and cards, pacing is this many times slower (20x -> ~3x)
@@ -79,26 +80,46 @@ def match_time(payload: dict) -> tuple[int, int] | None:
     return e["period"], e["match_clock_ms"]
 
 
-def _clock_after(payload: dict, at: datetime, clock):
+def _clock_after(payload: dict, at: datetime, clock, kickoff: dict[int, datetime]):
     """The running match clock after a message: (period, ms, emitted_at) of the last event,
-    or None once a period has ended (half-time: the clock stops)."""
+    or None once a period has ended (half-time: the clock stops).
+
+    Also records each half's kick-off wall time, once, from the half's first event that has
+    an `event_time`: the football clock never stops within a half, so event_time minus match
+    clock is the same for every event in it (docs/live-clock-anchoring.md)."""
     if payload.get("kind") != "event":
         return clock
     e = payload["event"]
-    return None if e.get("type") in PERIOD_ENDS else (e["period"], e["match_clock_ms"], at)
+    period = e["period"]
+    if period not in kickoff and e.get("event_time"):
+        try:
+            kickoff[period] = (datetime.fromisoformat(e["event_time"])
+                               - timedelta(milliseconds=e["match_clock_ms"]))
+        except (TypeError, ValueError):
+            pass  # malformed: this half falls back to counting from the last event
+    return None if e.get("type") in PERIOD_ENDS else (period, e["match_clock_ms"], at)
 
 
 async def _wait(seconds: float, pace: float, clock, prev: datetime,
-                nxt: tuple[int, int] | None, phase: list[float]) -> AsyncIterator[dict]:
+                nxt: tuple[int, int] | None, phase: list[float],
+                kickoff: datetime | None = None,
+                last_tick: list | None = None) -> AsyncIterator[dict]:
     """Sleep `seconds`; meanwhile yield a clock message every TICK_SECONDS of real time with
     the match time reached at `pace`, never past the next event. `phase` carries the time
     since the last tick across waits, so ticks keep a steady rate even when events arrive
     faster than TICK_SECONDS apart (tracking frames need that). No ticks while the clock
-    is stopped or when the next event is in another period."""
+    is stopped or when the next event is in another period.
+
+    With the half's `kickoff` wall time the match time is feed time minus kick-off, which
+    ticks evenly whatever each event's send delay; without it, it counts from the last
+    event (which runs behind by that event's delay, so it stalls and catches up)."""
     stopped = clock is None or (nxt is not None and nxt[0] != clock[0])
     if not stopped:
         period, base_ms, anchor = clock
-        offset = (prev - anchor).total_seconds()
+        if kickoff is not None:
+            base_ms, offset = 0, (prev - kickoff).total_seconds()
+        else:
+            offset = (prev - anchor).total_seconds()
     waited, last = 0.0, None
     while seconds - waited >= TICK_SECONDS - phase[0] - 1e-9:
         step = TICK_SECONDS - phase[0]
@@ -107,9 +128,16 @@ async def _wait(seconds: float, pace: float, clock, prev: datetime,
         phase[0] = 0.0
         if stopped:
             continue
-        ms = base_ms + int((offset + waited * pace) * 1000)
+        ms = base_ms + round((offset + waited * pace) * 1000)
         if nxt is not None:
-            ms = min(ms, nxt[1])
+            # Counting from the last event, the clock must not pass the next event. Counting
+            # from kick-off it is the true time, which leads the next event by that event's
+            # send delay; only a lead beyond any real delay is capped (bad data).
+            ms = min(ms, nxt[1] + (MAX_SEND_DELAY_MS if kickoff is not None else 0))
+        if last_tick is not None:
+            if last_tick[0] is not None and last_tick[0][0] == period and ms <= last_tick[0][1]:
+                continue  # never backwards (a late or corrected event)
+            last_tick[0] = (period, ms)
         if ms != last:
             last = ms
             yield {"kind": "clock", "period": period, "match_clock_ms": ms}
@@ -155,6 +183,8 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
     prev: datetime | None = None
     clock = None  # (period, ms, emitted_at) of the last event while the clock runs
     phase = [0.0]  # real seconds since the last clock message
+    kickoff: dict[int, datetime] = {}  # wall time of each half's kick-off, fixed once
+    last_tick: list = [None]  # (period, ms) of the last clock message
     idx = 0
     async for at, payload in _aiter(items):
         idx += 1
@@ -164,16 +194,18 @@ async def paced(items, speed: float = 10.0, *, start: tuple[int, int] | None = N
             prev = at
         if idx <= resume_after:
             prev = at if prev is None else max(prev, at)
-            clock = _clock_after(payload, at, clock)
+            clock = _clock_after(payload, at, clock, kickoff)
             continue
         if not catching_up and prev is not None:
             gap = (at - prev).total_seconds()
             if gap > 0:
                 pace = _slow_pace(speed) if slow and _near_key(keys, at) else speed
-                async for tick in _wait(gap / pace, pace, clock, prev, mt, phase):
+                kick = kickoff.get(clock[0]) if clock is not None else None
+                async for tick in _wait(gap / pace, pace, clock, prev, mt, phase, kick,
+                                        last_tick):
                     yield None, tick
         prev = at if prev is None else max(prev, at)
-        clock = _clock_after(payload, at, clock)
+        clock = _clock_after(payload, at, clock, kickoff)
         yield idx, payload
 
 

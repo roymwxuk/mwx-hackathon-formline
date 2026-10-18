@@ -40,3 +40,24 @@ def test_rejects_impossible_values():
         Ball(x=50, y=50, z=-1)
     with pytest.raises(ValidationError):
         TrackedPlayer(shirt=0, x=1, y=1)
+
+
+def test_frame_messages_blend_to_the_exact_time(tmp_path):
+    import json
+
+    from formline.tracking.frames import load_frames
+
+    def at(t, x):
+        return TrackingFrame(period=1, match_clock_ms=t, ball=Ball(x=x, y=50, z=0),
+                             home=[TrackedPlayer(shirt=9, x=x, y=40)],
+                             away=[TrackedPlayer(shirt=4, x=100 - x, y=60)])
+
+    path = tracking_path(tmp_path, "m")
+    write_tracking(path, [at(0, 10.0), at(100, 20.0), at(200, 30.0)])
+    index = load_frames(path)
+    exact = json.loads(index.message(1, 100))
+    assert exact["t"] == 100 and exact["h"] == [[9, 20.0, 40.0]]
+    mid = json.loads(index.message(1, 125))
+    assert mid["t"] == 125 and mid["h"] == [[9, 22.5, 40.0]] and mid["a"] == [[4, 77.5, 60.0]]
+    assert mid["b"] == [22.5, 50.0, 0.0]
+    assert index.message(1, 5_000) is None and index.message(2, 0) is None
