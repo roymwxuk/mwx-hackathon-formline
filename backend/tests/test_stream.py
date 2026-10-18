@@ -345,7 +345,8 @@ def test_clock_ticks_evenly_whatever_each_events_send_delay(monkeypatch):
     times = [p["match_clock_ms"] for p in _ticks(rp, items, 1.0)]
     steps = {b - a for a, b in pairwise(times)}
     assert steps == {250}  # one quarter second per quarter second: real time at 1x
-    assert times[0] == 550  # true match time (the first pass was sent 0.3 s after 0:00)
+    # match time minus the presentation delay: nothing before kick-off, then every 0.25 s
+    assert 0 <= times[0] < 250 and all(t >= 0 for t in times)
 
 
 def test_a_late_event_does_not_stall_the_clock(monkeypatch):
@@ -369,5 +370,27 @@ def test_kick_off_is_fixed_per_half(monkeypatch):
                            kick=second_kick - timedelta(seconds=2700))
     times = [(p["period"], p["match_clock_ms"]) for p in _ticks(rp, first + second, 1.0)]
     second_half = [ms for per, ms in times if per == 2]
-    assert second_half and all(2_700_000 < ms <= 2_706_500 for ms in second_half)  # + send delay
+    assert second_half and all(2_699_000 <= ms <= 2_706_500 for ms in second_half)  # - delay, + send delay
     assert {b - a for a, b in pairwise(second_half)} == {250}
+
+
+def test_the_stream_carries_analyst_comments_with_ids(client, data_dir, monkeypatch):
+    from formline.agents.fakes import FakeAgents
+    from formline.agents.llm import LLMConfig, make_runner
+    from formline.analyst.store import comments_path, make_writer, write_comments_file
+    from formline.analyst.writer import write_comments
+
+    feed = read_feed(data_dir / "feeds" / f"{LIVE}.jsonl")
+    writer = make_writer(data_dir, LIVE, make_runner(LLMConfig(), fake_responder=FakeAgents()))
+    path = comments_path(data_dir, LIVE)
+    write_comments_file(path, asyncio.run(write_comments(feed, writer)))
+    try:
+        blocks = _stream_blocks(client, "speed=1e9&until=20:00")
+        comments = [b for b in blocks if '"kind": "comment"' in b]
+        assert comments and all("id:" in b for b in comments)  # resumable like overlays
+        first = _data(comments[0])["comment"]
+        assert first["question"] == "shot_outcome" and first["evidence"]
+        ids = [int(line[3:].strip()) for b in blocks for line in b.splitlines() if line.startswith("id:")]
+        assert ids == list(range(1, len(ids) + 1))
+    finally:
+        path.unlink()

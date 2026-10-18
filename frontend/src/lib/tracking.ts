@@ -22,12 +22,26 @@ export function trackedMarkers(frame: TrackingFrameMessage, clubs: Club[], playe
   return out;
 }
 
+/** Events whose action the (delayed) clock has reached: a pass or shot once the ball has arrived
+ *  (start + flight time), anything else once it happened. Events arrive before the ball
+ *  moves (the stream runs a presentation delay), so drawing them on arrival would show the
+ *  pass line before the ball travels. */
+export function eventsReached(events: MatchEvent[], period: number, clockMs: number): MatchEvent[] {
+  return events.filter((e) => {
+    const p = e.period ?? 1;
+    if (p !== period) return p < period;
+    const done = e.match_clock_ms + (e.type === 'pass' || e.type === 'shot' ? (e.duration_ms ?? 0) : 0);
+    return done <= clockMs;
+  });
+}
+
 const LABEL_HOLD_MS = 8_000;
 
-/** Who gets a name label: the focus player always; the passer and receiver of the latest
- *  pass, or the shooter, for a few seconds after the action. */
-export function labelledPlayers(events: MatchEvent[], clockMs: number, focusPlayer: string | null): Set<string> {
-  const ids = new Set<string>();
+/** Who gets a name label: the focus player and the viewer's favorite players always; the
+ *  passer and receiver of the latest pass, or the shooter, for a few seconds after the action. */
+export function labelledPlayers(events: MatchEvent[], clockMs: number, focusPlayer: string | null,
+  favorites: string[] = []): Set<string> {
+  const ids = new Set<string>(favorites);
   if (focusPlayer) ids.add(focusPlayer);
   for (let i = events.length - 1; i >= 0; i -= 1) {
     const e = events[i];

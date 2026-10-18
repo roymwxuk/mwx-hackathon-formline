@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { ballAt } from '@/lib/ball';
 import { FrameInterpolator } from '@/lib/interpolate';
-import { labelledPlayers, trackedMarkers } from '@/lib/tracking';
+import { eventsReached, labelledPlayers, trackedMarkers } from '@/lib/tracking';
 import type { Club, Lang, MatchEvent, Player, TrackingFrameMessage } from '@/lib/types';
 
 interface Props {
@@ -16,11 +16,14 @@ interface Props {
    *  event actors and a ball path reconstructed from events. */
   frame?: TrackingFrameMessage | null;
   focusPlayer?: string | null;
+  /** The viewer's favorite players: always named on the tracked pitch. */
+  favoritePlayers?: string[];
 }
 
 const W = 1050;
 const H = 680;
 const SHOT_HOLD_MS = 25_000; // keep a shot on screen for 25 match seconds
+const ARROW_MIN_MS = 0.8; // m/s: below this the focus player's running arrow is hidden
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -33,9 +36,12 @@ function toScreen(x: number, y: number, flip: boolean): [number, number] {
   return [dx * (W / 100), dy * (H / 100)];
 }
 
-export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null }: Props) {
+export function Pitch({ events: received, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null, favoritePlayers = [] }: Props) {
+  // Only what the clock has reached: the ball travels first, then its pass line appears.
+  const period = frame?.p ?? received[received.length - 1]?.period ?? 1;
+  const events = frame ? eventsReached(received, period, clockMs) : received;
   const tracked = frame ? trackedMarkers(frame, clubs, players) : null;
-  const named = tracked ? labelledPlayers(events, clockMs, focusPlayer) : null;
+  const named = tracked ? labelledPlayers(events, clockMs, focusPlayer, favoritePlayers) : null;
 
   // Tracked markers move by JavaScript interpolation in an animation loop, not CSS
   // transitions (Firefox restarts interrupted SVG transitions from a stale position, so
@@ -51,6 +57,10 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, 
   const nodes = useRef(new Map<string, SVGGElement>());
   const ballNode = useRef<{ g: SVGGElement | null; shadow: SVGEllipseElement | null; ball: SVGCircleElement | null }>(
     { g: null, shadow: null, ball: null });
+  const arrowNode = useRef<{ g: SVGGElement | null; line: SVGLineElement | null; head: SVGPathElement | null }>(
+    { g: null, line: null, head: null });
+  const focusKeyRef = useRef<string | null>(null);
+  focusKeyRef.current = tracked?.find((m) => m.player?.player_id === focusPlayer)?.key ?? null;
   const place = useCallback((now: number) => {
     const pos = interp.current!.at(now);
     for (const [key, node] of nodes.current) {
@@ -60,6 +70,26 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, 
       const [sx, y] = toScreen(p.x, p.y, false);
       const x = isLabel ? Math.min(Math.max(sx, 60), W - 60) : sx; // keep names inside the pitch
       node.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    }
+    // Running direction of the focus player: an arrow along his current movement, longer when
+    // faster, hidden when he is (nearly) standing.
+    const { g: ag, line, head } = arrowNode.current;
+    const fk = focusKeyRef.current;
+    if (ag && line && head) {
+      const p = fk ? pos.get(fk) : undefined;
+      const v = fk ? interp.current!.velocity(fk) : { vx: 0, vy: 0 };
+      const ms = Math.hypot(v.vx * 1.05, v.vy * 0.68); // pitch % per second -> m/s
+      if (!p || ms < ARROW_MIN_MS) {
+        ag.setAttribute('visibility', 'hidden');
+      } else {
+        const [x, y] = toScreen(p.x, p.y, false);
+        const angle = (Math.atan2(v.vy * (H / 100), v.vx * (W / 100)) * 180) / Math.PI;
+        const len = 20 + Math.min(ms, 9) * 6; // from the marker's edge outwards
+        ag.setAttribute('visibility', 'visible');
+        ag.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(1)})`);
+        line.setAttribute('x2', len.toFixed(1));
+        head.setAttribute('d', `M ${len} -6 L ${len + 10} 0 L ${len} 6 Z`);
+      }
     }
     const b = pos.get('ball');
     const { g, shadow, ball: circle } = ballNode.current;
@@ -215,6 +245,12 @@ export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, 
           </g>
         );
       })}
+      {tracked && focusPlayer && (
+        <g ref={(el) => { arrowNode.current.g = el; }} className="run-arrow" visibility="hidden" pointerEvents="none">
+          <line ref={(el) => { arrowNode.current.line = el; }} x1={18} y1={0} x2={30} y2={0} />
+          <path ref={(el) => { arrowNode.current.head = el; }} d="M 30 -6 L 40 0 L 30 6 Z" />
+        </g>
+      )}
       {/* Names in their own layer, so no marker drawn later can cover them. */}
       {tracked?.filter((m) => m.player && named?.has(m.player.player_id)).map((m) => (
         <g key={`label-${m.key}`} ref={track(`label-${m.key}`)} className="track-label">

@@ -44,6 +44,15 @@ describe('FrameInterpolator', () => {
     expect(instant.at(250).get('h9')!.x).toBe(20);
   });
 
+  it('reports the current movement for the direction arrow', () => {
+    const f = new FrameInterpolator();
+    f.set(frame(0, 10), 0);
+    f.set(frame(1000, 20), 250); // 10 units in 0.25 s
+    expect(f.velocity('h9').vx).toBeCloseTo(40);
+    expect(f.velocity('h9').vy).toBeCloseTo(0);
+    expect(f.velocity('nobody')).toEqual({ vx: 0, vy: 0 });
+  });
+
   it('a substitute appears at his own spot rather than flying in', () => {
     const f = new FrameInterpolator();
     f.set(frame(0, 10), 0);

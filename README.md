@@ -43,6 +43,10 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
 - **Stays correct when the feed is messy.** Duplicates, late and out-of-order events and
   corrections are absorbed; when VAR overturns a goal, every dependent card is retracted or
   corrected through its lineage and the baseline update is rolled back.
+- **Explains key moments as they happen.** A Match Analyst agent writes a short, verified
+  comment after every shot, corner and card, in English or Japanese, from the facts the data
+  holds (distance, pressure, chance quality, placement, the build-up, fouls tonight) and shows
+  its evidence; it says when the data cannot answer (e.g. who was fouled).
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
   set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× and a Jump to menu
@@ -77,7 +81,7 @@ The five stages of the brief, end to end:
 |---|---|---|
 | a. Ingest | `generator/` (synthetic feed), `engine/log.py` + `engine/ingest.py` (append-only log, dedupe, reorder window with an idle timeout, corrections), `tracking/` (22 players and the ball at 10 Hz, derived from events), `replay.py` | ✅ |
 | b. Interpret | `engine/`: shot features (xG, PSxG, placement), like-for-like baselines with empirical Bayes shrinkage | ✅ |
-| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework, `gpt-4.1-mini` on Foundry) | ✅ |
+| c. Explain | `engine/insights.py` (deterministic insights with lineage) + `agents/` (Selector, Narrator, Verifier, Composer on Microsoft Agent Framework, `gpt-4.1-mini` on Foundry) + `analyst/` (comments on shots, corners and cards) | ✅ |
 | d. Render | overlay contract (`docs/contracts/overlay.schema.json`), timed overlays and tracking frames over SSE, viewer in `frontend/` | ✅ |
 | e. Personalize | EN/JA, casual/analyst, favorite clubs and players (card priority), player focus, "my metric" | ✅ (client-side) |
 
@@ -107,6 +111,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 | Verifier | Deterministic | Numbers by kind, names, estimate wording, certainty, language, structure ([catch rate](docs/verifier-catch-rate.md)) |
 | Overlay Composer | Deterministic | Fills the fixed template catalog; bars and rows come from facts, so numbers are correct by construction |
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
+| Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -118,7 +123,7 @@ Moment ─► Selector ─fan-out─► Narrator[en·casual]  ┐
 - **With or without Azure:** Microsoft Foundry (`FoundryChatClient`) when
   `AZURE_AI_PROJECT_ENDPOINT` is set (see `backend/.env.example`), otherwise a fake model on
   the same Agent Framework path. Tests and CI never need Azure.
-- Design rationale: [ADR-008](docs/decisions.md).
+- Design rationale: [ADR-008](docs/decisions.md); the Match Analyst: ADR-011 and [docs/plan-match-analyst.md](docs/plan-match-analyst.md).
 
 ## Evidence
 
@@ -226,6 +231,7 @@ uv run formline-gen generate     # writes backend/data/ (seed 2026, ~3 s, ~28 MB
 uv run formline-gen report       # writes docs/realism-report.md
 uv run formline-gen overlays     # runs the agents over the live match, caches its overlays
 uv run formline-gen tracking     # synthetic tracking for the live match (~40 s, 3.8 MB)
+uv run formline-gen analyst      # Match Analyst comments for the live match
 uv run uvicorn formline.api:app --reload
 uv run pytest
 
@@ -295,7 +301,7 @@ overridden through the variables in `scripts/azure/common.sh`.
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 233 backend + 41 frontend tests; tests never call Azure |
+| Tests | 233 backend + 54 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
 | Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet |
 
 ## Microsoft and Azure technologies
@@ -319,6 +325,7 @@ backend/    Python 3.12 · FastAPI · Pydantic · Microsoft Agent Framework (uv)
   src/formline/engine/      event log, ingestion, shot features, baselines, insights
   src/formline/agents/      catalog, narrators, verifier, selector, workflow, live orchestration
   src/formline/tracking/    synthetic tracking: team shape, event anchors, motion, realism
+  src/formline/analyst/     Match Analyst: facts packs, agent, verifier, writer
   data/sample/              committed excerpt of the generated data and example overlays
 frontend/   Next.js · React · TypeScript (pnpm): live viewer UI
 docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI screenshots
@@ -336,7 +343,12 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Shots only.** Personal baselines cover shot speed, placement and finish quality; other
   metrics (pass difficulty, sprint speed) would reuse the same engine but are not built.
 - **Personalization is client-side.** The backend produces every variant (EN/JA ×
-  casual/analyst); the viewer filters and ranks. Fine for the demo, wasteful at scale.
+  casual/analyst); the viewer filters and ranks. Fine for the demo, wasteful at scale. Golden
+  tests pin the exact card nine viewer profiles see at key moments of the real demo match.
+- **Viewer settings cannot bring back an insight the backend never produced.** The Selector
+  runs once for everyone (one card per shot, a per-player cooldown, at most 3 cards per 10
+  minutes); "my metric" secondary cards are a partial answer. Per-viewer selection would need
+  the backend to select per profile.
 - **Precomputed narration for the demo.** The live match's cards are narrated once and
   replayed (`?live=true` runs the agents live). The verifier checks facts, not style.
 - **Single replica, JSONL event log** baked into the image (the event log interface is
@@ -348,7 +360,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 | Topic | Where |
 |---|---|
 | Project pitch | [docs/pitch.md](docs/pitch.md) |
-| Design decisions (ADR-001 to ADR-010) | [docs/decisions.md](docs/decisions.md) |
+| Design decisions (ADR-001 to ADR-011) | [docs/decisions.md](docs/decisions.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |
 | Status and plan | [docs/roadmap.md](docs/roadmap.md) |

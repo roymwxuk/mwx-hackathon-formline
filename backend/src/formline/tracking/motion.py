@@ -175,6 +175,9 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
         balls: list[Ball] = []
         smooth: dict[tuple[bool, int], tuple[float, float]] = {}
         area: tuple[float, float] | None = None  # the smoothed ball the team shape follows
+        roles: dict[str, list[tuple[bool, int]]] = {}  # who presses / covers / supports
+        released: dict[tuple[bool, int], int] = {}  # player -> time he lost his role (ms)
+        had_role: set[tuple[bool, int]] = set()
         attack = {home_club_id: 0.5, away_club_id: 0.5}  # eased possession level per team
         for n, t in enumerate(ticks):
             for s in subs:
@@ -192,6 +195,8 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
             kickoff = any(p == period and 0 <= kt - t <= KICKOFF_LEAD_MS for p, kt in kickoffs) \
                 or (keys and t < keys[0].t)
             present = {}
+            targets: dict[tuple[bool, int], tuple[float, float]] = {}
+            keepers: set[tuple[bool, int]] = set()
             for club, home in ((home_club_id, True), (away_club_id, False)):
                 own_ball = to_shared(area, home)
                 target_level = 0.5 if owner is None else 1.0 if owner == club else 0.0
@@ -202,6 +207,7 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
                 else:
                     attack[club] += (target_level - attack[club]) * DT / (TRANSITION_S + DT)
                 shape = team_shape(lineups[club].slots, own_ball, attack[club], kickoff=kickoff)
+                keepers |= {(home, sl.shirt) for sl in lineups[club].slots if sl.role == "GK"}
                 for shirt, spot in shape.items():
                     key = (home, shirt)
                     target = to_shared(spot, home)
@@ -210,18 +216,31 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
                                       rng.uniform(7, 13), rng.uniform(7, 13))
                     px, py, tx, ty = drift[key]
                     secs = t / 1000
-                    target = (target[0] + DRIFT_M * 100 / PITCH_LENGTH_M * sin(2 * pi * secs / tx + px),
-                              target[1] + DRIFT_M * 100 / PITCH_WIDTH_M * sin(2 * pi * secs / ty + py))
-                    prev = smooth.get(key)
-                    if prev is None:
-                        cur = target
-                    else:
-                        a = DT / (REACTION_S + DT)
-                        cur = _cap(prev, (prev[0] + (target[0] - prev[0]) * a,
-                                          prev[1] + (target[1] - prev[1]) * a), BASE_SPEED * DT)
-                    smooth[key] = cur
-                    base.setdefault(key, [None] * len(ticks))[n] = cur
-                    present[key] = True
+                    targets[key] = (target[0] + DRIFT_M * 100 / PITCH_LENGTH_M * sin(2 * pi * secs / tx + px),
+                                    target[1] + DRIFT_M * 100 / PITCH_WIDTH_M * sin(2 * pi * secs / ty + py))
+            # Near the ball, players act rather than hold shape: pressing, cover, support runs.
+            pace = {} if kickoff else _ball_roles(targets, smooth, keepers, (ball.x, ball.y),
+                                                  owner, home_club_id, roles, area)
+            for key in had_role - set(pace):
+                released[key] = t
+            had_role = set(pace)
+            for key, target in targets.items():
+                if key in pace:
+                    reaction, top = pace[key]
+                elif t - released.get(key, -10**9) < RELEASE_S * 1000:
+                    reaction, top = RELEASE_PACE
+                else:
+                    reaction, top = REACTION_S, BASE_SPEED
+                prev = smooth.get(key)
+                if prev is None:
+                    cur = target
+                else:
+                    a = DT / (reaction + DT)
+                    cur = _cap(prev, (prev[0] + (target[0] - prev[0]) * a,
+                                      prev[1] + (target[1] - prev[1]) * a), top * DT)
+                smooth[key] = cur
+                base.setdefault(key, [None] * len(ticks))[n] = cur
+                present[key] = True
             on_pitch.append(present)
 
         offsets = _anchor_offsets(anchors, period, ticks, base)
@@ -241,6 +260,77 @@ def build_frames(events: list, home_club_id: str, players: Mapping[str, object],
                                         home=sorted(home_ps, key=lambda p: p.shirt),
                                         away=sorted(away_ps, key=lambda p: p.shirt)))
     return frames
+
+
+PRESS_PACE = (0.6, 7.0)  # reaction (s), top speed (m/s) for the player closing the ball
+COVER_PACE = (0.9, 6.0)  # the second defender, and attackers making support runs
+PRESS_RANGE_M = 25.0  # beyond this a defender holds his position instead of pressing
+SUPPORT_RANGE_M = 30.0
+STICKY_M = 3.0  # a role changes hands only when another player is this much closer
+RELEASE_S = 5.0  # after losing a role, a player jogs back to shape for this long...
+RELEASE_PACE = (3.0, 4.0)  # ...with this reaction (s) and top speed (m/s), not snapping back
+
+
+def _offset_m(point: tuple[float, float], dx_m: float, dy_m: float) -> tuple[float, float]:
+    return (clamp(point[0] + dx_m * 100 / PITCH_LENGTH_M, 1.0, 99.0),
+            clamp(point[1] + dy_m * 100 / PITCH_WIDTH_M, 1.0, 99.0))
+
+
+def _ball_roles(targets: dict, smooth: dict, keepers: set, ball: tuple[float, float], owner,
+                home_club_id: str, roles: dict, area: tuple[float, float] | None = None) -> dict:
+    """Override targets near the ball and return per-player pace (reaction, top speed).
+
+    - defending side: the nearest outfield player within range presses (about 1.5 m goal-side
+      of the ball), the next covers (about 6 m goal-side);
+    - side in possession: the two nearest teammates (after the ball carrier) offer passing
+      lanes about 10 m ahead and 8 m wide.
+    Role holders are sticky (STICKY_M) so roles do not flicker between equal candidates.
+    A loose ball (no owner) is chased by the nearest player of each side.
+    """
+    from formline.pitch import to_m
+
+    def dist(key) -> float:
+        p = smooth.get(key, targets[key])
+        return to_m(p[0] - ball[0], p[1] - ball[1])
+
+    def pick(name: str, side_home: bool, count: int, skip: int, limit: float) -> list:
+        pool = sorted((k for k in targets if k[0] == side_home and k not in keepers), key=dist)
+        pool = [k for k in pool[skip:] if dist(k) <= limit]
+        held = [k for k in roles.get(name, []) if k in pool]
+        chosen = []
+        for k in held:  # keep current holders unless someone is clearly closer
+            better = [c for c in pool if c not in held and c not in chosen
+                      and dist(c) < dist(k) - STICKY_M]
+            if not better and len(chosen) < count:
+                chosen.append(k)
+        for k in pool:
+            if len(chosen) >= count:
+                break
+            if k not in chosen:
+                chosen.append(k)
+        roles[name] = chosen
+        return chosen
+
+    pace: dict = {}
+    attack_home = None if owner is None else owner == home_club_id
+    sides = [True, False] if attack_home is None else [not attack_home]
+    for side in sides:  # defending side(s)
+        goal_x = 0.0 if side else 100.0  # own goal in the shared frame
+        toward = -1.0 if goal_x < ball[0] else 1.0
+        chasers = pick(f"press{side}", side, 1 if attack_home is None else 2, 0, PRESS_RANGE_M)
+        for i, key in enumerate(chasers):
+            back = 1.5 if i == 0 else 6.0
+            targets[key] = _offset_m(ball, toward * back, (50 - ball[1]) * 0.03 * back)
+            pace[key] = PRESS_PACE if i == 0 else COVER_PACE
+    if attack_home is not None:
+        forward = 1.0 if attack_home else -1.0
+        for i, key in enumerate(pick(f"support{attack_home}", attack_home, 2, 1, SUPPORT_RANGE_M)):
+            here = smooth.get(key, targets[key])
+            side_y = 1.0 if here[1] >= ball[1] else -1.0
+            # support runs follow the area of play (smoothed ball), not every pass
+            targets[key] = _offset_m(area or ball, forward * (10.0 if i == 0 else 4.0), side_y * 8.0)
+            pace[key] = COVER_PACE
+    return pace
 
 
 def _apply_sub(e, lineups: dict[str, Lineup], players, home_club_id: str, smooth) -> None:

@@ -68,6 +68,7 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players }: Pro
                       onClick={() => set({ favoritePlayers: toggle(s.favoritePlayers, p.player_id) })}
                     >
                       {s.favoritePlayers.includes(p.player_id) ? '✓ ' : ''}
+                      <span className="chip-number">{p.shirt_number}</span>
                       {p.display_name}
                     </button>
                   ))}

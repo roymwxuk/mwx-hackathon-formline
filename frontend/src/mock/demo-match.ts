@@ -19,7 +19,7 @@ export const MATCH_ID = 'mtc_s26_md14_har_nor';
 
 export const CLUBS: Club[] = [
   { club_id: 'clb_harbourside', name: 'Harbourside Athletic', short_name: 'HAR', color: '#0B3D91', text_color: '#FFFFFF' },
-  { club_id: 'clb_northgate', name: 'Northgate Rovers', short_name: 'NOR', color: '#E8E3D9', text_color: '#111111' },
+  { club_id: 'clb_northgate', name: 'Northgate Rovers', short_name: 'NOR', color: '#A6F28C', text_color: '#111111' },
 ];
 
 export const PLAYERS: Player[] = [

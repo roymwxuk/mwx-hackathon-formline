@@ -11,14 +11,16 @@ interface Props {
   clubs: Club[];
   players: Player[];
   lang: Lang;
+  /** No flash while the stream replays the past at once (a jump or reconnect). */
+  paused?: boolean;
 }
 
 /** A short "GOAL!" over the pitch when a goal is scored, in the scoring club's colours. */
-export function GoalFlash({ events, clockMs, clubs, players, lang }: Props) {
+export function GoalFlash({ events, clockMs, clubs, players, lang, paused = false }: Props) {
   const flashed = useRef(new Set<string>());
   const [goal, setGoal] = useState<MatchEvent | null>(null);
 
-  const fresh = freshGoal(events, clockMs, flashed.current);
+  const fresh = paused ? undefined : freshGoal(events, clockMs, flashed.current);
   useEffect(() => {
     if (!fresh) return;
     flashed.current.add(fresh.event_id);

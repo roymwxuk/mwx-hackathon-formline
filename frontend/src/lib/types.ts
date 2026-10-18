@@ -98,6 +98,25 @@ export interface OverlaySlots {
 }
 
 /** One message on the live stream (SSE `data:` payload). */
+/** A Match Analyst comment (docs/plan-match-analyst.md): verified, with its evidence. */
+export interface AnalystComment {
+  comment_id: string;
+  op: 'show' | 'retract';
+  supersedes_comment_id: string | null;
+  question: 'shot_outcome' | 'corner' | 'card' | 'var';
+  period: number;
+  match_clock_ms: number;
+  lang: Lang;
+  headline: string;
+  body: string;
+  player_id: string | null;
+  evidence: { event_id: string; minute: string; type: string }[];
+  verified: boolean;
+  source: 'llm' | 'template';
+  /** A comment on a goal (as known when written): highlighted in red. */
+  goal?: boolean;
+}
+
 /** One tracking frame (DATA_SCHEMA.md §5.4): shared frame, home attacks toward x = 100. */
 export interface TrackingFrameMessage {
   kind: 'frame';
@@ -113,6 +132,7 @@ export type StreamMessage =
   | { kind: 'overlay'; overlay: Overlay }
   | { kind: 'clock'; period: number; match_clock_ms: number } // running match time during gaps
   | TrackingFrameMessage // like clock, plus the ball and every player (when the match has tracking)
+  | { kind: 'comment'; comment: AnalystComment } // the Match Analyst
   | { kind: 'end' }; // the match feed is over
 
 export interface ViewerSettings {

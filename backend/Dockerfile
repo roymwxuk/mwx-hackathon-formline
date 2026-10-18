@@ -23,6 +23,7 @@ RUN uv sync --frozen --no-dev
 # overlays precomputed with Microsoft Foundry can be shipped in demo/ (see start.sh).
 RUN .venv/bin/formline-gen generate --out /app/data \
  && .venv/bin/formline-gen overlays --data /app/data \
+ && .venv/bin/formline-gen analyst --data /app/data \
  && .venv/bin/formline-gen tracking --out /app/data
 
 COPY demo ./demo

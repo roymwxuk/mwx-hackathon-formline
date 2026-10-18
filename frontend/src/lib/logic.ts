@@ -1,4 +1,4 @@
-import type { MatchEvent, Overlay, Player, StreamMessage, ViewerSettings } from '@/lib/types';
+import type { AnalystComment, MatchEvent, Overlay, Player, StreamMessage, ViewerSettings } from '@/lib/types';
 
 // ---------- Event store: idempotent, keeps the highest version per event_id ----------
 
@@ -70,6 +70,32 @@ export function score(store: Map<string, MatchEvent>, clubIds: [string, string])
 export interface OverlayState {
   overlay: Overlay;
   retracted: boolean;
+  /** The overlay that withdrew or replaced this one (a `retract` or a `correct`). */
+  replacedBy?: Overlay;
+  /** For a `correct`: the card it replaces. */
+  corrects?: Overlay;
+  /** Why it was withdrawn or corrected: the correction banner's headline for the same shot,
+   *  in the same language and mode (e.g. "Goal disallowed after review"). */
+  reason?: string;
+}
+
+export interface CommentState {
+  comment: AnalystComment;
+  retracted: boolean;
+}
+
+/** Analyst comments in arrival order; a retract (the VAR overturn) marks its comment withdrawn. */
+export function applyComments(received: AnalystComment[]): CommentState[] {
+  const byId = new Map<string, CommentState>();
+  for (const c of received) {
+    if (c.op === 'retract') {
+      const target = c.supersedes_comment_id ? byId.get(c.supersedes_comment_id) : undefined;
+      if (target) target.retracted = true;
+    } else if (!byId.has(c.comment_id)) {
+      byId.set(c.comment_id, { comment: c, retracted: false });
+    }
+  }
+  return [...byId.values()];
 }
 
 /** Applies ops in arrival order. A retract marks its superseded overlay as withdrawn. */
@@ -79,18 +105,31 @@ export function applyOverlays(received: Overlay[]): OverlayState[] {
   for (const o of received) {
     if (o.op === 'retract') {
       const target = o.supersedes_overlay_id ? byId.get(o.supersedes_overlay_id) : undefined;
-      if (target) target.retracted = true;
+      if (target) Object.assign(target, { retracted: true, replacedBy: o });
       continue;
     }
     if (byId.has(o.overlay_id)) continue; // duplicate delivery
+    let corrects: Overlay | undefined;
     if (o.op === 'correct' && o.supersedes_overlay_id) {
       const target = byId.get(o.supersedes_overlay_id);
-      if (target) target.retracted = true;
+      if (target) Object.assign(target, { retracted: true, replacedBy: o });
+      corrects = target?.overlay;
     }
-    byId.set(o.overlay_id, { overlay: o, retracted: false });
+    byId.set(o.overlay_id, { overlay: o, retracted: false, ...(corrects ? { corrects } : {}) });
     order.push(o.overlay_id);
   }
-  return order.map((id) => byId.get(id)!);
+  const states = order.map((id) => byId.get(id)!);
+  // Link each withdrawn or corrected card to the banner that explains it (same shot, same
+  // language and mode), so viewers see why, not just that it changed.
+  const banners = states.filter((st) => st.overlay.template_id === 'correction_banner');
+  for (const st of states) {
+    if (!st.replacedBy && !st.corrects) continue;
+    const shot = st.overlay.source_event_ids[0];
+    const banner = [...banners].reverse().find((b) => b.overlay.lang === st.overlay.lang
+      && b.overlay.audience_mode === st.overlay.audience_mode && b.overlay.source_event_ids.includes(shot));
+    if (banner) st.reason = banner.overlay.slots.headline;
+  }
+  return states;
 }
 
 /**

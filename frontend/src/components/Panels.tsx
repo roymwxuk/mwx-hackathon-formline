@@ -63,9 +63,15 @@ export function OverlayLog({ states, settings, players }: { states: OverlayState
             <span className="log-text">
               {isFavoriteOverlay(st.overlay, settings, players) ? '★ ' : ''}
               {st.overlay.slots.headline}
+              {(st.retracted || st.corrects) && (
+                <span className="log-reason">
+                  {st.reason ?? str.dataCorrection}
+                  {st.replacedBy && ` · ${st.replacedBy.op === 'correct' ? str.replacedAt : str.removedAt} ${formatClock(st.replacedBy.match_clock_ms)}`}
+                </span>
+              )}
             </span>
             <span className={st.retracted ? 'log-status danger-text' : 'log-status ok-text'}>
-              {st.retracted ? str.withdrawn : `✓ ${str.verified}`}
+              {st.retracted ? str.withdrawn : st.corrects ? `✓ ${str.corrected}` : `✓ ${str.verified}`}
             </span>
           </li>
         ))}

@@ -149,6 +149,14 @@ Every player on the pitch and the ball, 10 frames per second (tracking providers
 
 Unlike events, tracking uses **one shared frame**: 0–100 on both axes, the home team attacking toward x = 100 in both periods. Stored as gzipped JSONL (`data/tracking/<match_id>.jsonl.gz`), one compact row per frame: `{"p": 1, "t": 12300, "b": [x, y, z], "h": [[shirt, x, y], ...], "a": [...]}`.
 
+### 5.5 Analyst comment (DERIVED, LLM-written and verified)
+
+`comment_id`, `op (show / retract)`, `supersedes_comment_id`, `question (shot_outcome /
+corner / card / var)`, `period`, `match_clock_ms`, `lang (en / ja)`, `headline`, `body`,
+`player_id`, `evidence[] {event_id, minute, type}`, `verified`, `source (llm / template)`.
+Streamed as `{"kind": "comment", "comment": {...}}` with an SSE id. A retract withdraws a
+comment whose event was revised (the VAR overturn).
+
 ---
 
 ## 6. Derived data (engine output)

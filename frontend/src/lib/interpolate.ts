@@ -52,6 +52,16 @@ export class FrameInterpolator {
     return out;
   }
 
+  /** Movement of one marker in the current blend, in pitch percentages per second (the
+   *  direction and speed it is moving now); zero when it is not moving. */
+  velocity(key: string): { vx: number; vy: number } {
+    const a = this.from.get(key);
+    const b = this.to.get(key);
+    if (!a || !b || this.instant) return { vx: 0, vy: 0 };
+    const secs = this.duration / 1000;
+    return { vx: (b.x - a.x) / secs, vy: (b.y - a.y) / secs };
+  }
+
   reset(): void {
     this.from = new Map();
     this.to = new Map();

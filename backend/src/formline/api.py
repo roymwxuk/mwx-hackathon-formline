@@ -14,6 +14,7 @@ from formline.agents.precompute import (
     overlays_path,
     read_overlays,
 )
+from formline.analyst.store import comment_message, comments_path, make_writer, read_comments
 from formline.chaos import ChaosConfig, inject
 from formline.config import settings
 from formline.engine.bootstrap import bootstrap_history
@@ -117,16 +118,22 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
         return {"data": data} if idx is None else {"id": str(idx), "data": data}
 
     async def live_items(messages):
-        orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir),
-                                 default_runner(settings.data_dir))
+        runner = default_runner(settings.data_dir)
+        orch = make_orchestrator(settings.data_dir, history_engine(settings.data_dir), runner)
+        analyst = make_writer(settings.data_dir, match_id, runner)
         # Messages as they arrive, overlays as the orchestrator produces them (including those
         # its idle timeout releases between messages).
         async for at, item in orch.replay(messages):
             if isinstance(item, FeedMessage):
                 if (payload := to_stream_message(item)) is not None:
                     yield at, payload
+                for comment in await analyst.on_message(item):
+                    yield at, comment_message(comment)
             else:
                 yield at, overlay_message(item)
+        last = messages[-1].emitted_at if messages else None
+        for comment in await analyst.flush():
+            yield last, comment_message(comment)
 
     async def gen():
         if live or chaos:
@@ -135,7 +142,8 @@ async def stream(request: Request, match_id: str, speed: float | None = Query(No
         else:
             cached = overlays_path(settings.data_dir, match_id)
             overlays = read_overlays(cached) if cached.exists() else []
-            items = merge_stream(feed, overlays)
+            said = comments_path(settings.data_dir, match_id)
+            items = merge_stream(feed, overlays, read_comments(said) if said.exists() else [])
             key_times.extend(at for at, _ in overlays)
         sent = resume_after
         async for idx, payload in paced(items, pace, start=parse_clock(start),

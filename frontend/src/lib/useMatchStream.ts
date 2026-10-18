@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoStream, MATCH_END_MS } from '@/mock/demo-match';
 import { formatClock, timeAfter, type MatchTime } from '@/lib/logic';
-import type { MatchEvent, Overlay, StreamMessage, TrackingFrameMessage } from '@/lib/types';
+import type { AnalystComment, MatchEvent, Overlay, StreamMessage, TrackingFrameMessage } from '@/lib/types';
 
 export type StreamSource = 'mock' | 'sse';
 
@@ -10,6 +10,8 @@ export interface MatchStream {
   clockMs: number;
   events: MatchEvent[];
   overlays: Overlay[];
+  /** Match Analyst comments (live mode), in arrival order. */
+  comments: AnalystComment[];
   playing: boolean;
   speed: number;
   /** Speed choices for the header (live and mock replay differ). */
@@ -19,6 +21,9 @@ export interface MatchStream {
   ended: boolean;
   /** Latest tracking frame (live mode, when the match has tracking), else null. */
   frame: TrackingFrameMessage | null;
+  /** True while a (re)connect replays the past at once: pop-ups (goal, set piece, comment)
+   *  must not fire for moments the clock is only passing through. */
+  catchingUp: boolean;
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
   restart: () => void;
@@ -73,6 +78,7 @@ export function isNewerFrame(prev: TrackingFrameMessage | null, next: TrackingFr
 function messageKey(msg: StreamMessage): string {
   if (msg.kind === 'event') return `e:${msg.event.event_id}:${msg.event.version}`;
   if (msg.kind === 'overlay') return `o:${msg.overlay.overlay_id}`;
+  if (msg.kind === 'comment') return `c:${msg.comment.comment_id}`;
   return 'end';
 }
 const TICK_MS = 100;
@@ -105,6 +111,11 @@ export function useMatchStream(): MatchStream {
   const [received, setReceived] = useState<StreamMessage[]>([]);
   const [connected, setConnected] = useState(source === 'mock');
   const [ended, setEnded] = useState(false);
+  const [catchingUp, setCatchingUp] = useState(false);
+  const catchUpTo = useRef<MatchTime | null>(null);
+  // Once clock/frame ticks flow, they alone drive the clock: they run a presentation delay
+  // behind true time, and event times would jump it ahead and make it stall.
+  const ticksRef = useRef(false);
   const cursor = useRef(0);
   const clockRef = useRef(0);
 
@@ -137,6 +148,8 @@ export function useMatchStream(): MatchStream {
     esRef.current?.close(); // never two streams at once (e.g. one left behind by a hot reload)
     const es = new EventSource(liveStreamUrl(SSE_URL, speed, startRef.current));
     esRef.current = es;
+    catchUpTo.current = startRef.current;
+    setCatchingUp(startRef.current !== null);
     es.onopen = () => setConnected(true);
     es.onerror = () => setConnected(false); // EventSource reconnects and resumes after its last id
     es.onmessage = (ev) => {
@@ -158,7 +171,16 @@ export function useMatchStream(): MatchStream {
           seenRef.current.add(key);
           setReceived((r) => [...r, msg]);
         }
-        timeRef.current = timeAfter(timeRef.current, msg);
+        if (msg.kind === 'clock' || msg.kind === 'frame') ticksRef.current = true;
+        if (!ticksRef.current || msg.kind === 'clock' || msg.kind === 'frame') {
+          timeRef.current = timeAfter(timeRef.current, msg);
+        }
+        const target = catchUpTo.current;
+        if (target && (timeRef.current.period > target.period
+          || (timeRef.current.period === target.period && timeRef.current.clockMs >= target.clockMs))) {
+          catchUpTo.current = null; // reached the start time: from here on it is live
+          setCatchingUp(false);
+        }
         setClockMs(timeRef.current.clockMs);
       } catch {
         // Ignore malformed messages rather than breaking the viewer.
@@ -173,6 +195,7 @@ export function useMatchStream(): MatchStream {
   /** Start over, from kick-off or from a match time (the backend sends the past at once). */
   const liveRestart = useCallback((from: MatchTime | null = null) => {
     timeRef.current = { period: 1, clockMs: 0 };
+    ticksRef.current = false; // the catch-up's events move the clock until ticks resume
     startRef.current = from;
     seenRef.current = new Set();
     setReceived([]);
@@ -229,8 +252,12 @@ export function useMatchStream(): MatchStream {
     () => received.flatMap((m) => (m.kind === 'overlay' ? [m.overlay] : [])),
     [received],
   );
+  const comments = useMemo(
+    () => received.flatMap((m) => (m.kind === 'comment' ? [m.comment] : [])),
+    [received],
+  );
 
   const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
 
-  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, frame, setPlaying, setSpeed, restart, jumpTo };
+  return { source, clockMs, events, overlays, comments, playing, speed, speedOptions, connected, ended, frame, catchingUp: source === 'sse' && catchingUp, setPlaying, setSpeed, restart, jumpTo };
 }

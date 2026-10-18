@@ -16,6 +16,7 @@ happened, so the reasoning at the time remains visible.
 | [008](#adr-008-multi-agent-architecture-for-narration) | Multi-agent workflow on Agent Framework with a deterministic verifier | Accepted |
 | [009](#adr-009-deploy-on-azure-container-apps-with-scale-to-zero-and-keyless-foundry-access) | Container Apps, scale to zero, GHCR, managed identity for Foundry | Accepted |
 | [010](#adr-010-synthetic-tracking-data-derived-from-the-event-feed) | Synthetic tracking for all 22 players and the ball, derived from the events | Accepted; built |
+| [011](#adr-011-match-analyst-proactive-comments-at-key-events-questions-on-demand) | Match Analyst: verified comments at shots, corners and cards; questions on demand | Accepted; phase 1 built |
 
 ---
 
@@ -504,4 +505,44 @@ at turnovers (fixed by easing shape changes over 4 s and following a smoothed ba
 Firefox stuttered on CSS transitions (the viewer now interpolates in JavaScript). The
 trade-off is less running than real players (about 8 km per 90), reported in the realism
 report. Details: [docs/epic-tracking.md](epic-tracking.md).
+
+---
+
+## ADR-011: Match Analyst: proactive comments at key events, questions on demand
+
+**Status:** Accepted (2026-10-18). Phase 1 (proactive comments) built; phase 2 (question
+buttons) to be decided. Plan: [docs/plan-match-analyst.md](plan-match-analyst.md).
+
+**Context.** The insight cards explain a shot against the shooter's own history, but nothing
+explains *why* a moment turned out as it did, and the viewer has no running voice. An LLM
+commentator is the obvious answer, and the obvious risk: more text means more chances to
+state a wrong score, goal or name.
+
+**Options.**
+- (a) Continuous LLM commentary, a line every minute or so.
+- (b) Question buttons only: the viewer asks, the agent answers.
+- (c) Proactive comments only at key events (shots, corners, cards), and question buttons for
+  everything else.
+
+**Decision.** (c). A proactive comment is a catalog question answered automatically; buttons
+answer the other catalog questions on demand. One deterministic **facts pack** per question
+(engine shot features, the corner sequence, the card and its foul), one **Analyst agent**
+(JSON `{headline, body}`, English and Japanese), and its own **verifier**: every number must
+appear in the facts, only the players in the pack and the match's two clubs may be named,
+percentages and xG carry estimate wording, no certainty, no role placeholders. Three attempts,
+then a template answer built from the facts. Every comment lists its evidence.
+
+**Why.** (a) costs a call per line for the whole match and fills the screen with filler,
+where hallucinations hide; (b) leaves key moments silent. (c) speaks only where there is
+something to explain, keeps cost predictable (about 96 calls per match, under ¥1), and
+reuses the owner's production patterns: deterministic retrieval, then explanation; the LLM
+choosing from a fixed catalog.
+
+**Findings while building.** The card verifier treats "chance" as a probability claim;
+commentary uses it for opportunities ("a good chance"), so the Analyst verifier only asks
+for estimate wording on actual probability terms (%, percentile, xG). The feed sends some
+cards before their foul, so a card comment waits for its foul. The data does not record who
+was fouled; the facts say so and the comment says so instead of guessing. A jump or
+reconnect replays the past at once, which made old comments (and the GOAL! flash) briefly
+look fresh; pop-ups are held back until the stream catches up.
 
