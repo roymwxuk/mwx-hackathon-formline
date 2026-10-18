@@ -114,7 +114,8 @@ def test_every_agent_prompt_loads_from_its_versioned_file():
     from formline.prompts import DIR, load
 
     names = sorted(p.stem for p in DIR.glob("*.md"))
-    assert names == ["analyst", "analyst_free", "insight_selector", "narrator", "router", "suggester"]
+    assert names == ["analyst", "analyst_free", "insight_selector", "narrator", "researcher", "router",
+                     "suggester"]
     for name in names:
         p = load(name)
         assert p.version >= 1 and p.description and p.text.strip()
