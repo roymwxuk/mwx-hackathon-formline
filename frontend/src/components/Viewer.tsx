@@ -92,13 +92,15 @@ export function Viewer(p: Props) {
       <main className="viewer-main">
         {stage}
         {focus && <FocusStrip store={p.store} player={focus} lang={s.lang} />}
-        <AnalystPanel comments={comments} lang={s.lang} />
         <OverlayLog states={visible} settings={s} players={players} />
       </main>
-      <aside className="panel side" aria-label="Viewer settings">
-        <h2>Make it yours</h2>
-        <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} />
-      </aside>
+      <div className="side-column">
+        <AnalystPanel comments={comments} lang={s.lang} />
+        <aside className="panel side" aria-label="Viewer settings">
+          <h2>Make it yours</h2>
+          <SettingsPanel id={p.id} settings={s} onChange={p.onSettingsChange} clubs={clubs} players={players} />
+        </aside>
+      </div>
     </div>
   );
 }
