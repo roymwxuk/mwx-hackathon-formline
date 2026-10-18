@@ -76,6 +76,36 @@ class FakeAgents:
     garbage: bool = False
     attempts: dict[str, int] = field(default_factory=dict)
 
+    def research(self, turn: int, seen: list[tuple[str, str, str]]):
+        """The Researcher, scripted: the Router's keyword plan as tool calls, then done. For
+        "top scorer … last n games" it chains: season leaders first, then the recent games of
+        the top scorer whose id the first result returned."""
+        from formline.analyst.tools import TOOL_FOR_SECTION
+
+        payload = json.loads(next(t for role, kind, t in seen if role == "user" and kind == "text"))
+        plan = fake_route(payload)
+        results = [json.loads(t) for _, kind, t in seen if kind == "function_result"]
+        if plan.get("cannot_answer"):
+            return '{"cannot_answer": true}'
+        secs, n = plan["sections"], plan.get("n") or 3
+        chain = "season_leaders" in secs and plan.get("n") and not plan.get("player_id")
+        if turn == 1:
+            if chain:
+                return [("get_season_leaders", {})]
+            args = {"team_tonight": {"club_id": plan.get("club_id")},
+                    "team_recent": {"club_id": plan.get("club_id"), "n": n},
+                    "player_info": {"player_id": plan.get("player_id")},
+                    "player_tonight": {"player_id": plan.get("player_id")},
+                    "player_recent": {"player_id": plan.get("player_id"), "n": n}}
+            return [(TOOL_FOR_SECTION[sec], args.get(sec, {})) for sec in secs]
+        if chain and turn == 2 and results and "facts" in results[-1]:
+            side = "away" if any(c["id"] == plan.get("club_id") for c in payload["CLUBS"][1:]) else "home"
+            top = results[-1]["facts"][f"{side}_top_scorer"]
+            role = next((r for r in results[-1]["players"] if r in top), None)
+            if role:
+                return [("get_player_recent", {"player_id": results[-1]["players"][role]["id"], "n": n})]
+        return '{"done": true}'
+
     def __call__(self, texts: list[str]) -> str:
         payload = json.loads(texts[-1])
         if "VIEWER_TEXT" in payload:  # the Question Router: keyword routing

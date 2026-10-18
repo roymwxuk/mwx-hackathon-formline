@@ -19,11 +19,13 @@ import hashlib
 import json
 import sys
 from collections.abc import Awaitable, Callable, Sequence
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from agent_framework import Agent, BaseChatClient, ChatResponse, Message
+from agent_framework import Agent, BaseChatClient, ChatResponse, Content, Message
+from agent_framework._tools import FunctionInvocationLayer
 
 from formline.config import settings
 
@@ -64,6 +66,63 @@ def echo_responder(texts: list[str]) -> str:
     return texts[-1] if texts else ""
 
 
+# ---------- tool-using agents (the Researcher) ----------
+
+# The current research run's per-round-trip hook (request-local through asyncio's context):
+# every model round-trip of a tool loop, including the framework's final no-tools call,
+# is charged here before it is sent.
+ON_MODEL_CALL: ContextVar[Callable[[], None] | None] = ContextVar("on_model_call", default=None)
+
+# What a scripted fake sees of the conversation: (role, kind, text) per content, where kind is
+# "text" or "function_result"; it replies with tool calls [(name, args)] or a final text.
+ToolScript = Callable[[int, list[tuple[str, str, str]]], "list[tuple[str, dict]] | str"]
+
+# Fixed tool-loop settings for the research client; our own request-local counter enforces
+# the real limits (the framework's max_function_calls is checked only after a batch).
+TOOL_LOOP = {"max_iterations": 6, "allow_concurrent_invocation": False,
+             "max_consecutive_errors_per_request": 3}
+
+
+def _charge_model_call() -> None:
+    hook = ON_MODEL_CALL.get()
+    if hook is not None:
+        hook()
+
+
+class FakeToolChatClient(FunctionInvocationLayer, BaseChatClient):
+    """A scripted chat client that can call tools, so tests run the real framework tool loop
+    offline. `script(turn, seen)` returns tool calls or the final text; `turn` counts this
+    run's round-trips (from the conversation, so one client serves many runs)."""
+
+    def __init__(self, script: ToolScript, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.script = script
+        self.turns = 0
+
+    def _inner_get_response(self, *, messages: Sequence[Message], stream: bool,
+                            options: dict, **kwargs: Any) -> Awaitable[ChatResponse]:
+        if stream:
+            raise NotImplementedError("FakeToolChatClient does not stream")
+        _charge_model_call()
+        self.turns += 1  # all runs, for tests that count round-trips
+        turn = 1 + sum(m.role == "assistant" for m in messages)  # this run's turn
+        seen = [(m.role, c.type, str(c.result) if c.type == "function_result" else (c.text or ""))
+                for m in messages for c in m.contents if c.type in ("text", "function_result")]
+        reply = self.script(turn, seen)
+
+        async def respond() -> ChatResponse:
+            if isinstance(reply, list):
+                calls = [Content.from_function_call(f"call_{self.turns}_{i}", name, arguments=args)
+                         for i, (name, args) in enumerate(reply)]
+                return ChatResponse(messages=[Message("assistant", calls)], model="fake")
+            return ChatResponse(messages=[Message("assistant", [reply])], model="fake")
+        return respond()
+
+
+def _scripted_done(turn: int, seen: list[tuple[str, str, str]]) -> str:
+    return '{"cannot_answer": true}'
+
+
 # ---------- client factory ----------
 
 @dataclass(frozen=True)
@@ -95,6 +154,27 @@ def make_chat_client(config: LLMConfig, fake_responder: Responder = echo_respond
                                    credential=DefaultAzureCredential())
         return client, "foundry"
     return FakeChatClient(fake_responder), "fake"
+
+
+def make_tool_client(config: LLMConfig, script: ToolScript | None = None):
+    """A chat client for tool-using agents, with fixed loop settings. Foundry when
+    configured; otherwise a scripted fake. Each model round-trip is charged first."""
+    if config.uses_foundry:
+        from agent_framework.foundry import FoundryChatClient
+        from azure.identity import DefaultAzureCredential
+
+        class CountingFoundryChatClient(FoundryChatClient):
+            def _inner_get_response(self, **kwargs: Any):
+                _charge_model_call()
+                return super()._inner_get_response(**kwargs)
+
+        client = CountingFoundryChatClient(project_endpoint=config.endpoint,
+                                           model=config.deployment,
+                                           credential=DefaultAzureCredential())
+    else:
+        client = FakeToolChatClient(script or _scripted_done)
+    client.function_invocation_configuration.update(TOOL_LOOP)
+    return client
 
 
 # ---------- cost guard ----------
@@ -157,10 +237,41 @@ class LLMRunner:
     cache: ResponseCache = field(default_factory=ResponseCache)
     budget: CallBudget | None = None
     cache_hits: int = 0
+    tool_client: Any = None  # for tool-using agents (make_tool_client), created on first use
+    tool_script: ToolScript | None = None  # the fake's research script
 
     def __post_init__(self) -> None:
         if self.budget is None:
             self.budget = CallBudget(self.config.max_calls)
+
+    @property
+    def remaining(self) -> int:
+        return self.budget.max_calls - self.budget.calls
+
+    async def research(self, agent_name: str, instructions: str, user_input: str,
+                       tools: list, max_model_calls: int) -> str:
+        """One tool-using agent run: the model calls `tools` (each guards its own limits)
+        and replies. Every round-trip is charged to the shared budget and to this run's
+        allowance first; over either, BudgetExceeded is raised and the run stops. Not cached:
+        a tool loop depends on what the tools return."""
+        if self.tool_client is None:
+            self.tool_client = make_tool_client(self.config, self.tool_script)
+        used = 0
+
+        def charge() -> None:
+            nonlocal used
+            if used >= max_model_calls:
+                raise BudgetExceeded(f"research allowance of {max_model_calls} model calls reached")
+            self.budget.spend()
+            used += 1
+        token = ON_MODEL_CALL.set(charge)
+        try:
+            agent = Agent(self.tool_client, instructions, name=agent_name, tools=tools)
+            response = await agent.run(user_input, options={
+                "temperature": self.config.temperature, "max_tokens": self.config.max_tokens})
+            return response.text
+        finally:
+            ON_MODEL_CALL.reset(token)
 
     async def complete(self, agent_name: str, instructions: str, user_input: str,
                        use_cache: bool = True) -> str:
@@ -183,7 +294,8 @@ def make_runner(config: LLMConfig | None = None, fake_responder: Responder = ech
                 cache_path: Path | None = None) -> LLMRunner:
     config = config or LLMConfig.from_settings()
     client, kind = make_chat_client(config, fake_responder)
-    return LLMRunner(client, kind, config, ResponseCache(cache_path))
+    return LLMRunner(client, kind, config, ResponseCache(cache_path),
+                     tool_script=getattr(fake_responder, "research", None))
 
 
 def main(argv: list[str] | None = None) -> int:

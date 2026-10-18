@@ -137,6 +137,10 @@ export interface FreeAnswer {
   retrieved: { sections: string[]; club_id: string | null; player_id: string | null; label: string } | null;
   answer: (Omit<FollowupAnswer, 'question'> & { question: 'free'; coverage: 'full' | 'partial' }) | null;
   declined: string | null;
+  /** The Researcher's tool calls, in order (empty when the one-shot Router answered). */
+  research?: { tool: string; ok: boolean; label: string }[];
+  /** answered | cannot_answer | clarify | fallback_* | timeout | budget_exhausted */
+  outcome?: string;
 }
 
 /** The Analyst's verified answer to a follow-up question (POST /matches/{id}/ask). */
