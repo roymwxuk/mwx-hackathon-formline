@@ -130,11 +130,12 @@ export interface FollowupSuggestion {
   player_id: string | null;
 }
 
-/** The answer to a typed question (POST /matches/{id}/ask/free): routed to a catalog
- *  question and answered, or declined when the data cannot answer it. */
+/** The answer to a typed question (POST /matches/{id}/ask/free), "RAG over computed
+ *  facts": the fact sections retrieved for it, the Analyst's verified answer to the question
+ *  itself (with how far the facts cover it), or a decline. */
 export interface FreeAnswer {
-  routed_as: { question: FollowupQuestion; player_id: string | null; label: string } | null;
-  answer: FollowupAnswer | null;
+  retrieved: { sections: string[]; club_id: string | null; player_id: string | null; label: string } | null;
+  answer: (Omit<FollowupAnswer, 'question'> & { question: 'free'; coverage: 'full' | 'partial' }) | null;
   declined: string | null;
 }
 

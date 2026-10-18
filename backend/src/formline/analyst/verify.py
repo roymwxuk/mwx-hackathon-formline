@@ -25,6 +25,7 @@ from formline.agents.verifier import (
 from formline.analyst.facts import FactsPack
 
 LIMITS = {"en": {"headline": 70, "body": 260}, "ja": {"headline": 36, "body": 130}}
+COVERAGE = ("full", "partial", "none")  # typed questions: how far FACTS answer them
 # Probability wording that needs an estimate marker. Unlike on cards, "chance" alone is not a
 # trigger: in commentary "a good chance" usually means an opportunity, not a probability.
 PROBABILITY = {"en": ("%", "percentile", "probability", "likelihood", "xg"),
@@ -43,6 +44,7 @@ class AnswerContext:
     pack: FactsPack
     lang: str
     match_clubs: tuple[str, str]  # club ids
+    free: bool = False  # a typed question: the reply also carries `coverage`
 
 
 def _strings(value) -> list[str]:
@@ -68,9 +70,13 @@ def _forms(en: str, ja: str, lang: str) -> set[str]:
 def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verdict:
     failures: list[Failure] = []
     limits = LIMITS[ctx.lang]
-    for key in answer:
-        if key not in limits:
-            failures.append(Failure("structure", f"unexpected key {key!r}: return only headline, body"))
+    for key, value in answer.items():
+        if key == "coverage" and ctx.free:
+            if value not in COVERAGE:
+                failures.append(Failure("structure", f"coverage must be one of {', '.join(COVERAGE)}"))
+        elif key not in limits:
+            failures.append(Failure("structure", f"unexpected key {key!r}: return only headline, body"
+                                                 + (", coverage" if ctx.free else "")))
     for key, limit in limits.items():
         value = answer.get(key)
         if not isinstance(value, str) or not value.strip():

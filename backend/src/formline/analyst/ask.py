@@ -6,13 +6,13 @@ is; otherwise the events known at that sequence are replayed from the feed, the 
 checked against the catalog (it must apply to that moment), and the Analyst agent answers
 it live from the facts pack, verified, under the runner's cache and call budget.
 
-A question the viewer typed (`answer_free`) goes through the Question Router first
-(`analyst/router.py`), which maps it to a catalog question or declines; from there it is the
-same path, and a precomputed answer is still served when the route matches one.
+A question the viewer typed (`answer_free`) is answered "RAG over computed facts": the
+Question Router (`analyst/router.py`) picks the fact sections (`analyst/sections.py`) that
+answer it, and the Analyst answers the viewer's own question from only those facts.
 """
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from formline.agents.llm import LLMRunner
 from formline.analyst.agent import answer_verified
@@ -21,10 +21,11 @@ from formline.analyst.followups import (
     answer_key,
     applicable,
     followup_pack,
-    label,
     moment_kind,
 )
-from formline.analyst.router import CANNOT, DECLINE, route
+from formline.analyst.router import DECLINE, MAX_TEXT, route
+from formline.analyst.sections import facts_for
+from formline.analyst.sections import label as section_label
 from formline.analyst.store import MatchContext
 from formline.analyst.writer import answer_payload
 from formline.schema.feed import FeedMessage
@@ -101,25 +102,31 @@ async def answer_question(req: AskRequest, feed: list[FeedMessage], ctx: MatchCo
 
 
 async def answer_free(moment_id: str, seq: int, text: str, lang: str, feed: list[FeedMessage],
-                      ctx: MatchContext, runner: LLMRunner, precomputed: Mapping[str, dict],
-                      norm: Callable[[str], float | None] | None = None) -> dict:
-    """A typed question: route it to a catalog question (or decline), then answer that.
+                      ctx: MatchContext, runner: LLMRunner,
+                      norm: Callable[[str], float | None] | None = None,
+                      short_names: Mapping[str, str] | None = None) -> dict:
+    """A typed question, "RAG over computed facts": the Router retrieves 1–3 fact sections,
+    the Analyst answers the viewer's own question from them (verified), or it is declined.
 
-    Returns {"routed_as": {question, player_id, label} | None, "answer": {...} | None,
-    "declined": message | None}."""
+    Returns {"retrieved": {sections, club_id, player_id, label} | None,
+    "answer": {..., coverage} | None, "declined": message | None}."""
     if not text.strip():
         raise AskError("empty question")
     m, known = _moment(moment_id, seq, feed, ctx, norm)
-    r = await route(text, lang, m, ctx.league.players, ctx.clubs, runner)
-    if r.question == CANNOT:
-        return {"routed_as": None, "answer": None, "declined": DECLINE[lang]}
-    if r.question == "player_tonight":
-        m = replace(m, player_id=r.player_id, _shots=None)
-    name = None
+    r = await route(text, lang, m, ctx.league.players, dict(short_names or {}), runner)
+    if not r.sections:
+        return {"retrieved": None, "answer": None, "declined": DECLINE[lang]}
+    pack = facts_for(r.sections, m, r.club_id, r.player_id)
+    player = None
     if r.player_id:
         en, ja = ctx.league.players[r.player_id]
-        name = en.split()[-1] if lang == "en" else ja.split("・")[-1]
-    answer = await _answer(r.question, lang, m, known, ctx, runner, precomputed)
-    return {"routed_as": {"question": r.question, "player_id": r.player_id,
-                          "label": label(r.question, lang, m, name)},
-            "answer": answer, "declined": None}
+        player = en.split()[-1] if lang == "en" else ja.split("・")[-1]
+    retrieved = {"sections": r.sections, "club_id": r.club_id, "player_id": r.player_id,
+                 "label": section_label(r.sections, lang, ctx.clubs.get(r.club_id), player)}
+    a = await answer_verified(pack, lang, runner, ctx.league, (ctx.home, ctx.away),
+                              viewer_question=text[:MAX_TEXT])
+    if a.coverage == "none":
+        return {"retrieved": retrieved, "answer": None, "declined": DECLINE[lang]}
+    answer = {**answer_payload("free", lang, a, pack, known), "coverage": a.coverage,
+              "cached": False}
+    return {"retrieved": retrieved, "answer": answer, "declined": None}

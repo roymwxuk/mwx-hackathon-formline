@@ -76,7 +76,7 @@ describe('follow-up questions', () => {
   });
 
   it('sends a typed question to /ask/free with the moment and the language', async () => {
-    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ routed_as: null, answer: null, declined: 'no' }) });
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ retrieved: null, answer: null, declined: 'no' }) });
     vi.stubGlobal('fetch', fetch);
     const out = await askFree('http://x/matches/m1/ask', c('a', 0, 'ja', { ask }), 'レイナーは？');
     expect(out.declined).toBe('no');

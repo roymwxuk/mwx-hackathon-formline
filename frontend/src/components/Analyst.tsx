@@ -37,7 +37,7 @@ export function CommentBubble({ comments, clockMs, lang, paused = false }: { com
 
 type Asked =
   | { status: 'loading' }
-  | { status: 'done'; answer: FollowupAnswer; routedAs?: string }
+  | { status: 'done'; answer: Pick<FollowupAnswer, 'headline' | 'body' | 'evidence'>; basedOn?: string; partial?: boolean }
   | { status: 'declined'; message: string }
   | { status: 'limited' }
   | { status: 'error' };
@@ -74,8 +74,8 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
     setItems((list) => [{ key, lang: c.lang, label: question, minute: c.evidence[0]?.minute ?? '', state: { status: 'loading' } },
       ...list.filter((i) => i.key !== key)]);
     askFree(askUrl, c, question)
-      .then((r) => settle(key, r.answer && r.routed_as
-        ? { status: 'done', answer: r.answer, routedAs: r.routed_as.label }
+      .then((r) => settle(key, r.answer && r.retrieved
+        ? { status: 'done', answer: r.answer, basedOn: r.retrieved.label, partial: r.answer.coverage === 'partial' }
         : { status: 'declined', message: r.declined ?? '' }))
       .catch(failed(key));
   };
@@ -116,9 +116,10 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
               {i.state.status === 'declined' && <p className="comment-body muted">{i.state.message}</p>}
               {i.state.status === 'done' && (
                 <>
-                  {i.state.routedAs && <span className="muted ask-routed">{str.answeredAs}: {i.state.routedAs}</span>}
+                  {i.state.basedOn && <span className="muted ask-routed">{str.basedOn}: {i.state.basedOn}</span>}
                   <strong className="comment-headline">{i.state.answer.headline}</strong>
                   <p className="comment-body">{i.state.answer.body}</p>
+                  {i.state.partial && <p className="muted ask-routed">{str.askPartial}</p>}
                   {limit === undefined && i.state.answer.evidence.length > 0 && (
                     <p className="analyst-evidence muted">
                       {str.evidence}: {i.state.answer.evidence.map((e) => `${e.type.replace('_', ' ')} ${e.minute}`).join(' · ')}

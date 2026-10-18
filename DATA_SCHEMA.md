@@ -167,10 +167,11 @@ verified, source, cached}` (`cached`: precomputed with the match). Unknown momen
 that do not apply to the moment, or a `player_id` other than the moment's player get a 422.
 
 Typed questions: `POST /matches/{match_id}/ask/free` with `{moment, seq, text (1–200
-chars), lang}` returns `{routed_as {question, player_id, label} | null, answer | null,
-declined | null}`. The Question Router maps the text to a catalog question (for
-`player_tonight`, any player who has shot so far) or declines; 429 after 10 typed questions
-per viewer in 10 minutes.
+chars), lang}` returns `{retrieved {sections[], club_id, player_id, label} | null, answer
+{question: "free", lang, headline, body, coverage (full / partial), evidence[], verified,
+source, cached} | null, declined | null}`. Sections: `situation`, `score`, `team_stats`,
+`team_tonight` (club), `player_tonight` (a player who has shot), `chances`, `discipline`,
+`recent` (last 10 minutes). 429 after 10 typed questions per viewer in 10 minutes.
 
 ---
 

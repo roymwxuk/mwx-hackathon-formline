@@ -1,12 +1,10 @@
-"""The Question Router: maps a question the viewer typed to one the data can answer.
+"""The Question Router: retrieves the facts that answer a question the viewer typed.
 
-Natural language in, a structured query out (the NL→SQL pattern, with the catalog as the
-"schema"): the model may only return a catalog question id (`analyst/followups.py`) and, for
-"how is he doing tonight?", a player of this match, or `cannot_answer`. Code checks the
-reply (known id, a player who has shot tonight), retries once with the problem, then
-declines. The viewer's text never reaches the Analyst agent that writes the answer: it
-answers the routed catalog question from its facts pack, through the same verifier, so a
-typed instruction can at worst pick another valid question.
+"RAG over computed facts": the model picks 1–3 fact sections (`analyst/sections.py`) and,
+where a section needs one, the club or the player; code computes those sections from the
+events. Code checks the reply (known section ids, a club of this match, a player who has
+shot), retries once with the problem, then declines. The Analyst then answers the viewer's
+own question from only those facts, and the verifier checks every number and name.
 """
 
 import json
@@ -14,12 +12,12 @@ from dataclasses import dataclass
 
 from formline.agents.llm import LLMRunner
 from formline.agents.selector import strip_fences
-from formline.analyst.followups import DESCRIPTIONS, FOLLOWUPS, Moment
+from formline.analyst.followups import Moment
+from formline.analyst.sections import MAX_SECTIONS, SECTIONS
 from formline.prompts import load
 
 MAX_TEXT = 200
 MAX_ATTEMPTS = 2
-CANNOT = "cannot_answer"
 
 PROMPT = load("router")  # prompts/router.md
 INSTRUCTIONS = PROMPT.text
@@ -27,7 +25,8 @@ INSTRUCTIONS = PROMPT.text
 
 @dataclass(frozen=True)
 class Route:
-    question: str  # a catalog id, or CANNOT
+    sections: list[str]  # empty: cannot answer
+    club_id: str | None
     player_id: str | None
     source: str  # "llm" or "rule" (declined after failed attempts)
     attempts: int
@@ -44,25 +43,32 @@ def shooters(m: Moment) -> list[str]:
 
 def check_route(reply: object, m: Moment) -> str | None:
     """None if the reply is a valid route, else the problem (fed back on the retry)."""
-    if not isinstance(reply, dict) or "question" not in reply:
-        return 'reply with {"question": ..., "player_id": ...} only'
-    q, pid = reply.get("question"), reply.get("player_id")
-    if q == CANNOT:
+    if not isinstance(reply, dict):
+        return 'reply with {"sections": [...], "club_id": ..., "player_id": ...} only'
+    if reply.get("cannot_answer") is True:
         return None
-    if q not in FOLLOWUPS:
-        return f"unknown question {q!r}; use one of {list(FOLLOWUPS)} or {CANNOT}"
-    if q == "player_tonight" and pid not in shooters(m):
-        return f"player_id must be one of PLAYERS, got {pid!r}"
+    secs = reply.get("sections")
+    if not isinstance(secs, list) or not 1 <= len(secs) <= MAX_SECTIONS:
+        return f"sections must be a list of 1 to {MAX_SECTIONS} ids, or reply cannot_answer"
+    unknown = [s for s in secs if s not in SECTIONS]
+    if unknown or len(set(secs)) != len(secs):
+        return f"use each id at most once, only from {list(SECTIONS)}"
+    if "team_tonight" in secs and reply.get("club_id") not in (m.home, m.away):
+        return f"team_tonight needs club_id {m.home} or {m.away}"
+    if "player_tonight" in secs and reply.get("player_id") not in shooters(m):
+        return f"player_tonight needs a player_id from PLAYERS, got {reply.get('player_id')!r}"
     return None
 
 
 async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str]],
-                clubs: dict[str, str], runner: LLMRunner) -> Route:
-    """Map `text` to a catalog question about moment `m` (or decline)."""
+                short_names: dict[str, str], runner: LLMRunner) -> Route:
+    """The sections (and their subject) that answer `text` at moment `m`, or none."""
     players = [{"id": pid, "name": names[pid][0], "name_ja": names[pid][1],
-                "club": clubs[m.players[pid].club_id]} for pid in shooters(m)]
-    payload = {"VIEWER_TEXT": text[:MAX_TEXT], "LANGUAGE": lang,
-               "OPTIONS": {q: DESCRIPTIONS[q] for q in FOLLOWUPS}, "PLAYERS": players}
+                "club": m.clubs[m.players[pid].club_id]} for pid in shooters(m)]
+    clubs = [{"id": c, "name": m.clubs[c], "short_name": short_names.get(c, "")}
+             for c in (m.home, m.away)]
+    payload = {"VIEWER_TEXT": text[:MAX_TEXT], "LANGUAGE": lang, "SECTIONS": SECTIONS,
+               "CLUBS": clubs, "PLAYERS": players}
     feedback = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         if feedback:
@@ -77,15 +83,18 @@ async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str
             continue
         feedback = check_route(reply, m)
         if feedback is None:
-            q = reply["question"]
-            return Route(q, reply.get("player_id") if q == "player_tonight" else None, "llm",
-                         attempt)
-    return Route(CANNOT, None, "rule", MAX_ATTEMPTS)
+            if reply.get("cannot_answer") is True:
+                return Route([], None, None, "llm", attempt)
+            secs = reply["sections"]
+            return Route(secs, reply.get("club_id") if "team_tonight" in secs else None,
+                         reply.get("player_id") if "player_tonight" in secs else None,
+                         "llm", attempt)
+    return Route([], None, None, "rule", MAX_ATTEMPTS)
 
 
 DECLINE = {
-    "en": "I can only answer from the match data: what's happening, why the score is what it "
-          "is, how a player who has shot is doing tonight, or how the two teams compare.",
-    "ja": "試合データから答えられるのは、試合の流れ、スコアの理由、シュートを打った選手の今夜の出来、"
-          "両チームの比較です。",
+    "en": "I can only answer from this match's data: goals, shots and chances, how a team or a "
+          "player who has shot is doing, fouls and cards, corners, and the last 10 minutes.",
+    "ja": "答えられるのはこの試合のデータだけです：ゴール、シュートと決定機、チームやシュートを打った選手の"
+          "出来、ファウルとカード、コーナー、直近10分。",
 }

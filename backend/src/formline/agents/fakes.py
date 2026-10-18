@@ -16,6 +16,9 @@ NUMBER = re.compile(r"\d+")
 
 
 ROUTE_WORDS = (
+    ("recent", ("last 10", "recently", "直近")),
+    ("discipline", ("card", "foul", "booked", "カード", "ファウル")),
+    ("chances", ("chance", "most shots", "best shot", "決定機", "チャンス")),
     ("team_stats", ("compare", "stats", "teams", "比較", "スタッツ")),
     ("score", ("score", "why is it", "スコア", "なぜ")),
     ("situation", ("happening", "so far", "going on", "流れ", "状況")),
@@ -23,15 +26,23 @@ ROUTE_WORDS = (
 
 
 def fake_route(p: dict) -> dict:
-    """Route a typed question like a careful model would: a named player first, then words."""
+    """Retrieve like a careful model would: a named team or player, then topic words."""
     text = p["VIEWER_TEXT"].lower()
-    for player in p["PLAYERS"]:
-        if player["name"].split()[-1].lower() in text or player["name_ja"].split("・")[-1] in text:
-            return {"question": "player_tonight", "player_id": player["id"]}
-    for q, words in ROUTE_WORDS:
-        if any(w in text for w in words):
-            return {"question": q, "player_id": None}
-    return {"question": "cannot_answer", "player_id": None}
+    sections, club, player = [], None, None
+    for c in p["CLUBS"]:
+        first = c["name"].split()[0].lower()
+        if first in text or (c["short_name"] and c["short_name"].lower() in text.split()):
+            sections, club = ["team_tonight"], c["id"]
+            break
+    for pl in p["PLAYERS"]:
+        if pl["name"].split()[-1].lower() in text or pl["name_ja"].split("・")[-1] in text:
+            sections, player = sections + ["player_tonight"], pl["id"]
+            break
+    sections += [q for q, words in ROUTE_WORDS if any(w in text for w in words)]
+    sections = list(dict.fromkeys(sections))[:3]
+    if not sections:
+        return {"cannot_answer": True}
+    return {"sections": sections, "club_id": club, "player_id": player}
 
 
 @dataclass
@@ -46,6 +57,13 @@ class FakeAgents:
             return json.dumps(fake_route(payload))
         if "OPTIONS" in payload:  # the Question Suggester: the first options (best first)
             return json.dumps({"pick": list(payload["OPTIONS"])[:3]})
+        if "VIEWER_QUESTION" in payload:  # the Match Analyst on a typed question
+            from formline.analyst.facts import FactsPack
+            from formline.analyst.templates import template_answer
+
+            pack = FactsPack("free", None, payload["FACTS"], {r: r for r in payload["NAMES"]})
+            return json.dumps({**template_answer(pack, payload["LANGUAGE"], payload["NAMES"]),
+                               "coverage": "full"}, ensure_ascii=False)
         if "QUESTION_ID" in payload:  # the Match Analyst: answer like the template, from FACTS
             from formline.analyst.facts import FactsPack
             from formline.analyst.templates import template_answer

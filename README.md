@@ -52,9 +52,11 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
   answer with its evidence.
   The panel has two tabs: *Commentary* and *Ask the analyst*: the latest moment's two
   suggested questions, a box to type your own, and the answers asked so far. A typed question
-  is routed by a Question Router agent to one the data can answer ("is Reyner having a good
-  game?" → "How is Reyner doing tonight?", shown as *Answered as*) or politely declined
-  (weather, opinions); the answering agent never sees the typed text.
+  is answered "RAG over computed facts": a Question Router agent retrieves the 1–3 fact
+  sections that answer it (e.g. "why haven't NOR scored?" → *Northgate Rovers tonight*, all
+  computed by code from the events), the Match Analyst answers the question itself from only
+  those facts and says when they only partly answer it, and the verifier checks every number
+  and name. Questions the data cannot answer (weather, opinions) are politely declined.
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
   set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× with an optional
@@ -119,7 +121,8 @@ The Match Analyst runs beside it, on the same model and the same verify-retry-te
 Key moment ─► facts pack ─► Match Analyst ─► Analyst verifier ─► comment (EN, JA)
                                   └──► Question Suggester ─► 2–3 catalog questions on the comment
 Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Match Analyst ─► verifier ─► answer
-Typed question ─► POST /ask/free ─► Question Router ─┬─► catalog question ─► (same as a click)
+Typed question ─► POST /ask/free ─► Question Router ─┬─► 1–3 fact sections (computed by code)
+                                                     │     ─► Match Analyst answers the question ─► verifier
                                                      └─► cannot_answer ─► polite decline
 ```
 
@@ -132,7 +135,7 @@ Typed question ─► POST /ask/free ─► Question Router ─┬─► catalog
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 | Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
-| Question Router | LLM, checked in code | Maps a typed question to `{question, player_id}` from the catalog (any player who has shot) or `cannot_answer`; invalid replies retry once, then decline. The viewer's text goes only to the Router, never to the agent that writes the answer |
+| Question Router | LLM, checked in code | Retrieval for a typed question: picks 1–3 of 8 fact sections (match so far, score, team comparison, one team, one player, best chances, fouls and cards, last 10 minutes) and their club or player, or `cannot_answer`; unknown sections, other clubs or non-shooters are rejected, one retry, then decline |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -292,7 +295,7 @@ follow-up question about a comment (`DATA_SCHEMA.md` §5.5): the answer precompu
 `formline-gen analyst` when there is one, otherwise the Match Analyst live, verified and
 under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question
 (`{moment, seq, text, lang}`, at most 200 characters, 10 per viewer per 10 minutes) and
-returns `{routed_as, answer, declined}`. The agents use Microsoft Foundry when
+returns `{retrieved, answer (with coverage), declined}`. The agents use Microsoft Foundry when
 `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
 ## Deploy to Azure
@@ -329,12 +332,12 @@ overridden through the variables in `scripts/azure/common.sh`.
 |---|---|
 | Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.6% of injected errors with 0 false positives |
 | Reliability | Agent retries with feedback, template fallback after 3 failures, selector falls back to rules; idempotent, event-sourced ingestion that converges under chaos (300/300); resumable SSE streams |
-| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget; typed questions are capped at 200 characters and 10 per viewer per 10 minutes, and never reach the answering agent (prompt injection can at worst pick another valid question) |
+| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget; typed questions are capped at 200 characters and 10 per viewer per 10 minutes and are quoted as data; any number, player or club not in the retrieved facts is rejected by the verifier, so an injected claim cannot reach the screen (tested) |
 | Cost | Scale to zero, ingress off when not in use, LLM response cache and per-run call budget, budget alerts |
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 265 backend + 74 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
+| Tests | 269 backend + 74 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
 | Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; the typed-question limit is in memory and keyed on `X-Forwarded-For` (a cost guard, not abuse protection) |
 
 ## Microsoft and Azure technologies
@@ -391,10 +394,10 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
-- **Answers come from a fixed catalog of four questions** ("What's happening?", "Why is it
-  1–0?", "How is X doing tonight?", "Compare the teams"), by design: every question offered
-  is one the data can answer, and a typed question is routed to one of them or declined, so
-  "who has the most shots?" gets the team comparison rather than a ranking. Club names stay in their FACTS spelling in Japanese answers,
+- **Typed questions are answered from 8 fact sections.** A question needing facts outside
+  them (a pass map, a player who has not shot, a time window other than the last 10 minutes)
+  gets a partial answer or a decline, never invented facts. Suggested chips come from a
+  catalog of four questions. Club names stay in their FACTS spelling in Japanese answers,
   since the league has no official Japanese names the verifier could check.
 
 ## Documentation

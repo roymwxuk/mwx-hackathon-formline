@@ -126,6 +126,14 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   Analyst answers the routed catalog question, so prompt injection can at worst choose
   another valid question. `POST /ask/free`, 200 characters, 10 per viewer per 10 minutes
   (in-memory limiter keyed on `X-Forwarded-For`). The answer shows *Answered as: …*.
+- **Typed questions v2, "RAG over computed facts" (2026-10-18).** Routing to the nearest
+  catalog question answered "why nor score nothing today" as "Why is it 1–0?" from the other
+  side: fluent, verified and off-target, because the verifier checks facts, not fit. Now the
+  Router retrieves 1–3 of 8 fact sections (`analyst/sections.py`: the 4 catalog packs plus
+  one team, best chances, fouls and cards, last 10 minutes), merged with one placeholder per
+  player; the Analyst (`prompts/analyst_free.md`) answers the viewer's own question from them
+  with `coverage` full / partial / none (none → decline); the verifier is unchanged. The
+  viewer shows *Based on: Northgate Rovers tonight · Score*. Chip answers are unchanged.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are
