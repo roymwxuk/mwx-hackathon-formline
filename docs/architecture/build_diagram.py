@@ -120,7 +120,7 @@ box(910,676,210,158,'Match Analyst',PURPLE,[
  'Comments after shots,',
  '  corners, cards, VAR',
  'Suggester: 2 of 4 questions',
- 'Router: typed → catalog',
+ 'Researcher: tools, chains',
  '/ask · own verifier',
 ],size=13)
 arrow([(1015,676),(1015,668)],PURPLE)

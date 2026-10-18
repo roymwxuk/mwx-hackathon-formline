@@ -121,10 +121,20 @@ The Match Analyst runs beside it, on the same model and the same verify-retry-te
 Key moment ─► facts pack ─► Match Analyst ─► Analyst verifier ─► comment (EN, JA)
                                   └──► Question Suggester ─► 2–3 catalog questions on the comment
 Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Match Analyst ─► verifier ─► answer
-Typed question ─► POST /ask/free ─► Question Router ─┬─► 1–3 fact sections (computed by code)
-                                                     │     ─► Match Analyst answers the question ─► verifier
-                                                     └─► cannot_answer ─► polite decline
+Typed question ─► POST /ask/free ─► Researcher (tools, ≤5 calls) ─┬─► lookups (computed by code, may chain)
+                                                                    │     ─► Match Analyst answers the question ─► verifier
+                                                                    ├─► fails (timeout, budget, malformed) ─► one-shot Router ─► same path
+                                                                    └─► cannot_answer ─► polite decline
 ```
+
+The **Researcher** is the agentic step: it calls the fact sections as Agent Framework tools,
+reads each result and decides whether to look up more, chaining ids from earlier results.
+"How did the top scorer do in his last 3 games?" becomes `get_season_leaders` → (Reyner)
+→ `get_player_recent(Reyner, 3)`, shown to the viewer as *Looked up: Season leaders → Reyner:
+last 3 games*. Limits are enforced in our code, not only by the framework: tool calls are
+admitted before they run (5 per question, invalid ones count), every model round-trip is
+charged to the call budget, calls are kept back for the fallback, and the whole request has
+a 25 s deadline (ADR-013).
 
 | Agent | Kind | Job |
 |---|---|---|
@@ -135,7 +145,8 @@ Typed question ─► POST /ask/free ─► Question Router ─┬─► 1–3 f
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 | Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
-| Question Router | LLM, checked in code | Retrieval for a typed question: picks 1–3 of 13 fact sections (match info and venue with both clubs' season record, match so far, score, team comparison, one team, any player's profile and season, one player's shooting tonight, best chances, fouls and cards, last 10 minutes; and from the past matches: season leaders, a player's or a team's last 1–5 games) with their club, player and number of games, or `cannot_answer`; unknown sections, other clubs, non-shooters or a number of games outside 1–5 are rejected, one retry, then decline |
+| Researcher | LLM with tools, checked in code | The agentic step for a typed question: calls 1–5 of 14 tools (the fact sections below, plus `find_player`), reads the results and chains ids; arguments validated in code (errors go back to the agent, never into the facts); lookups keyed by tool and arguments; its own reply is only `done` or `cannot_answer` |
+| Question Router | LLM, checked in code | The Researcher's fallback (one shot): retrieval for a typed question: picks 1–3 of 13 fact sections (match info and venue with both clubs' season record, match so far, score, team comparison, one team, any player's profile and season, one player's shooting tonight, best chances, fouls and cards, last 10 minutes; and from the past matches: season leaders, a player's or a team's last 1–5 games) with their club, player and number of games, or `cannot_answer`; unknown sections, other clubs, non-shooters or a number of games outside 1–5 are rejected, one retry, then decline |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -299,7 +310,7 @@ follow-up question about a comment (`DATA_SCHEMA.md` §5.5): the answer precompu
 under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question any time
 from kick-off (`{event_id, version, text, lang}`: as of the latest event the viewer has
 received; at most 200 characters, 10 per viewer per 10 minutes) and
-returns `{retrieved, answer (with coverage), declined}`. The agents use Microsoft Foundry when
+returns `{retrieved, answer (with coverage), declined, research (the Researcher's steps), outcome}`. The agents use Microsoft Foundry when
 `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
 ## Deploy to Azure
@@ -341,7 +352,7 @@ overridden through the variables in `scripts/azure/common.sh`.
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 273 backend + 75 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
+| Tests | 313 backend + 75 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
 | Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; the typed-question limit is in memory and keyed on `X-Forwarded-For` (a cost guard, not abuse protection) |
 
 ## Microsoft and Azure technologies
@@ -395,6 +406,10 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Single replica, JSONL event log** baked into the image (the event log interface is
   ready for Postgres); no infrastructure as code yet.
 - **Verifier misses role confusions** (a real fact in the wrong place, 0.4% of injected errors).
+  For typed answers, numbers are bound to the player named in the same clause (Codex's review
+  reproduced swapped goal counts passing before); two numbers of the same player (goals vs
+  shots) are still not told apart, and passing the verifier does not prove the answer
+  addresses the question, which is evaluated separately.
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
@@ -412,7 +427,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 | Topic | Where |
 |---|---|
 | Project pitch | [docs/pitch.md](docs/pitch.md) |
-| Design decisions (ADR-001 to ADR-012) | [docs/decisions.md](docs/decisions.md) |
+| Design decisions (ADR-001 to ADR-013) | [docs/decisions.md](docs/decisions.md) |
 | Match Analyst (comments, follow-up questions) | [docs/plan-match-analyst.md](docs/plan-match-analyst.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |

@@ -1,7 +1,7 @@
 # Plan: agentic research for typed questions (a tool-using Researcher agent)
 
-**Status:** Planned 2026-10-19, revised after Codex's review the same day; not started,
-waiting for the owner's review and go.
+**Status:** Built 2026-10-19 (ADR-013), after Codex's review; real-model evaluation pending
+the owner's go.
 **Estimate:** 5.5–6.5 h (verifier binding and adversarial tests added by the review).
 **Prompted by:** the "ask, find a gap, patch" loop on typed questions.
 **Review:** `private/researcher-plan-review.md` (Codex), all six points adopted.

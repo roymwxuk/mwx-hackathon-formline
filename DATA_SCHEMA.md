@@ -182,7 +182,10 @@ preferred foot, season before tonight from the history, involvement tonight),
 `recent` (last 10 minutes); from the past matches: `season_leaders` (both clubs' top
 scorers, assists, shots), `player_recent` (a squad player's last `n` games, 1–5),
 `team_recent` (a club's last `n` games, 1–5). The Router's reply carries `n` for the last
-two. 429 after 10 typed questions per viewer in 10 minutes.
+two. Since ADR-013 the reply also has `research [{tool, ok, label}]` (the Researcher's tool
+calls in order) and `outcome` (`answered`, `cannot_answer`, `clarify`, `fallback_timeout`,
+`fallback_budget`, `fallback_malformed`, `fallback_no_evidence`, `fallback_error`,
+`timeout`, `budget_exhausted`); `retrieved.label` is the chain of lookups. 429 after 10 typed questions per viewer in 10 minutes.
 
 ---
 

@@ -36,7 +36,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [ ] Foundry evaluations (M3 task 11)
 - [ ] Half-time or full-time baseline recap card (M3 task 12, frontend gap 7)
 - [ ] Studio graphics producer copilot (milestone 3b)
-- [ ] Agentic research for typed questions: a tool-using Researcher agent that chains lookups (`docs/plan-agentic-research.md`, planned, owner review pending)
+- [x] Agentic research for typed questions: a tool-using Researcher agent that chains lookups (`docs/plan-agentic-research.md`, ADR-013); real-model evaluation pending
 - [ ] Milestone 6: team style baselines (tactics: low block, high press, possession, direct…), tonight vs the team's own norm; needs per-club style profiles in the generator (`docs/milestone-6-team-styles.md`, decision pending)
 
 **Done recently**
