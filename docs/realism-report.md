@@ -44,20 +44,20 @@ Targets are season aggregates, used only to calibrate the generator. Rows marked
 
 Synthetic tracking for all 22 players and the ball at 10 Hz, derived from the live match's
 events (ADR-010): 57,651 frames, 22 players on the pitch for at
-least 45 minutes. 3 of 7 checks are within range. These rows are reported,
+least 45 minutes. 4 of 7 checks are within range. These rows are reported,
 not enforced.
 
 | Metric | Generated | Typical range | Reference | Verdict |
 |---|---|---|---|---|
-| Distance per 90, outfield (km) | 7.9 | 9.5–12.5 | typical elite figures (assumption) | ⬇️ below |
+| Distance per 90, outfield (km) | 9.5 | 9.5–12.5 | typical elite figures (assumption) | ⬇️ below |
 | Distance per 90, goalkeepers (km) | 2.7 | 4.0–6.5 | typical elite figures (assumption) | ⬇️ below |
-| Time above 7 m/s per 90, outfield (s) | 17 | 20–45 | typical elite figures (assumption) | ⬇️ below |
+| Time above 7 m/s per 90, outfield (s) | 39 | 20–45 | typical elite figures (assumption) | ✅ |
 | Peak speed, outfield median (m/s) | 9.6 | 8.0–9.6 | typical elite figures (assumption) | ⬆️ above |
 | Team length, median (m) | 39 | 30–50 | typical elite figures (assumption) | ✅ |
 | Team width, median (m) | 40 | 35–55 | typical elite figures (assumption) | ✅ |
-| Players on their event spots, within 0.5 m (%) | 99.5 | 98.0–100.0 | Formline target (ADR-010) | ✅ |
+| Players on their event spots, within 0.5 m (%) | 99.4 | 98.0–100.0 | Formline target (ADR-010) | ✅ |
 
-Outfield distance per 90 ranges from 6.1 to 8.8 km by player.
+Outfield distance per 90 ranges from 7.6 to 10.7 km by player.
 
 **Why players run less than in real football.** Movement is a team shape plus event
 anchors, eased so players do not dart out and straight back (a turnover eases the shape over

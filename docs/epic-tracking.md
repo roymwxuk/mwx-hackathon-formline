@@ -126,6 +126,15 @@ in the buffer. Stretch task S1 starts only if everything above is done early.
   use 1–5% of one core, the same as with `tracking=false`. The container has 1 GiB and
   0.5 vCPU. The tracking file adds about 4 MB to the image and `formline-gen tracking` about
   40 s to the Docker build; CI's image job reports the exact numbers.
+- **Movement looked like slow motion at 1x (2026-10-18):** players were mostly walking and
+  jogging (running 5%, sprinting 0%), a by-product of the smoothing against back-and-forth.
+  Players near the ball now act instead of holding shape: the nearest defender presses
+  (about 1.5 m goal-side, 0.6 s reaction, up to 7 m/s), the next covers, and the two nearest
+  teammates of the ball carrier make support runs following the area of play; roles are
+  sticky (3 m), and a player who loses a role jogs back over 5 s. Result (first half): running
+  10%, sprinting 1%, distance 9.5 km per 90 (was 8.1), time above 7 m/s 39 s per 90 (in range),
+  anchors 99.5%. Big out-and-back trips rose from 17 to about 30, mostly pressers dropping back.
+  Still open: the ball crawls between events (option A: keep it with the player in possession).
 - **Generator quirk:** one pass (57:56) is credited to a player substituted off at 56:53. The
   anchors skip actions by players not on the pitch rather than fixing the generator, which
   would re-randomize the rest of the match and invalidate the Foundry-narrated overlays.
