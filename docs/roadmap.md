@@ -28,6 +28,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [ ] Live seek bar in the viewer (the backend already supports `start=mm:ss`)
 
 **Could (only if time allows)**
+- [ ] Match Analyst: proactive comments after shots, corners and cards (phase 1, about 4 h), then contextual question buttons (phase 2, about 2.5 h) (`docs/plan-match-analyst.md`)
 - [x] Golden tests for viewer personalization on the real demo overlays (`docs/plan-personalization-golden-tests.md`)
 - [x] Epic: synthetic tracking data, all 22 players and the ball (`docs/epic-tracking.md`, ADR-010): done 2026-10-18, checkpoint passed
 - [ ] Infrastructure as code: Bicep + `azd` (M4 task 6)
