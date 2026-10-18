@@ -3,6 +3,7 @@ import { t } from '@/lib/i18n';
 import { isFavoriteOverlay, orderedEvents, personalize, pickCard, score, type OverlayState } from '@/lib/logic';
 import type { Club, MatchEvent, Player, TrackingFrameMessage, ViewerSettings } from '@/lib/types';
 import { CorrectionBanner, OverlayCard } from './OverlayCard';
+import { GoalFlash } from './GoalFlash';
 import { FocusStrip, OverlayLog, ScoreBug } from './Panels';
 import { Pitch } from './Pitch';
 import { SettingsPanel } from './SettingsPanel';
@@ -37,8 +38,11 @@ export function Viewer(p: Props) {
 
   const stage = (
     <div className="stage">
-      <Pitch events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang}
-        detailed={s.mode === 'analyst'} frame={p.frame} focusPlayer={s.focusPlayer} />
+      <div className="pitch-wrap">
+        <Pitch events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang}
+          detailed={s.mode === 'analyst'} frame={p.frame} focusPlayer={s.focusPlayer} />
+        <GoalFlash events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang} />
+      </div>
       <ScoreBug clubs={clubs} score={score(p.store, [clubs[0].club_id, clubs[1].club_id])} clockMs={p.clockMs} />
       <div className="card-slot">
         {current ? (

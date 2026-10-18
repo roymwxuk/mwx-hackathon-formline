@@ -79,6 +79,21 @@ details.panel[open] summary { margin-bottom: 8px; }
 .scorebug .clock { background: var(--panel); color: var(--accent-soft); font-family: var(--mono); font-size: 16px; display: flex; align-items: center; }
 
 .card-slot { position: absolute; left: 14px; bottom: 14px; width: 380px; max-width: calc(100% - 28px); }
+.pitch-wrap { position: relative; }
+.goal-flash { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; pointer-events: none; animation: goal-pop 2.5s ease-out forwards; }
+.goal-word { font: 800 clamp(40px, 9vw, 96px)/1 var(--display, var(--body)); letter-spacing: 0.04em; padding: 10px 28px;
+  border-radius: 14px; border: 3px solid var(--accent); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45); }
+.goal-scorer { font: 700 clamp(16px, 2.4vw, 24px)/1.2 var(--body); color: #fff; paint-order: stroke;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
+@keyframes goal-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  12% { opacity: 1; transform: scale(1.08); }
+  22% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .goal-flash { animation: none; } }
 .overlay-card { background: rgba(13, 17, 23, 0.94); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 9px; animation: card-in 0.35s ease-out; }
 .overlay-card.waiting { color: var(--muted); font-size: 14px; }
 .overlay-card.retracted { border-style: dashed; border-color: #4a5361; background: rgba(13, 17, 23, 0.82); }

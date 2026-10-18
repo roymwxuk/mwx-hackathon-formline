@@ -20,6 +20,7 @@ const dict = {
     source: 'Source',
     waiting: 'Waiting for the first insight…',
     favorite: 'Favorite',
+    goal: 'GOAL!',
   },
   ja: {
     focusTitle: '選手フォーカス',
@@ -39,6 +40,7 @@ const dict = {
     withdrawnNote: 'データ訂正により取り消されました',
     source: 'ソース',
     waiting: '最初のインサイトを待っています…',
+    goal: 'ゴール！',
     favorite: '推し',
   },
 } satisfies Record<Lang, Record<string, string>>;
