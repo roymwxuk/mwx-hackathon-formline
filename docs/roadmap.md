@@ -1,6 +1,6 @@
 # Roadmap and status
 
-**Updated:** 2026-10-17 · **Deadline:** submissions close Oct 27; treat Oct 26 (JST) as the
+**Updated:** 2026-10-18 · **Deadline:** submissions close Oct 27; treat Oct 26 (JST) as the
 deadline. · **Time budget:** 30–40 h in total.
 
 The original plan lives in `CLAUDE.md` (kept local since the history cleanup). This file
@@ -36,6 +36,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 - [ ] Foundry evaluations (M3 task 11)
 - [ ] Half-time or full-time baseline recap card (M3 task 12, frontend gap 7)
 - [ ] Studio graphics producer copilot (milestone 3b)
+- [ ] Milestone 6: team style baselines (tactics: low block, high press, possession, direct…), tonight vs the team's own norm; needs per-club style profiles in the generator (`docs/milestone-6-team-styles.md`, decision pending)
 
 **Done recently**
 - [x] Foundry resource, project and `gpt-4.1-mini` deployment; smoke test; identity-based auth (no keys)
@@ -55,6 +56,7 @@ milestone doc keeps its own detailed task table; the checklist below is the shor
 | 3b | ⭐ Optional plus: studio graphics producer copilot (a real agent with human approval, autonomy levels, audit log) | Only if time allows after milestone 4 MUST tasks | ⬜ Not started | `docs/milestone-3b-studio-copilot.md` |
 | 4 | Azure deployment and live viewer UI | Oct 20–22 | 🟡 Tasks 1–4, 7 and 8 done; deployed once and stopped; redeploy and task 5 (observability) left; task 6 (IaC) optional | `docs/milestone-4-deployment.md`, `docs/frontend-gaps.md` |
 | 5 | README, architecture diagram, decisions cleanup, demo video, pitch | Oct 23–25 | 🟡 Diagram, README, ADR cleanup, demo tuning and pitch done; redeploy, video, final check, submit left | `docs/video-plan.md`, `docs/pitch.md` |
+| 6 | ⭐ Optional: team style baselines (tactics), tonight vs each club's own norm | Only after the must-dos, before Oct 24 | ⬜ Not started (decision pending) | `docs/milestone-6-team-styles.md` |
 | — | Buffer and submit | Oct 26 | ⬜ | — |
 
 ## Branches
