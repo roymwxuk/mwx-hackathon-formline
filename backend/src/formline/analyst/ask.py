@@ -23,7 +23,7 @@ from formline.analyst.followups import (
     followup_pack,
     moment_kind,
 )
-from formline.analyst.router import DECLINE, MAX_TEXT, route
+from formline.analyst.router import DECLINE, MAX_TEXT, player_clarification, route
 from formline.analyst.sections import facts_for
 from formline.analyst.sections import label as section_label
 from formline.analyst.store import MatchContext
@@ -127,6 +127,10 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     if not text.strip():
         raise AskError("empty question")
     m, known = moment_as_of(event_id, version, feed, ctx, norm)
+    clarification = player_clarification(text[:MAX_TEXT], lang, m, short_names)
+    if clarification:
+        # Existing clients already display this message without treating it as an error.
+        return {"retrieved": None, "answer": None, "declined": clarification}
     r = await route(text, lang, m, ctx.league.players, dict(short_names or {}), runner)
     if not r.sections:
         return {"retrieved": None, "answer": None, "declined": DECLINE[lang]}

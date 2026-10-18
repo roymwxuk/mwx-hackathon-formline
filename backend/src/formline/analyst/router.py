@@ -8,6 +8,8 @@ own question from only those facts, and the verifier checks every number and nam
 """
 
 import json
+import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from formline.agents.llm import LLMRunner
@@ -68,6 +70,51 @@ def check_route(reply: object, m: Moment) -> str | None:
 def squad(m: Moment) -> list[str]:
     """Every player of the two clubs in this match."""
     return [pid for pid, p in m.players.items() if p.club_id in (m.home, m.away)]
+
+
+def player_clarification(text: str, lang: str, m: Moment,
+                         short_names: Mapping[str, str] | None = None) -> str | None:
+    """Ask before routing a shared first name/surname; no model may guess the identity.
+
+    Explicit full names and a uniquely named club disambiguate. Only match squads count.
+    English names use word boundaries so e.g. Ito never matches a piece of another word.
+    """
+    def mentioned(name: str, source: str) -> bool:
+        return bool(re.search(rf"(?<!\w){re.escape(name.casefold())}(?!\w)", source))
+
+    source = text.casefold()
+    ids = squad(m)
+    # Remove full names first: their individual components must not trigger ambiguity.
+    for pid in ids:
+        p = m.players[pid]
+        for name in (p.display_name, p.display_name_ja):
+            if mentioned(name, source) or (re.search(r"[\u3040-\u30ff]", name)
+                                            and name.casefold() in source):
+                source = source.replace(name.casefold(), " ")
+    clubs = [cid for cid in (m.home, m.away)
+             if any(mentioned(alias, text.casefold())
+                    for alias in (m.clubs[cid], m.clubs[cid].split()[0],
+                                  (short_names or {}).get(cid, "")) if alias)]
+    if len(clubs) == 1:
+        ids = [pid for pid in ids if m.players[pid].club_id == clubs[0]]
+    groups: dict[str, list[str]] = {}
+    for pid in ids:
+        p = m.players[pid]
+        for token in set(p.display_name.split() + p.display_name_ja.split("・")):
+            hit = token in source if re.search(r"[\u3040-\u30ff]", token) else mentioned(token, source)
+            if hit:
+                groups.setdefault(token.casefold(), []).append(pid)
+    for candidates in groups.values():
+        if len(candidates) < 2:
+            continue
+        choices = "; ".join(
+            f"{m.players[pid].display_name_ja if lang == 'ja' else m.players[pid].display_name} "
+            f"({m.clubs[m.players[pid].club_id]}, #{m.players[pid].shirt_number})"
+            for pid in candidates)
+        if lang == "ja":
+            return f"どの選手ですか？ {choices}。フルネームまたはクラブ名を添えて質問してください。"
+        return f"Which player do you mean: {choices}? Please ask again using the full name or club."
+    return None
 
 
 async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str]],

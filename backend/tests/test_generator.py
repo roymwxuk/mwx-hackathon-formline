@@ -1,5 +1,7 @@
 import asyncio
+import json
 from collections import Counter
+from datetime import date
 from math import hypot
 
 import pytest
@@ -64,6 +66,31 @@ def test_league_shape(season):
         assert len(numbers) == len(set(numbers))
         surnames = [p.display_name.split()[-1] for p in squad]
         assert len(surnames) == len(set(surnames)), club.name
+
+
+def test_every_public_profile_survives_generation_and_disk_roundtrip(season, data_dir):
+    from formline.agents.precompute import load_league
+    from formline.schema.biography import COUNTRIES, PLACES, synthetic_biography
+
+    raw = json.loads((data_dir / "league.json").read_text())
+    players, clubs = load_league(data_dir)
+    assert len(raw["players"]) == len(players) == 108
+    assert {c.club_id for c in clubs} == {c.club_id for c in season.league.clubs}
+    for generated, stored, loaded in zip(season.league.players, raw["players"], players, strict=True):
+        assert loaded == generated
+        assert generated.display_name and generated.display_name_ja
+        assert generated.club_id and generated.position and generated.position_group
+        assert generated.shirt_number > 0 and generated.preferred_foot in ("left", "right")
+        assert generated.nationality in COUNTRIES
+        assert date(1990, 1, 1) <= generated.date_of_birth <= date(2007, 12, 31)
+        city, country = generated.birthplace.split(", ")
+        assert city in PLACES[country]
+        assert stored["date_of_birth"] == generated.date_of_birth.isoformat()
+        assert stored["nationality"] == generated.nationality
+        assert stored["birthplace"] == generated.birthplace
+        assert synthetic_biography(generated.player_id) == {
+            "nationality": generated.nationality, "date_of_birth": generated.date_of_birth,
+            "birthplace": generated.birthplace}
 
 
 def test_season_is_double_round_robin(season):

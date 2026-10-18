@@ -13,7 +13,7 @@ from formline.agents.llm import LLMConfig, make_runner
 from formline.agents.verifier import league_names
 from formline.analyst.ask import AskError, answer_free, known_events
 from formline.analyst.followups import Moment, moment_kind
-from formline.analyst.router import check_route, shooters, squad
+from formline.analyst.router import check_route, player_clarification, shooters, squad
 from formline.analyst.sections import facts_for
 from formline.analyst.store import MatchContext, player_season_stats, season_records
 from formline.analyst.verify import AnswerContext, verify_answer
@@ -154,15 +154,109 @@ def test_any_player_has_a_profile_and_a_season_from_kick_off(match):
     assert season["appearances"] > 0 and season["shots"] >= season["on_target"] >= season["goals"]
     # only public fields: nothing from the generator's hidden profiles
     assert set(info) <= {"player", "club", "profile", "season_before_tonight", "shot_speed_norm",
-                         "substitution", "tonight", "not_in_the_data"}
+                         "substitution", "tonight", "not_in_the_data", "nationality",
+                         "date_of_birth", "birthplace"}
+
+
+@pytest.mark.parametrize("question", ["THORNE, nationality is",
+                                    "THORNE, which country of this player",
+                                    "Thorne nationity", "Thorne birthday",
+                                    "ソーンの国籍は？", "ソーンの生年月日は？"])
+def test_player_biography_is_answerable_before_any_shot(match, question):
+    gm, ctx, _, _ = match
+    first = next(msg for msg in gm.feed if msg.event is not None)
+    lang = "ja" if "ソーン" in question else "en"
+    out = ask(match, question, lang, as_of=(first.event_id, first.version))
+    thorne = next(p for p in ctx.players.values() if p.display_name == "Oskar Thorne")
+    assert out["retrieved"]["sections"] == ["player_info"]
+    assert out["retrieved"]["player_id"] == thorne.player_id
+    assert out["answer"]["verified"]
+    assert thorne.nationality in text_of(out)
+    assert thorne.date_of_birth.isoformat() in text_of(out)
+
+
+def test_legacy_league_loads_biographies_without_rewriting_files(tmp_path, match):
+    from formline.agents.precompute import load_league
+
+    _, ctx, _, _ = match
+    old_players = [p.model_dump(mode="json", exclude={"nationality", "date_of_birth", "birthplace"})
+                   for p in ctx.players.values()]
+    path = tmp_path / "league.json"
+    path.write_text(json.dumps({"players": old_players, "clubs": []}))
+    original = path.read_bytes()
+    players, _ = load_league(tmp_path)
+    assert path.read_bytes() == original
+    for player in players:
+        assert player.nationality == ctx.players[player.player_id].nationality
+        assert player.date_of_birth == ctx.players[player.player_id].date_of_birth
+        assert player.birthplace == ctx.players[player.player_id].birthplace
+
+
+@pytest.mark.parametrize("question,name", [("where is ito borned", "Kenji Ito"),
+                                          ("where was Dmitri Lacombe born?", "Dmitri Lacombe"),
+                                          ("where was Rafael Lacombe born?", "Rafael Lacombe")])
+def test_birthplace_questions_before_any_shot(match, question, name):
+    gm, ctx, _, _ = match
+    first = next(msg for msg in gm.feed if msg.event is not None)
+    out = ask(match, question, as_of=(first.event_id, first.version))
+    player = next(p for p in ctx.players.values() if p.display_name == name)
+    assert out["retrieved"]["sections"] == ["player_info"]
+    assert out["retrieved"]["player_id"] == player.player_id
+    assert out["answer"]["verified"]
+    assert player.birthplace in text_of(out)
+
+
+def test_ambiguous_surname_does_not_choose_the_wrong_player(match):
+    calls = []
+
+    def responder(texts):
+        calls.append(texts)
+        return '{"cannot_answer": true}'
+
+    out = ask(match, "where is Lacombe borned", responder=responder)
+    assert out["retrieved"] is None and out["answer"] is None
+    assert "Which player" in out["declined"]
+    assert "Dmitri Lacombe" in out["declined"] and "Rafael Lacombe" in out["declined"]
+    assert not calls  # clarification is deterministic, before any Router or Analyst call
+
+
+def test_shared_first_names_also_request_clarification(match):
+    m = moment(match)
+    groups = {}
+    for pid in squad(m):
+        groups.setdefault(m.players[pid].display_name.split()[0], []).append(pid)
+    first, candidates = next((name, ids) for name, ids in groups.items() if len(ids) > 1)
+    out = ask(match, f"where was {first} born?")
+    assert "Which player" in out["declined"] and out["answer"] is None
+    for pid in candidates:
+        assert m.players[pid].display_name in out["declined"]
+        assert m.clubs[m.players[pid].club_id] in out["declined"]
+
+
+def test_names_can_be_disambiguated_and_do_not_match_inside_other_words(match):
+    m = moment(match)
+    assert player_clarification("where was Dmitri Lacombe born?", "en", m) is None
+    assert player_clarification("where was Harbourside Lacombe born?", "en", m) is None
+    assert player_clarification("compare Dmitri Lacombe and Rafael Lacombe", "en", m) is None
+    assert player_clarification("how many goals tonight?", "en", m) is None
+    out = ask(match, "where was Dmitri born?")
+    assert out["retrieved"]["player_id"] == next(
+        pid for pid in squad(m) if m.players[pid].display_name == "Dmitri Lacombe")
+    # Use the actual transliteration rather than assuming how a surname is rendered.
+    full_name = next(p.display_name_ja for p in m.players.values()
+                     if p.display_name == "Dmitri Lacombe")
+    surname = full_name.split("・")[-1]
+    ja = player_clarification(f"{surname}の出身は？", "ja", m)
+    assert ja and "どの選手ですか" in ja
+    assert player_clarification(f"{full_name}の出身は？", "ja", m) is None
 
 
 def test_a_player_who_has_not_shot_gets_his_profile(match):
     m = moment(match)
     keeper = next(pid for pid in squad(m) if m.players[pid].position == "GK"
                   and pid not in shooters(m))
-    surname = match[1].league.players[keeper][0].split()[-1]
-    out = ask(match, f"how is {surname} doing?")
+    full_name = match[1].league.players[keeper][0]
+    out = ask(match, f"how is {full_name} doing?")
     assert out["retrieved"]["sections"] == ["player_info"] and out["retrieved"]["player_id"] == keeper
     assert "goalkeeper" in out["answer"]["body"]
 

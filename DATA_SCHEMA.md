@@ -40,6 +40,8 @@ Every **raw** field below exists in real professional football data today, eithe
 | position | Position at the time of the event; providers attach it per event |
 | position_group | **Derived**: GK, DEF, MID or FWD, used as the shrinkage prior group |
 | preferred_foot | Standard player bio data |
+| nationality, date_of_birth | Synthetic public bio; birth date is ISO YYYY-MM-DD. Assigned reproducibly per player ID using separate randomness, never inferred from names. Older synthetic league files are enriched in memory without changing match events. |
+| birthplace | Synthetic city and country of birth for every player, generated independently of nationality and match events; nationality does not imply birthplace. |
 
 ### 2.3 `player_latent_profile` (GEN-ONLY)
 Hidden "true" tendencies used to generate events, such as shot power mean and sd, placement skill, shot volume, long-range tendency and pressure sensitivity. **Never visible to the engine.** Use it afterwards to measure how well estimated baselines recover the truth.

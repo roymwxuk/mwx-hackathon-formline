@@ -29,7 +29,7 @@ def write_season(season: Season, out: Path) -> None:
     """
     league = {
         "clubs": [c.model_dump() for c in season.league.clubs],
-        "players": [p.model_dump() for p in season.league.players],
+        "players": [p.model_dump(mode="json") for p in season.league.players],
     }
     matches = [m.match.model_dump(mode="json") for m in season.matches]
     _dump(out / "league.json", league)

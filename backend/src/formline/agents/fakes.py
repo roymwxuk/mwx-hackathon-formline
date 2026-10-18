@@ -37,13 +37,24 @@ def fake_route(p: dict) -> dict:
         if first in text or (c["short_name"] and c["short_name"].lower() in text.split()):
             sections, club = ["team_tonight"], c["id"]
             break
-    about = ("info", "about", "who is", "profile", "season", "情報", "について", "プロフィール")
-    for pl in p["PLAYERS"]:
-        if pl["name"].split()[-1].lower() in text or pl["name_ja"].split("・")[-1] in text:
-            shooting = pl.get("has_shot", True) and not any(w in text for w in about)
-            sections = sections + ["player_tonight" if shooting else "player_info"]
-            player = pl["id"]
-            break
+    about = ("info", "about", "who is", "profile", "season", "nationality", "nationity",
+             "country", "birthday", "birth", "born", "国籍", "誕生日", "生年月日", "出身", "生まれ",
+             "情報", "について", "プロフィール")
+    full = [pl for pl in p["PLAYERS"] if pl["name"].lower() in text or pl["name_ja"] in text]
+    matches = full or [pl for pl in p["PLAYERS"]
+                       if any(re.search(rf"\b{re.escape(token.lower())}\b", text)
+                              for token in pl["name"].split())
+                       or any(token in text for token in pl["name_ja"].split("・"))]
+    if len(matches) > 1 and club:
+        club_name = next(c["name"] for c in p["CLUBS"] if c["id"] == club)
+        matches = [pl for pl in matches if pl["club"] == club_name]
+    if len(matches) > 1:
+        return {"cannot_answer": True}
+    if matches:
+        pl = matches[0]
+        shooting = pl.get("has_shot", True) and not any(w in text for w in about)
+        sections = sections + ["player_tonight" if shooting else "player_info"]
+        player = pl["id"]
     sections += [q for q, words in ROUTE_WORDS if any(w in text for w in words)
                  and not (player and q == "match_info")]
     sections = list(dict.fromkeys(sections))[:3]

@@ -1,6 +1,6 @@
 """Reference data (DATA_SCHEMA.md §2). Clubs, players and venues are fictional."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -42,6 +42,9 @@ class Player(BaseModel):
     position: str
     position_group: PositionGroup
     preferred_foot: Literal["left", "right"]
+    nationality: str | None = None
+    date_of_birth: date | None = None
+    birthplace: str | None = None
 
 
 class MatchConditions(BaseModel):

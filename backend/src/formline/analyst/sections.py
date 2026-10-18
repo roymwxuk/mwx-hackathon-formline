@@ -43,7 +43,9 @@ SECTIONS = {
     "player_tonight": "one player who has shot (needs player_id): his shots, on target, goals, "
                       "best chance, fastest shot, speed vs his own season norm",
     "player_info": "any player of either squad (needs player_id): club, shirt number, "
-                   "position, preferred foot, his season before tonight (appearances, goals, "
+                   "position, preferred foot, nationality (country), birthday/date of birth, "
+                   "birthplace (city and country where born), "
+                   "his season before tonight (appearances, goals, "
                    "assists, shots, shot-speed norm) and what he has done tonight",
     "chances": "the best chances of the match so far, both teams, by chance quality",
     "discipline": "fouls and cards per team, and who was booked or sent off",
@@ -193,6 +195,10 @@ def player_info(m: Moment, roles: _Roles, pid: str, seasons: dict,
     facts: dict = {
         "player": roles("PLAYER", pid),
         "club": m.clubs[p.club_id],
+        "nationality": f"nationality: {p.nationality}" if p.nationality else "nationality not recorded",
+        "date_of_birth": (f"date of birth: {p.date_of_birth.isoformat()} (YYYY-MM-DD)"
+                          if p.date_of_birth else "date of birth not recorded"),
+        "birthplace": f"born in {p.birthplace}" if p.birthplace else "birthplace not recorded",
         "profile": (f"shirt number {p.shirt_number}, {POSITION.get(p.position, p.position)}, "
                     f"{p.preferred_foot}-footed"),
         "season_before_tonight": (f"{s['appearances']} appearance(s), {s['goals']} goal(s), "
@@ -215,7 +221,7 @@ def player_info(m: Moment, roles: _Roles, pid: str, seasons: dict,
                             f"{len(won)} duel(s), interception(s) or recoveries")
     else:
         facts["tonight"] = "not involved tonight so far (no events of his yet)"
-    facts["not_in_the_data"] = "age, height, nationality, contract and injuries are not in the data"
+    facts["not_in_the_data"] = "age, height, contract and injuries are not in the data"
     return facts, [e.event_id for e in shots]
 
 
