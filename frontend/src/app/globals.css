@@ -95,7 +95,9 @@ details.panel[open] summary { margin-bottom: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .goal-flash { animation: none; } }
 .overlay-card { background: rgba(13, 17, 23, 0.94); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 9px; animation: card-in 0.35s ease-out; }
-.overlay-card.waiting { color: var(--muted); font-size: 14px; }
+.overlay-card.waiting { display: inline-flex; padding: 7px 12px; font-size: 13px; color: rgba(230, 237, 243, 0.75);
+  background: rgba(13, 17, 23, 0.4); border-color: rgba(255, 255, 255, 0.12); backdrop-filter: blur(2px); }
+.viewer.compact .overlay-card.waiting { display: flex; background: rgba(13, 17, 23, 0.6); }
 .overlay-card.retracted { border-style: dashed; border-color: #4a5361; background: rgba(13, 17, 23, 0.82); }
 .overlay-card.retracted .overlay-headline { color: #8a96a6; text-decoration: line-through; }
 .overlay-tagline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
