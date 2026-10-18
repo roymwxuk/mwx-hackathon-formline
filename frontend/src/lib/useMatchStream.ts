@@ -22,6 +22,8 @@ export interface MatchStream {
   setPlaying: (p: boolean) => void;
   setSpeed: (s: number) => void;
   restart: () => void;
+  /** Live mode: replay from a match time (everything before it arrives at once). */
+  jumpTo: (to: MatchTime) => void;
 }
 
 const SSE_URL: string | undefined = process.env.NEXT_PUBLIC_STREAM_URL;
@@ -51,6 +53,16 @@ export function initialLiveSpeed(base: string): number {
   const speed = Number(new URL(base).searchParams.get('speed'));
   return Number.isFinite(speed) && speed > 0 ? speed : 20;
 }
+
+/** Key moments of the live demo match, a few seconds before each happens. */
+export const MOMENTS: { label: string; at: MatchTime }[] = [
+  { label: '12:00 · Reyner 101 km/h', at: { period: 1, clockMs: 12 * 60_000 } },
+  { label: '22:20 · Ito goal', at: { period: 1, clockMs: 22 * 60_000 + 20_000 } },
+  { label: '40:05 · Reyner placement (my metric)', at: { period: 1, clockMs: 40 * 60_000 + 5_000 } },
+  { label: '52:35 · Reyner fastest header', at: { period: 2, clockMs: 52 * 60_000 + 35_000 } },
+  { label: '63:30 · Reyner 118 km/h goal', at: { period: 2, clockMs: 63 * 60_000 + 30_000 } },
+  { label: '64:05 · VAR review', at: { period: 2, clockMs: 64 * 60_000 + 5_000 } },
+];
 
 /** Frames only move forward in match time; an older one (a stale stream) is ignored. */
 export function isNewerFrame(prev: TrackingFrameMessage | null, next: TrackingFrameMessage): boolean {
@@ -158,9 +170,10 @@ export function useMatchStream(): MatchStream {
     };
   }, [source, playing, speed, connectKey]);
 
-  const liveRestart = useCallback(() => {
+  /** Start over, from kick-off or from a match time (the backend sends the past at once). */
+  const liveRestart = useCallback((from: MatchTime | null = null) => {
     timeRef.current = { period: 1, clockMs: 0 };
-    startRef.current = null;
+    startRef.current = from;
     seenRef.current = new Set();
     setReceived([]);
     setClockMs(0);
@@ -186,6 +199,7 @@ export function useMatchStream(): MatchStream {
   );
 
   const restart = useCallback(() => (source === 'sse' ? liveRestart() : seek(0)), [source, liveRestart, seek]);
+  const jumpTo = useCallback((to: MatchTime) => liveRestart(to), [liveRestart]);
 
   const setSpeed = useCallback((value: number) => {
     if (source === 'sse') startRef.current = timeRef.current; // resume from here at the new speed
@@ -218,5 +232,5 @@ export function useMatchStream(): MatchStream {
 
   const speedOptions = source === 'sse' ? LIVE_SPEEDS : MOCK_SPEEDS;
 
-  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, frame, setPlaying, setSpeed, restart };
+  return { source, clockMs, events, overlays, playing, speed, speedOptions, connected, ended, frame, setPlaying, setSpeed, restart, jumpTo };
 }

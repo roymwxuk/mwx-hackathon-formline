@@ -159,3 +159,13 @@ describe('clock messages', () => {
     expect(timeAfter(t, frame)).toEqual({ period: 2, clockMs: 2_710_000 });
   });
 });
+
+describe('key moments', () => {
+  it('jump a few seconds before each moment, in the right half', async () => {
+    const { MOMENTS, liveStreamUrl } = await import('@/lib/useMatchStream');
+    const base = 'http://localhost:8000/matches/m/stream?speed=20';
+    const starts = MOMENTS.map((m) => new URL(liveStreamUrl(base, 20, m.at)).searchParams.get('start'));
+    expect(starts).toEqual(['12:00', '22:20', '40:05', '52:35', '63:30', '64:05']);
+    expect(MOMENTS.filter((m) => m.at.period === 2).map((m) => m.label.slice(0, 5))).toEqual(['52:35', '63:30', '64:05']);
+  });
+});

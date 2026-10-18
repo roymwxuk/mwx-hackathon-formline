@@ -5,7 +5,7 @@ import { Viewer } from './Viewer';
 import { applyEvents, applyOverlays, formatClock } from '@/lib/logic';
 import { useLeague } from '@/lib/league';
 import type { ViewerSettings } from '@/lib/types';
-import { useMatchStream } from '@/lib/useMatchStream';
+import { MOMENTS, useMatchStream } from '@/lib/useMatchStream';
 
 type View = 'single' | 'two';
 
@@ -81,6 +81,17 @@ export default function App() {
             {stream.playing ? 'Pause' : 'Play'}
           </button>
           <button type="button" className="ctl" onClick={stream.restart}>Restart</button>
+          {stream.source === 'sse' && (
+            <label className="speed">
+              <span>Jump to</span>
+              <select value="" onChange={(e) => { const m = MOMENTS[Number(e.target.value)]; if (m) stream.jumpTo(m.at); }}>
+                <option value="" disabled>Key moment…</option>
+                {MOMENTS.map((m, i) => (
+                  <option key={m.label} value={i}>{m.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="speed">
             <span>Speed</span>
             <select value={stream.speed} onChange={(e) => stream.setSpeed(Number(e.target.value))}>
