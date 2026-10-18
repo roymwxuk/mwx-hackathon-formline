@@ -27,6 +27,10 @@ describe('labelledPlayers', () => {
   it('names the passer, receiver and focus player shortly after a pass', () => {
     expect([...labelledPlayers([pass], 12_000, 'a4')].sort()).toEqual(['a4', 'h7', 'h9']);
   });
+  it('always names the favorite players too', () => {
+    expect([...labelledPlayers([pass], 30_000, 'h9', ['h9', 'h11'])].sort()).toEqual(['h11', 'h9']);
+  });
+
   it('keeps only the focus player once the action is old', () => {
     expect([...labelledPlayers([pass], 30_000, 'a4')]).toEqual(['a4']);
     expect([...labelledPlayers([pass], 30_000, null)]).toEqual([]);

@@ -24,10 +24,11 @@ export function trackedMarkers(frame: TrackingFrameMessage, clubs: Club[], playe
 
 const LABEL_HOLD_MS = 8_000;
 
-/** Who gets a name label: the focus player always; the passer and receiver of the latest
- *  pass, or the shooter, for a few seconds after the action. */
-export function labelledPlayers(events: MatchEvent[], clockMs: number, focusPlayer: string | null): Set<string> {
-  const ids = new Set<string>();
+/** Who gets a name label: the focus player and the viewer's favorite players always; the
+ *  passer and receiver of the latest pass, or the shooter, for a few seconds after the action. */
+export function labelledPlayers(events: MatchEvent[], clockMs: number, focusPlayer: string | null,
+  favorites: string[] = []): Set<string> {
+  const ids = new Set<string>(favorites);
   if (focusPlayer) ids.add(focusPlayer);
   for (let i = events.length - 1; i >= 0; i -= 1) {
     const e = events[i];

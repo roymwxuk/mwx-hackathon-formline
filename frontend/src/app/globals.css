@@ -198,6 +198,10 @@ legend.field-label { margin-bottom: 4px; }
 .club-group-label { font-size: 12px; color: var(--muted); }
 .chip { padding: 0 14px; border-radius: 999px; font-size: 14px; }
 .chip[aria-pressed='true'] { border-color: #5b8def; background: #12233f; color: #fff; }
+/* Favorite players: compact, so two fit on a row in the side column */
+.club-group .chip-row { gap: 6px; }
+.club-group .chip { min-height: 32px; padding: 0 10px; font-size: 13px; }
+.club-group .chip-number { margin-right: 4px; }
 .radio { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 15px; cursor: pointer; }
 .radio input { width: 18px; height: 18px; accent-color: var(--accent); }
 

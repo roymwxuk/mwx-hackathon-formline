@@ -16,6 +16,8 @@ interface Props {
    *  event actors and a ball path reconstructed from events. */
   frame?: TrackingFrameMessage | null;
   focusPlayer?: string | null;
+  /** The viewer's favorite players: always named on the tracked pitch. */
+  favoritePlayers?: string[];
 }
 
 const W = 1050;
@@ -33,9 +35,9 @@ function toScreen(x: number, y: number, flip: boolean): [number, number] {
   return [dx * (W / 100), dy * (H / 100)];
 }
 
-export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null }: Props) {
+export function Pitch({ events, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null, favoritePlayers = [] }: Props) {
   const tracked = frame ? trackedMarkers(frame, clubs, players) : null;
-  const named = tracked ? labelledPlayers(events, clockMs, focusPlayer) : null;
+  const named = tracked ? labelledPlayers(events, clockMs, focusPlayer, favoritePlayers) : null;
 
   // Tracked markers move by JavaScript interpolation in an animation loop, not CSS
   // transitions (Firefox restarts interrupted SVG transitions from a stale position, so

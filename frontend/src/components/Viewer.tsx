@@ -54,7 +54,8 @@ export function Viewer(p: Props) {
     <div className="stage">
       <div className="pitch-wrap">
         <Pitch events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang}
-          detailed={s.mode === 'analyst'} frame={p.frame} focusPlayer={s.focusPlayer} />
+          detailed={s.mode === 'analyst'} frame={p.frame} focusPlayer={s.focusPlayer}
+          favoritePlayers={s.favoritePlayers} />
         <GoalFlash events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang} paused={p.catchingUp} />
         <RestartTag events={events} clockMs={p.clockMs} lang={s.lang} paused={p.catchingUp} />
       </div>
