@@ -18,6 +18,11 @@ out/
 # Agent instructions (kept local for now)
 CLAUDE.md
 decision-temp.md
+HANDOVER.md
+agent-chat.md
+
+# Local private files
+/private/
 
 # Generated synthetic data (deterministic: regenerate with `uv run formline-gen generate`)
 backend/data/*

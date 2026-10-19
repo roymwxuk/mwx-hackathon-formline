@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AskLimited, answerKey, askAnalyst, askFree, freshComment, latestAskable } from '@/lib/analyst';
+import { AskLimited, answerKey, askAnalyst, askFree, freshComment, latestAskable, type AsOf } from '@/lib/analyst';
 import { t } from '@/lib/i18n';
 import type { CommentState } from '@/lib/logic';
 import type { AnalystComment, FollowupAnswer, FollowupSuggestion, Lang } from '@/lib/types';
@@ -37,7 +37,7 @@ export function CommentBubble({ comments, clockMs, lang, paused = false }: { com
 
 type Asked =
   | { status: 'loading' }
-  | { status: 'done'; answer: FollowupAnswer; routedAs?: string }
+  | { status: 'done'; answer: Pick<FollowupAnswer, 'headline' | 'body' | 'evidence'>; basedOn?: string; partial?: boolean }
   | { status: 'declined'; message: string }
   | { status: 'limited' }
   | { status: 'error' };
@@ -47,7 +47,7 @@ interface AskedItem { key: string; lang: Lang; label: string; minute: string; st
 const MAX_TEXT = 200; // backend analyst/router.py MAX_TEXT
 
 /** "Ask the analyst": the latest moment's suggested questions, and the answers asked so far. */
-function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; askUrl: string; lang: Lang; limit?: number }) {
+function AskTab({ comments, askUrl, asOf, lang, limit }: { comments: CommentState[]; askUrl: string; asOf: AsOf | null; lang: Lang; limit?: number }) {
   const str = t(lang);
   const latest = latestAskable(comments)?.comment;
   const [items, setItems] = useState<AskedItem[]>([]);
@@ -66,16 +66,16 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
     if (item !== existing) askAnalyst(askUrl, c, s).then((answer) => settle(key, { status: 'done', answer })).catch(failed(key));
   };
 
-  const askTyped = (c: AnalystComment) => {
+  const askTyped = () => {
     const question = text.trim().slice(0, MAX_TEXT);
-    if (!question) return;
-    const key = `free|${c.ask?.moment}|${question}|${c.lang}`;
+    if (!question || !asOf) return;
+    const key = `free|${asOf.event_id}|${asOf.version}|${question}|${lang}`;
     setText('');
-    setItems((list) => [{ key, lang: c.lang, label: question, minute: c.evidence[0]?.minute ?? '', state: { status: 'loading' } },
+    setItems((list) => [{ key, lang, label: question, minute: asOf.minute, state: { status: 'loading' } },
       ...list.filter((i) => i.key !== key)]);
-    askFree(askUrl, c, question)
-      .then((r) => settle(key, r.answer && r.routed_as
-        ? { status: 'done', answer: r.answer, routedAs: r.routed_as.label }
+    askFree(askUrl, asOf, question, lang)
+      .then((r) => settle(key, r.answer && r.retrieved
+        ? { status: 'done', answer: r.answer, basedOn: r.retrieved.label, partial: r.answer.coverage === 'partial' }
         : { status: 'declined', message: r.declined ?? '' }))
       .catch(failed(key));
   };
@@ -95,16 +95,16 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
               </button>
             ))}
           </div>
-          <form className="ask-form" onSubmit={(e) => { e.preventDefault(); askTyped(latest); }}>
-            <textarea rows={2} value={text} maxLength={MAX_TEXT} placeholder={str.askPlaceholder}
-              aria-label={str.askPlaceholder} onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => { // Enter asks, Shift+Enter starts a new line (not while composing Japanese)
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); askTyped(latest); }
-              }} />
-            <button type="submit" className="ctl" disabled={!text.trim()}>{str.askSend}</button>
-          </form>
         </div>
       )}
+      <form className="ask-form" onSubmit={(e) => { e.preventDefault(); askTyped(); }}>
+        <textarea rows={2} value={text} maxLength={MAX_TEXT} placeholder={str.askPlaceholder}
+          aria-label={str.askPlaceholder} disabled={!asOf} onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { // Enter asks, Shift+Enter starts a new line (not while composing Japanese)
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); askTyped(); }
+          }} />
+        <button type="submit" className="ctl" disabled={!asOf || !text.trim()}>{str.askSend}</button>
+      </form>
       {mine.length > 0 && (
         <ul className="analyst-list">
           {mine.slice(0, limit).map((i) => (
@@ -116,9 +116,10 @@ function AskTab({ comments, askUrl, lang, limit }: { comments: CommentState[]; a
               {i.state.status === 'declined' && <p className="comment-body muted">{i.state.message}</p>}
               {i.state.status === 'done' && (
                 <>
-                  {i.state.routedAs && <span className="muted ask-routed">{str.answeredAs}: {i.state.routedAs}</span>}
+                  {i.state.basedOn && <span className="muted ask-routed">{str.basedOn}: {i.state.basedOn}</span>}
                   <strong className="comment-headline">{i.state.answer.headline}</strong>
                   <p className="comment-body">{i.state.answer.body}</p>
+                  {i.state.partial && <p className="muted ask-routed">{str.askPartial}</p>}
                   {limit === undefined && i.state.answer.evidence.length > 0 && (
                     <p className="analyst-evidence muted">
                       {str.evidence}: {i.state.answer.evidence.map((e) => `${e.type.replace('_', ' ')} ${e.minute}`).join(' · ')}
@@ -139,7 +140,7 @@ type Tab = 'comments' | 'ask';
 /** Two tabs: the commentary (every comment so far, newest first, with its evidence; withdrawn
  *  ones struck through) and, in live mode (`askUrl`), "Ask the analyst". A dot on the Ask tab
  *  says the latest moment has new questions. */
-export function AnalystPanel({ comments, lang, limit, askUrl = null }: { comments: CommentState[]; lang: Lang; limit?: number; askUrl?: string | null }) {
+export function AnalystPanel({ comments, lang, limit, askUrl = null, asOf = null }: { comments: CommentState[]; lang: Lang; limit?: number; askUrl?: string | null; asOf?: AsOf | null }) {
   const str = t(lang);
   const items = [...comments].reverse().slice(0, limit);
   const [tab, setTab] = useState<Tab>('comments');
@@ -159,7 +160,7 @@ export function AnalystPanel({ comments, lang, limit, askUrl = null }: { comment
           </button>
         </div>
       )}
-      {askUrl && <div hidden={!showAsk}><AskTab comments={comments} askUrl={askUrl} lang={lang} limit={limit} /></div>}
+      {askUrl && <div hidden={!showAsk}><AskTab comments={comments} askUrl={askUrl} asOf={asOf} lang={lang} limit={limit} /></div>}
       {!showAsk && items.length === 0 && <p className="muted">{str.analystEmpty}</p>}
       <ul className="analyst-list" hidden={showAsk}>
         {items.map(({ comment: c, retracted }) => (

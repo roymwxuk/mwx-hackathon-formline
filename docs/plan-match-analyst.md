@@ -126,6 +126,32 @@ them); answers come from a **live endpoint whose cache is pre-warmed** by the pr
   Analyst answers the routed catalog question, so prompt injection can at worst choose
   another valid question. `POST /ask/free`, 200 characters, 10 per viewer per 10 minutes
   (in-memory limiter keyed on `X-Forwarded-For`). The answer shows *Answered as: …*.
+- **Typed questions v2, "RAG over computed facts" (2026-10-18).** Routing to the nearest
+  catalog question answered "why nor score nothing today" as "Why is it 1–0?" from the other
+  side: fluent, verified and off-target, because the verifier checks facts, not fit. Now the
+  Router retrieves 1–3 of 8 fact sections (`analyst/sections.py`: the 4 catalog packs plus
+  one team, best chances, fouls and cards, last 10 minutes), merged with one placeholder per
+  player; the Analyst (`prompts/analyst_free.md`) answers the viewer's own question from them
+  with `coverage` full / partial / none (none → decline); the verifier is unchanged. The
+  viewer shows *Based on: Northgate Rovers tonight · Score*. Chip answers are unchanged.
+  Typed questions are asked "as of" the latest event the viewer has received (`event_id`,
+  `version`; the backend replays the feed to that message), so they work from kick-off,
+  before any comment, and always reflect the current minute. A `match_info` section (from
+  `matches.json`: season, matchday, venue, kick-off, home and away; plus both clubs' record
+  before tonight from the 30 history matches) answers "where is this game played?", which was
+  declined before. A `player_info` section covers any squad player, not just those who have
+  shot: public profile (club, shirt number, position, preferred foot; never the generator's
+  hidden ratings), his season before tonight (appearances, goals, assists, shots, shot-speed
+  norm) and his involvement tonight; "info about reyner?" at 2' was declined before.
+  Matches now carry match-day `conditions` (weather, temperature, attendance, a fictional
+  referee) from a per-match random stream (events byte-identical), so "how was the
+  weather?" is answered from `match_info`.
+  History questions (no generator change): one pass over the 30 past feeds
+  (`store.history_rows`) gives per-game rows (opponent, score, scorers, each player's goals,
+  assists, shots, passes). Three sections use them: `season_leaders` (each club's top
+  scorers, assists, shots), `player_recent` and `team_recent` (last `n` games, n 1–5, checked
+  in code). "Top scorer this season for these two teams" and "Reyner's last 3 games" were
+  declined before.
 - **Measured on the fake model:** 48 moments, 96 comments, 48 Suggester picks (0 fallbacks),
   288 answers (0 template fallbacks); a live answer equals the precomputed one (test).
 - **Cost of the Foundry run:** about 96 + 48 + 288 calls plus retries; measured prompts are

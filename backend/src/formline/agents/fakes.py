@@ -16,6 +16,14 @@ NUMBER = re.compile(r"\d+")
 
 
 ROUTE_WORDS = (
+    ("season_leaders", ("top scorer", "top score", "leading scorer", "most goals", "leaders",
+                        "得点王", "得点ランキング")),
+    ("match_info", ("where", "venue", "stadium", "kick-off", "when", "season", "weather",
+                    "attendance", "crowd", "referee", "どこ", "会場", "スタジアム", "今季", "天気",
+                    "観客", "審判")),
+    ("recent", ("last 10", "recently", "直近")),
+    ("discipline", ("card", "foul", "booked", "カード", "ファウル")),
+    ("chances", ("chance", "most shots", "best shot", "決定機", "チャンス")),
     ("team_stats", ("compare", "stats", "teams", "比較", "スタッツ")),
     ("score", ("score", "why is it", "スコア", "なぜ")),
     ("situation", ("happening", "so far", "going on", "流れ", "状況")),
@@ -23,15 +31,43 @@ ROUTE_WORDS = (
 
 
 def fake_route(p: dict) -> dict:
-    """Route a typed question like a careful model would: a named player first, then words."""
+    """Retrieve like a careful model would: a named team or player, then topic words."""
     text = p["VIEWER_TEXT"].lower()
-    for player in p["PLAYERS"]:
-        if player["name"].split()[-1].lower() in text or player["name_ja"].split("・")[-1] in text:
-            return {"question": "player_tonight", "player_id": player["id"]}
-    for q, words in ROUTE_WORDS:
-        if any(w in text for w in words):
-            return {"question": q, "player_id": None}
-    return {"question": "cannot_answer", "player_id": None}
+    sections, club, player = [], None, None
+    for c in p["CLUBS"]:
+        first = c["name"].split()[0].lower()
+        if first in text or (c["short_name"] and c["short_name"].lower() in text.split()):
+            sections, club = ["team_tonight"], c["id"]
+            break
+    about = ("info", "about", "who is", "profile", "season", "nationality", "nationity",
+             "country", "birthday", "birth", "born", "国籍", "誕生日", "生年月日", "出身", "生まれ",
+             "情報", "について", "プロフィール")
+    full = [pl for pl in p["PLAYERS"] if pl["name"].lower() in text or pl["name_ja"] in text]
+    matches = full or [pl for pl in p["PLAYERS"]
+                       if any(re.search(rf"\b{re.escape(token.lower())}\b", text)
+                              for token in pl["name"].split())
+                       or any(token in text for token in pl["name_ja"].split("・"))]
+    if len(matches) > 1 and club:
+        club_name = next(c["name"] for c in p["CLUBS"] if c["id"] == club)
+        matches = [pl for pl in matches if pl["club"] == club_name]
+    if len(matches) > 1:
+        return {"cannot_answer": True}
+    recent = re.search(r"(?:last|past|recent)\s*(\d+)?\s*(?:games?|matches?)|直近(\d+)?|最近(\d+)?", text)
+    n = next((int(g) for g in recent.groups() if g), 1 if "last game" in text else 3) if recent else None
+    if recent and club and not matches:  # "Northgate's last 5 games"
+        sections = ["team_recent"]
+    if matches:
+        pl = matches[0]
+        shooting = pl.get("has_shot", True) and not any(w in text for w in about)
+        sections = sections + ["player_recent" if recent else
+                               "player_tonight" if shooting else "player_info"]
+        player = pl["id"]
+    sections += [q for q, words in ROUTE_WORDS if any(w in text for w in words)
+                 and not (player and q == "match_info") and not (recent and q == "recent")]
+    sections = list(dict.fromkeys(sections))[:3]
+    if not sections:
+        return {"cannot_answer": True}
+    return {"sections": sections, "club_id": club, "player_id": player, "n": n}
 
 
 @dataclass
@@ -40,12 +76,49 @@ class FakeAgents:
     garbage: bool = False
     attempts: dict[str, int] = field(default_factory=dict)
 
+    def research(self, turn: int, seen: list[tuple[str, str, str]]):
+        """The Researcher, scripted: the Router's keyword plan as tool calls, then done. For
+        "top scorer … last n games" it chains: season leaders first, then the recent games of
+        the top scorer whose id the first result returned."""
+        from formline.analyst.tools import TOOL_FOR_SECTION
+
+        payload = json.loads(next(t for role, kind, t in seen if role == "user" and kind == "text"))
+        plan = fake_route(payload)
+        results = [json.loads(t) for _, kind, t in seen if kind == "function_result"]
+        if plan.get("cannot_answer"):
+            return '{"cannot_answer": true}'
+        secs, n = plan["sections"], plan.get("n") or 3
+        chain = "season_leaders" in secs and plan.get("n") and not plan.get("player_id")
+        if turn == 1:
+            if chain:
+                return [("get_season_leaders", {})]
+            args = {"team_tonight": {"club_id": plan.get("club_id")},
+                    "team_recent": {"club_id": plan.get("club_id"), "n": n},
+                    "player_info": {"player_id": plan.get("player_id")},
+                    "player_tonight": {"player_id": plan.get("player_id")},
+                    "player_recent": {"player_id": plan.get("player_id"), "n": n}}
+            return [(TOOL_FOR_SECTION[sec], args.get(sec, {})) for sec in secs]
+        if chain and turn == 2 and results and "facts" in results[-1]:
+            side = "away" if any(c["id"] == plan.get("club_id") for c in payload["CLUBS"][1:]) else "home"
+            top = results[-1]["facts"][f"{side}_top_scorer"]
+            role = next((r for r in results[-1]["players"] if r in top), None)
+            if role:
+                return [("get_player_recent", {"player_id": results[-1]["players"][role]["id"], "n": n})]
+        return '{"done": true}'
+
     def __call__(self, texts: list[str]) -> str:
         payload = json.loads(texts[-1])
         if "VIEWER_TEXT" in payload:  # the Question Router: keyword routing
             return json.dumps(fake_route(payload))
         if "OPTIONS" in payload:  # the Question Suggester: the first options (best first)
             return json.dumps({"pick": list(payload["OPTIONS"])[:3]})
+        if "VIEWER_QUESTION" in payload:  # the Match Analyst on a typed question
+            from formline.analyst.facts import FactsPack
+            from formline.analyst.templates import template_answer
+
+            pack = FactsPack("free", None, payload["FACTS"], {r: r for r in payload["NAMES"]})
+            return json.dumps({**template_answer(pack, payload["LANGUAGE"], payload["NAMES"]),
+                               "coverage": "full"}, ensure_ascii=False)
         if "QUESTION_ID" in payload:  # the Match Analyst: answer like the template, from FACTS
             from formline.analyst.facts import FactsPack
             from formline.analyst.templates import template_answer

@@ -52,9 +52,11 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
   answer with its evidence.
   The panel has two tabs: *Commentary* and *Ask the analyst*: the latest moment's two
   suggested questions, a box to type your own, and the answers asked so far. A typed question
-  is routed by a Question Router agent to one the data can answer ("is Reyner having a good
-  game?" → "How is Reyner doing tonight?", shown as *Answered as*) or politely declined
-  (weather, opinions); the answering agent never sees the typed text.
+  is answered "RAG over computed facts": a Question Router agent retrieves the 1–3 fact
+  sections that answer it (e.g. "why haven't NOR scored?" → *Northgate Rovers tonight*, all
+  computed by code from the events), the Match Analyst answers the question itself from only
+  those facts and says when they only partly answer it, and the verifier checks every number
+  and name. Questions the data cannot answer (weather, opinions) are politely declined.
 - **Shows the match, not just the numbers.** A 2D pitch draws all 22 players and the ball
   from synthetic 10 Hz tracking (derived from the events, ADR-010), with a GOAL! flash,
   set-piece labels (throw-in, corner, goal kick), speeds from 1× to 120× with an optional
@@ -119,9 +121,20 @@ The Match Analyst runs beside it, on the same model and the same verify-retry-te
 Key moment ─► facts pack ─► Match Analyst ─► Analyst verifier ─► comment (EN, JA)
                                   └──► Question Suggester ─► 2–3 catalog questions on the comment
 Viewer click ─► POST /ask ─► precomputed answer, or facts pack ─► Match Analyst ─► verifier ─► answer
-Typed question ─► POST /ask/free ─► Question Router ─┬─► catalog question ─► (same as a click)
-                                                     └─► cannot_answer ─► polite decline
+Typed question ─► POST /ask/free ─► Researcher (tools, ≤5 calls) ─┬─► lookups (computed by code, may chain)
+                                                                    │     ─► Match Analyst answers the question ─► verifier
+                                                                    ├─► fails (timeout, budget, malformed) ─► one-shot Router ─► same path
+                                                                    └─► cannot_answer ─► polite decline
 ```
+
+The **Researcher** is the agentic step: it calls the fact sections as Agent Framework tools,
+reads each result and decides whether to look up more, chaining ids from earlier results.
+"How did the top scorer do in his last 3 games?" becomes `get_season_leaders` → (Reyner)
+→ `get_player_recent(Reyner, 3)`, shown to the viewer as *Looked up: Season leaders → Reyner:
+last 3 games*. Limits are enforced in our code, not only by the framework: tool calls are
+admitted before they run (5 per question, invalid ones count), every model round-trip is
+charged to the call budget, calls are kept back for the fallback, and the whole request has
+a 25 s deadline (ADR-013).
 
 | Agent | Kind | Job |
 |---|---|---|
@@ -132,7 +145,8 @@ Typed question ─► POST /ask/free ─► Question Router ─┬─► catalog
 | TemplateFallback | Deterministic | After 3 failed attempts, the template narration, which always verifies |
 | Match Analyst | LLM + own verifier | After every shot, corner and card: a comment from a deterministic facts pack (`analyst/`), checked for numbers, players, clubs, estimate wording and certainty; retries, then a template |
 | Question Suggester | LLM, checked in code | Per comment, picks 2–3 follow-up questions from the catalog questions that apply (`{"pick": [...]}`); unknown or repeated ids are rejected, one retry, then the default order. The Match Analyst answers the click from that question's facts pack, through the same verifier |
-| Question Router | LLM, checked in code | Maps a typed question to `{question, player_id}` from the catalog (any player who has shot) or `cannot_answer`; invalid replies retry once, then decline. The viewer's text goes only to the Router, never to the agent that writes the answer |
+| Researcher | LLM with tools, checked in code | The agentic step for a typed question: calls 1–5 of 14 tools (the fact sections below, plus `find_player`), reads the results and chains ids; arguments validated in code (errors go back to the agent, never into the facts); lookups keyed by tool and arguments; its own reply is only `done` or `cannot_answer` |
+| Question Router | LLM, checked in code | The Researcher's fallback (one shot): retrieval for a typed question: picks 1–3 of 13 fact sections (match info and venue with both clubs' season record, match so far, score, team comparison, one team, any player's profile and season, one player's shooting tonight, best chances, fouls and cards, last 10 minutes; and from the past matches: season leaders, a player's or a team's last 1–5 games) with their club, player and number of games, or `cannot_answer`; unknown sections, other clubs, non-shooters or a number of games outside 1–5 are rejected, one retry, then decline |
 
 - **Failure recovery:** bad JSON, timeouts and an exhausted budget become verifier failures
   (retry, then template); a run always completes.
@@ -237,6 +251,9 @@ tracking data capture today.
   its events by a team-shape model with event anchors and motion limits (ADR-010), as
   professional feeds pair event data with optical tracking. Its realism is measured in the
   same report, including where it falls short.
+- **Match-day metadata:** each match carries weather, temperature, attendance and a
+  fictional referee, as professional match feeds do, from its own random stream so the
+  events never change.
 - **Sample:** `backend/data/sample/` holds the league, the match list, a live-feed excerpt
   including the VAR correction, and 20 s of tracking.
 
@@ -290,9 +307,10 @@ the stream replays the feed with the overlays cached by `formline-gen overlays`;
 replays a chaotic feed (and implies live). `POST /matches/{match_id}/ask` answers a
 follow-up question about a comment (`DATA_SCHEMA.md` §5.5): the answer precomputed by
 `formline-gen analyst` when there is one, otherwise the Match Analyst live, verified and
-under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question
-(`{moment, seq, text, lang}`, at most 200 characters, 10 per viewer per 10 minutes) and
-returns `{routed_as, answer, declined}`. The agents use Microsoft Foundry when
+under the call budget. `POST /matches/{match_id}/ask/free` takes a typed question any time
+from kick-off (`{event_id, version, text, lang}`: as of the latest event the viewer has
+received; at most 200 characters, 10 per viewer per 10 minutes) and
+returns `{retrieved, answer (with coverage), declined, research (the Researcher's steps), outcome}`. The agents use Microsoft Foundry when
 `AZURE_AI_PROJECT_ENDPOINT` is set, otherwise a built-in fake model.
 
 ## Deploy to Azure
@@ -329,12 +347,12 @@ overridden through the variables in `scripts/azure/common.sh`.
 |---|---|
 | Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.6% of injected errors with 0 false positives |
 | Reliability | Agent retries with feedback, template fallback after 3 failures, selector falls back to rules; idempotent, event-sourced ingestion that converges under chaos (300/300); resumable SSE streams |
-| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget; typed questions are capped at 200 characters and 10 per viewer per 10 minutes, and never reach the answering agent (prompt injection can at worst pick another valid question) |
+| Security | No secrets: managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates its input (catalog questions only, the moment must exist at that feed sequence) and model calls stay under the per-process call budget; typed questions are capped at 200 characters and 10 per viewer per 10 minutes and are quoted as data; any number, player or club not in the retrieved facts is rejected by the verifier, so an injected claim cannot reach the screen (tested) |
 | Cost | Scale to zero, ingress off when not in use, LLM response cache and per-run call budget, budget alerts |
 | Delivery | GitHub Actions: lint, typecheck, tests, image builds; SHA-tagged images published on `main`; idempotent deploy scripts |
 | Observability | Container logs in Log Analytics; each agent step is logged as a JSON line (queries in Log Analytics not yet checked) |
 | Resources | 150 MB memory with tracking loaded, no growth with five simultaneous streams, 1–5% of a core (container: 1 GiB, 0.5 vCPU) |
-| Tests | 265 backend + 74 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
+| Tests | 313 backend + 75 frontend tests (including golden personalization tests on the real demo match); tests never call Azure |
 | Known gaps | Single replica (no HA); JSONL event log in the image (Postgres-ready interface); no IaC yet; the typed-question limit is in memory and keyed on `X-Forwarded-For` (a cost guard, not abuse protection) |
 
 ## Microsoft and Azure technologies
@@ -388,13 +406,20 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Single replica, JSONL event log** baked into the image (the event log interface is
   ready for Postgres); no infrastructure as code yet.
 - **Verifier misses role confusions** (a real fact in the wrong place, 0.4% of injected errors).
+  For typed answers, numbers are bound to the player named in the same clause (Codex's review
+  reproduced swapped goal counts passing before); two numbers of the same player (goals vs
+  shots) are still not told apart, and passing the verifier does not prove the answer
+  addresses the question, which is evaluated separately.
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
   in possession", which the facts do not hold (they only count completed passes).
-- **Answers come from a fixed catalog of four questions** ("What's happening?", "Why is it
-  1–0?", "How is X doing tonight?", "Compare the teams"), by design: every question offered
-  is one the data can answer, and a typed question is routed to one of them or declined, so
-  "who has the most shots?" gets the team comparison rather than a ranking. Club names stay in their FACTS spelling in Japanese answers,
+- **Typed questions are answered from 13 fact sections**, including the season before
+  tonight (season leaders, a player's or team's last 1–5 games, from the 30 past matches). A question needing facts outside
+  them (team news, a player's age or injuries, the referee's reasons, a time window other
+  than the last 10 minutes) gets a partial answer or a decline, never invented facts. Player
+  profiles use only public fields (club, shirt number, position, preferred foot); the
+  generator's hidden ratings are never shown. Suggested chips come from a
+  catalog of four questions. Club names stay in their FACTS spelling in Japanese answers,
   since the league has no official Japanese names the verifier could check.
 
 ## Documentation
@@ -402,7 +427,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 | Topic | Where |
 |---|---|
 | Project pitch | [docs/pitch.md](docs/pitch.md) |
-| Design decisions (ADR-001 to ADR-012) | [docs/decisions.md](docs/decisions.md) |
+| Design decisions (ADR-001 to ADR-013) | [docs/decisions.md](docs/decisions.md) |
 | Match Analyst (comments, follow-up questions) | [docs/plan-match-analyst.md](docs/plan-match-analyst.md) |
 | Data model and overlay contract | [DATA_SCHEMA.md](DATA_SCHEMA.md), [docs/contracts/](docs/contracts/) |
 | Engine, agents, deployment logs | [milestone 2](docs/milestone-2-engine.md), [milestone 3](docs/milestone-3-agents.md), [milestone 4](docs/milestone-4-deployment.md) |

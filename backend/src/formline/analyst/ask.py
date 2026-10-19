@@ -6,26 +6,33 @@ is; otherwise the events known at that sequence are replayed from the feed, the 
 checked against the catalog (it must apply to that moment), and the Analyst agent answers
 it live from the facts pack, verified, under the runner's cache and call budget.
 
-A question the viewer typed (`answer_free`) goes through the Question Router first
-(`analyst/router.py`), which maps it to a catalog question or declines; from there it is the
-same path, and a precomputed answer is still served when the route matches one.
+A question the viewer typed (`answer_free`) is answered "RAG over computed facts": the
+Question Router (`analyst/router.py`) picks the fact sections (`analyst/sections.py`) that
+answer it, and the Analyst answers the viewer's own question from only those facts.
 """
 
+import asyncio
+import json
+import logging
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
-from formline.agents.llm import LLMRunner
-from formline.analyst.agent import answer_verified
+from formline.agents.llm import BudgetExceeded, LLMRunner
+from formline.analyst.agent import Answer, answer_verified, role_names
 from formline.analyst.followups import (
     Moment,
     answer_key,
     applicable,
     followup_pack,
-    label,
     moment_kind,
 )
-from formline.analyst.router import CANNOT, DECLINE, route
+from formline.analyst.researcher import MAX_MODEL_CALLS, ResearchFailed, research
+from formline.analyst.router import DECLINE, MAX_TEXT, player_clarification, route
+from formline.analyst.sections import LABELS, facts_for
+from formline.analyst.sections import label as section_label
 from formline.analyst.store import MatchContext
+from formline.analyst.templates import template_answer
+from formline.analyst.tools import SECTION_FOR_TOOL
 from formline.analyst.writer import answer_payload
 from formline.schema.feed import FeedMessage
 
@@ -100,26 +107,145 @@ async def answer_question(req: AskRequest, feed: list[FeedMessage], ctx: MatchCo
     return await _answer(req.question, req.lang, m, known, ctx, runner, precomputed)
 
 
-async def answer_free(moment_id: str, seq: int, text: str, lang: str, feed: list[FeedMessage],
-                      ctx: MatchContext, runner: LLMRunner, precomputed: Mapping[str, dict],
-                      norm: Callable[[str], float | None] | None = None) -> dict:
-    """A typed question: route it to a catalog question (or decline), then answer that.
+def moment_as_of(event_id: str, version: int, feed: list[FeedMessage], ctx: MatchContext,
+                 norm: Callable[[str], float | None] | None) -> tuple[Moment, dict[str, object]]:
+    """The match as known when the viewer received this event version: the feed replayed up
+    to that message (the viewer names an event it has, never a clock)."""
+    msg = next((m for m in feed if m.event_id == event_id and m.version == version), None)
+    if msg is None or msg.event is None:
+        raise AskError(f"no event {event_id} v{version} in this match")
+    known = known_events(feed, msg.sequence)
+    events = sorted(known.values(), key=lambda e: (e.period, e.match_clock_ms))
+    event = known[event_id]
+    return Moment("free", event, events, getattr(event, "player_id", None), ctx.home, ctx.away,
+                  ctx.clubs, ctx.players, norm), known
 
-    Returns {"routed_as": {question, player_id, label} | None, "answer": {...} | None,
-    "declined": message | None}."""
+
+log = logging.getLogger("formline.ask")
+
+# Typed questions: one deadline for the whole request, and model calls kept back for the
+# fallback Router (1 + a retry) and the Analyst (3 attempts) so they can always run.
+DEADLINE_S = 25.0
+RESEARCH_TIMEOUT_S = 12.0
+FALLBACK_RESERVE = 2 + 3
+
+
+def _steps(session, lang: str) -> list[dict]:
+    """The Researcher's calls for the viewer: tool, ok, a short label."""
+    out = []
+    for st in session.steps:
+        label = st["tool"]
+        if st["ok"] and st["tool"] in SECTION_FOR_TOOL:
+            sec = SECTION_FOR_TOOL[st["tool"]]
+            pid, club = st["args"].get("player_id"), st["args"].get("club_id")
+            player = None
+            if pid:
+                en, ja = session.ctx.league.players[pid]
+                player = en.split()[-1] if lang == "en" else ja.split("・")[-1]
+            label = LABELS[lang][sec].format(club=session.ctx.clubs.get(club, ""),
+                                             player=player or "", n=st["args"].get("n", 3))
+        out.append({"tool": st["tool"], "ok": st["ok"], "label": label})
+    return out
+
+
+def _template(pack, lang: str, ctx: MatchContext) -> Answer:
+    """When the deadline leaves no time for the Analyst: what the facts say (always verifies)."""
+    t = template_answer(pack, lang, role_names(pack, lang, ctx.league))
+    return Answer(t["headline"], t["body"], "template", 0, "partial")
+
+
+async def answer_free(event_id: str, version: int, text: str, lang: str,
+                      feed: list[FeedMessage], ctx: MatchContext, runner: LLMRunner,
+                      norm: Callable[[str], float | None] | None = None,
+                      short_names: Mapping[str, str] | None = None,
+                      use_research: bool = True) -> dict:
+    """A typed question. The Researcher (a tool-using agent) gathers the facts it needs, in
+    as many lookups as it takes within hard limits; if it fails, the one-shot Router picks
+    sections instead (partial research is discarded). The Analyst answers the viewer's own
+    question from those facts and the Verifier checks it (docs/plan-agentic-research.md).
+
+    Returns {"retrieved": {sections, club_id, player_id, label} | None,
+    "answer": {..., coverage} | None, "declined": message | None,
+    "research": [{tool, ok, label}], "outcome": str}."""
     if not text.strip():
         raise AskError("empty question")
-    m, known = _moment(moment_id, seq, feed, ctx, norm)
-    r = await route(text, lang, m, ctx.league.players, ctx.clubs, runner)
-    if r.question == CANNOT:
-        return {"routed_as": None, "answer": None, "declined": DECLINE[lang]}
-    if r.question == "player_tonight":
-        m = replace(m, player_id=r.player_id, _shots=None)
-    name = None
-    if r.player_id:
-        en, ja = ctx.league.players[r.player_id]
-        name = en.split()[-1] if lang == "en" else ja.split("・")[-1]
-    answer = await _answer(r.question, lang, m, known, ctx, runner, precomputed)
-    return {"routed_as": {"question": r.question, "player_id": r.player_id,
-                          "label": label(r.question, lang, m, name)},
-            "answer": answer, "declined": None}
+    m, known = moment_as_of(event_id, version, feed, ctx, norm)
+    clarification = player_clarification(text[:MAX_TEXT], lang, m, short_names)
+    if clarification:
+        # Existing clients already display this message without treating it as an error.
+        return {"retrieved": None, "answer": None, "declined": clarification, "research": [],
+                "outcome": "clarify"}
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+
+    def left() -> float:
+        return DEADLINE_S - (loop.time() - start)
+
+    def done(outcome: str, steps: list, retrieved=None, answer=None, declined=None) -> dict:
+        log.info(json.dumps({"event": "ask_free", "outcome": outcome, "steps": len(steps),
+                             "seconds": round(loop.time() - start, 2)}))
+        return {"retrieved": retrieved, "answer": answer, "declined": declined,
+                "research": steps, "outcome": outcome}
+
+    if runner.remaining < FALLBACK_RESERVE:
+        return done("budget_exhausted", [], declined=DECLINE[lang])
+    steps: list[dict] = []
+    pack = retrieved = None
+    outcome = "fallback_budget"
+    allowance = min(MAX_MODEL_CALLS, runner.remaining - FALLBACK_RESERVE)
+    if use_research and allowance >= 2:
+        try:
+            res = await asyncio.wait_for(
+                research(text[:MAX_TEXT], lang, m, ctx, runner, dict(short_names or {}), norm,
+                         allowance), RESEARCH_TIMEOUT_S)
+            steps = _steps(res.session, lang)
+            if res.cannot_answer:
+                return done("cannot_answer", steps, declined=DECLINE[lang])
+            pack = res.session.pack()
+            lookups = list(res.session.lookups.values())
+            retrieved = {"sections": [lk.section for lk in lookups],
+                         "club_id": next((lk.args["club_id"] for lk in lookups
+                                          if lk.args.get("club_id")), None),
+                         "player_id": next((lk.args["player_id"] for lk in lookups
+                                            if lk.args.get("player_id")), None),
+                         "label": res.session.label(lang)}
+            outcome = "answered"
+        except TimeoutError:
+            outcome = "fallback_timeout"
+        except BudgetExceeded:
+            outcome = "fallback_budget"
+        except ResearchFailed as exc:
+            outcome = exc.outcome
+        except Exception:  # a framework or tool error: fall back, never fail
+            log.exception("researcher failed")
+            outcome = "fallback_error"
+    if pack is None:  # the one-shot Router, from the reserved budget
+        try:
+            r = await asyncio.wait_for(
+                route(text, lang, m, ctx.league.players, dict(short_names or {}), runner),
+                max(1.0, left()))
+        except TimeoutError:
+            return done("timeout", steps, declined=DECLINE[lang])
+        if not r.sections:
+            return done(outcome if outcome != "answered" else "cannot_answer", steps,
+                        declined=DECLINE[lang])
+        pack = facts_for(r.sections, m, r.club_id, r.player_id, ctx.info, ctx.records,
+                         ctx.player_seasons, norm, history=ctx.history, n=r.n)
+        player = None
+        if r.player_id:
+            en, ja = ctx.league.players[r.player_id]
+            player = en.split()[-1] if lang == "en" else ja.split("・")[-1]
+        retrieved = {"sections": r.sections, "club_id": r.club_id, "player_id": r.player_id,
+                     "label": section_label(r.sections, lang, ctx.clubs.get(r.club_id), player,
+                                            r.n)}
+    try:
+        a = await asyncio.wait_for(
+            answer_verified(pack, lang, runner, ctx.league, (ctx.home, ctx.away),
+                            viewer_question=text[:MAX_TEXT]), max(2.0, left()))
+    except TimeoutError:
+        a = _template(pack, lang, ctx)
+    if a.coverage == "none":
+        return done("cannot_answer", steps, retrieved, declined=DECLINE[lang])
+    answer = {**answer_payload("free", lang, a, pack, known), "coverage": a.coverage,
+              "cached": False}
+    return done(outcome, steps, retrieved, answer)

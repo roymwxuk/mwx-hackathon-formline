@@ -1,6 +1,6 @@
 """Reference data (DATA_SCHEMA.md §2). Clubs, players and venues are fictional."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -42,6 +42,20 @@ class Player(BaseModel):
     position: str
     position_group: PositionGroup
     preferred_foot: Literal["left", "right"]
+    nationality: str | None = None
+    date_of_birth: date | None = None
+    birthplace: str | None = None
+
+
+class MatchConditions(BaseModel):
+    """Match-day metadata, as in professional match feeds (synthetic; the referee is fictional)."""
+
+    weather: Literal["clear", "partly cloudy", "overcast", "light rain", "rain", "windy"]
+    temperature_c: int
+    attendance: int
+    capacity: int
+    referee: str
+    referee_ja: str
 
 
 class Match(BaseModel):
@@ -53,3 +67,4 @@ class Match(BaseModel):
     away_club_id: str
     venue: str
     is_live_demo: bool
+    conditions: MatchConditions | None = None

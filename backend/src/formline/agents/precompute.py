@@ -21,13 +21,16 @@ from formline.agents.verifier import league_names
 from formline.agents.workflow import Deps
 from formline.engine.engine import BaselineEngine
 from formline.generator.output import read_feed
+from formline.schema.biography import synthetic_biography
 from formline.schema.overlay import Overlay, overlay_json
 from formline.schema.reference import Club, Player
 
 
 def load_league(data_dir: Path) -> tuple[list[Player], list[Club]]:
     league = json.loads((data_dir / "league.json").read_text(encoding="utf-8"))
-    return ([Player.model_validate(p) for p in league["players"]],
+    # Older synthetic demo files predate biographies. Enrich in memory; never rewrite feeds.
+    return ([Player.model_validate({**synthetic_biography(p["player_id"]), **p})
+             for p in league["players"]],
             [Club.model_validate(c) for c in league["clubs"]])
 
 

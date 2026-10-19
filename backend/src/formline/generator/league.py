@@ -7,6 +7,7 @@ they exist so we can later measure how well estimated baselines recover the trut
 import random
 from dataclasses import asdict, dataclass
 
+from formline.schema.biography import synthetic_biography
 from formline.schema.reference import POSITION_GROUPS, Club, ClubColors, Player
 
 
@@ -250,7 +251,8 @@ def build_league(seed: int) -> League:
             used_names.add(name)
             player = Player(player_id=pid, display_name=name, display_name_ja=ja,
                             club_id=club_id, shirt_number=number, position=position,
-                            position_group=POSITION_GROUPS[position], preferred_foot=foot)
+                            position_group=POSITION_GROUPS[position], preferred_foot=foot,
+                            **synthetic_biography(pid))
             players.append(player)
             profiles[pid] = _make_profile(rng, player, overrides)
             if starter:

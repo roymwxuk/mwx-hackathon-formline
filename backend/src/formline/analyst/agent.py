@@ -35,6 +35,7 @@ QUESTIONS = {
 }
 
 PROMPT = load("analyst")  # prompts/analyst.md; "{lang}" is filled in per call
+FREE_PROMPT = load("analyst_free")  # prompts/analyst_free.md: typed questions
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,7 @@ class Answer:
     body: str
     source: str  # "llm" or "template"
     attempts: int
+    coverage: str = "full"  # typed questions: full | partial | none
 
 
 def role_names(pack: FactsPack, lang: str, league: LeagueNames) -> dict[str, str]:
@@ -53,24 +55,35 @@ def role_names(pack: FactsPack, lang: str, league: LeagueNames) -> dict[str, str
     return out
 
 
-def payload(pack: FactsPack, lang: str, names: dict[str, str], feedback: str | None) -> dict:
-    p = {"LANGUAGE": lang, "QUESTION": QUESTIONS[lang][pack.question],
-         "QUESTION_ID": pack.question, "NAMES": names,
-         "FACTS": pack.facts, "MAX_CHARACTERS": LIMITS[lang]}
+def payload(pack: FactsPack, lang: str, names: dict[str, str], feedback: str | None,
+            viewer_question: str | None = None) -> dict:
+    if viewer_question is not None:  # a typed question, answered from retrieved sections
+        p = {"LANGUAGE": lang, "VIEWER_QUESTION": viewer_question, "NAMES": names,
+             "FACTS": pack.facts, "MAX_CHARACTERS": LIMITS[lang]}
+    else:
+        p = {"LANGUAGE": lang, "QUESTION": QUESTIONS[lang][pack.question],
+             "QUESTION_ID": pack.question, "NAMES": names,
+             "FACTS": pack.facts, "MAX_CHARACTERS": LIMITS[lang]}
     if feedback:
         p["FIX_THESE_PROBLEMS"] = feedback
     return p
 
 
 async def answer_verified(pack: FactsPack, lang: str, runner: LLMRunner, league: LeagueNames,
-                          match_clubs: tuple[str, str]) -> Answer:
+                          match_clubs: tuple[str, str],
+                          viewer_question: str | None = None) -> Answer:
+    """`viewer_question` set: a typed question, answered freely from `pack` (the retrieved
+    sections) with a coverage verdict; otherwise the catalog question of the pack."""
     names = role_names(pack, lang, league)
-    ctx = AnswerContext(pack, lang, match_clubs)
+    free = viewer_question is not None
+    ctx = AnswerContext(pack, lang, match_clubs, free=free)
+    prompt = (FREE_PROMPT if free else PROMPT).text.replace("{lang}", lang)
     feedback: str | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            text = await runner.complete("analyst", PROMPT.text.replace("{lang}", lang),
-                                         json.dumps(payload(pack, lang, names, feedback),
+            text = await runner.complete("analyst", prompt,
+                                         json.dumps(payload(pack, lang, names, feedback,
+                                                            viewer_question),
                                                     ensure_ascii=False),
                                          use_cache=feedback is None)
             answer = json.loads(strip_fences(text))
@@ -81,8 +94,11 @@ async def answer_verified(pack: FactsPack, lang: str, runner: LLMRunner, league:
             continue
         verdict = verify_answer(answer, ctx, league)
         if verdict.ok:
-            return Answer(answer["headline"], answer["body"], "llm", attempt)
+            return Answer(answer["headline"], answer["body"], "llm", attempt,
+                          answer.get("coverage", "full"))
         feedback = verdict.feedback()
     t = template_answer(pack, lang, names)
     assert verify_answer(t, ctx, league).ok, f"template answer must verify: {verify_answer(t, ctx, league).feedback()}"
-    return Answer(t["headline"], t["body"], "template", MAX_ATTEMPTS)
+    # a typed question's template only lists what the data shows: a partial answer at best
+    return Answer(t["headline"], t["body"], "template", MAX_ATTEMPTS,
+                  "partial" if free else "full")

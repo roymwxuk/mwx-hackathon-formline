@@ -40,12 +40,14 @@ Every **raw** field below exists in real professional football data today, eithe
 | position | Position at the time of the event; providers attach it per event |
 | position_group | **Derived**: GK, DEF, MID or FWD, used as the shrinkage prior group |
 | preferred_foot | Standard player bio data |
+| nationality, date_of_birth | Synthetic public bio; birth date is ISO YYYY-MM-DD. Assigned reproducibly per player ID using separate randomness, never inferred from names. Older synthetic league files are enriched in memory without changing match events. |
+| birthplace | Synthetic city and country of birth for every player, generated independently of nationality and match events; nationality does not imply birthplace. |
 
 ### 2.3 `player_latent_profile` (GEN-ONLY)
 Hidden "true" tendencies used to generate events, such as shot power mean and sd, placement skill, shot volume, long-range tendency and pressure sensitivity. **Never visible to the engine.** Use it afterwards to measure how well estimated baselines recover the truth.
 
 ### 2.4 `match` (RAW-EVENT, match sheet data)
-`match_id`, `season`, `matchday`, `kickoff_at`, `home_club_id`, `away_club_id`, `venue` (fictional), `is_live_demo` (internal flag)
+`match_id`, `season`, `matchday`, `kickoff_at`, `home_club_id`, `away_club_id`, `venue` (fictional), `is_live_demo` (internal flag), `conditions {weather, temperature_c, attendance, capacity, referee, referee_ja}` (match-day metadata as in professional match feeds; the referee is fictional; drawn from a per-match random stream, so the events never change)
 
 ---
 
@@ -166,11 +168,24 @@ comment's language. The viewer posts `{moment, seq, question, player_id, lang}` 
 verified, source, cached}` (`cached`: precomputed with the match). Unknown moments, questions
 that do not apply to the moment, or a `player_id` other than the moment's player get a 422.
 
-Typed questions: `POST /matches/{match_id}/ask/free` with `{moment, seq, text (1–200
-chars), lang}` returns `{routed_as {question, player_id, label} | null, answer | null,
-declined | null}`. The Question Router maps the text to a catalog question (for
-`player_tonight`, any player who has shot so far) or declines; 429 after 10 typed questions
-per viewer in 10 minutes.
+Typed questions: `POST /matches/{match_id}/ask/free` with `{event_id, version, text (1–200
+chars), lang}` (the latest event the viewer has received: the backend replays the feed up to
+that message, so a question can be asked from kick-off and never trusts a clock) returns `{retrieved {sections[], club_id, player_id, label} | null, answer
+{question: "free", lang, headline, body, coverage (full / partial), evidence[], verified,
+source, cached} | null, declined | null}`. Sections: `match_info` (season, matchday,
+venue, kick-off, home and away, weather, attendance, referee, both clubs' record before
+tonight from the history),
+`situation`, `score`, `team_stats`,
+`team_tonight` (club), `player_info` (any squad player: club, shirt number, position,
+preferred foot, season before tonight from the history, involvement tonight),
+`player_tonight` (a player who has shot), `chances`, `discipline`,
+`recent` (last 10 minutes); from the past matches: `season_leaders` (both clubs' top
+scorers, assists, shots), `player_recent` (a squad player's last `n` games, 1–5),
+`team_recent` (a club's last `n` games, 1–5). The Router's reply carries `n` for the last
+two. Since ADR-013 the reply also has `research [{tool, ok, label}]` (the Researcher's tool
+calls in order) and `outcome` (`answered`, `cannot_answer`, `clarify`, `fallback_timeout`,
+`fallback_budget`, `fallback_malformed`, `fallback_no_evidence`, `fallback_error`,
+`timeout`, `budget_exhausted`); `retrieved.label` is the chain of lookups. 429 after 10 typed questions per viewer in 10 minutes.
 
 ---
 

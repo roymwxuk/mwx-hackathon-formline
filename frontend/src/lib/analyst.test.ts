@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AskLimited, answerKey, askAnalyst, askFree, askUrlFor, commentsFor, freshComment, latestAskable } from '@/lib/analyst';
+import { AskLimited, answerKey, askAnalyst, askFree, askUrlFor, asOfLatest, commentsFor, freshComment, latestAskable } from '@/lib/analyst';
 import { applyComments } from '@/lib/logic';
-import type { AnalystComment } from '@/lib/types';
+import type { AnalystComment, MatchEvent } from '@/lib/types';
 
 const c = (id: string, clock: number, lang: 'en' | 'ja' = 'en', extra: Partial<AnalystComment> = {}): AnalystComment => ({
   comment_id: id, op: 'show', supersedes_comment_id: null, question: 'shot_outcome', period: 2,
@@ -75,19 +75,25 @@ describe('follow-up questions', () => {
     expect(JSON.parse(init.body)).toEqual({ ...ask, question: 'player_tonight', player_id: 'ply_0203', lang: 'ja' });
   });
 
-  it('sends a typed question to /ask/free with the moment and the language', async () => {
-    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ routed_as: null, answer: null, declined: 'no' }) });
+  it('asks "as of" the latest event received, from kick-off', () => {
+    expect(asOfLatest([])).toBeNull();
+    const ev = (id: string, clock: number, version = 1) => ({ event_id: id, version, match_clock_ms: clock }) as MatchEvent;
+    expect(asOfLatest([ev('e1', 0), ev('e2', 52 * 60_000 + 10_000, 2)])).toEqual({ event_id: 'e2', version: 2, minute: "53'" });
+  });
+
+  it('sends a typed question to /ask/free with the event and the language', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ retrieved: null, answer: null, declined: 'no' }) });
     vi.stubGlobal('fetch', fetch);
-    const out = await askFree('http://x/matches/m1/ask', c('a', 0, 'ja', { ask }), 'レイナーは？');
+    const out = await askFree('http://x/matches/m1/ask', { event_id: 'evt_9', version: 2, minute: "53'" }, 'レイナーは？', 'ja');
     expect(out.declined).toBe('no');
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe('http://x/matches/m1/ask/free');
-    expect(JSON.parse(init.body)).toEqual({ ...ask, text: 'レイナーは？', lang: 'ja' });
+    expect(JSON.parse(init.body)).toEqual({ event_id: 'evt_9', version: 2, text: 'レイナーは？', lang: 'ja' });
   });
 
   it('tells the rate limit apart from other errors', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429 }));
-    await expect(askFree('http://x/ask', c('a', 0, 'en', { ask }), 'score?')).rejects.toBeInstanceOf(AskLimited);
+    await expect(askFree('http://x/ask', { event_id: 'e', version: 1, minute: "1'" }, 'score?', 'en')).rejects.toBeInstanceOf(AskLimited);
   });
 
   it('fails on an error status, so the panel can offer a retry', async () => {

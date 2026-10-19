@@ -23,6 +23,8 @@ def template_answer(pack: FactsPack, lang: str, names: dict[str, str]) -> dict:
     """{headline, body} from the facts; `names`: role -> display name in this language."""
     f = pack.facts
     q = pack.question
+    if q == "free":
+        return _free(f, lang, names)
     if lang == "ja":
         return _ja(q, f, names)
     if q == "shot_outcome":
@@ -124,3 +126,21 @@ def _ja_followup(q: str, f: dict, names: dict[str, str]) -> dict:
             tonight, norm = NUMBER.findall(f["speed_vs_norm"])[:2]
             body += f"利き足の平均{tonight} km/h（今季平均{norm} km/h）。"
     return {"headline": head[:36], "body": body[:130]}
+
+
+def _free(facts: dict, lang: str, names: dict[str, str]) -> dict:
+    """A typed question's fallback: what the retrieved sections say, whole facts only."""
+    if lang == "ja":
+        head, prefix, limit = "データから言えること（推定を含む）", "データ：", 130
+    else:
+        head, prefix, limit = "What the data shows", "", 260
+    parts: list[str] = []
+    for section in facts.values():
+        for v in section.values():
+            if not isinstance(v, str):
+                continue
+            fact = _fill(v, names)
+            if len(prefix + "; ".join([*parts, fact])) + 1 <= limit:
+                parts.append(fact)  # whole facts only, in order; one that does not fit is skipped
+    body = prefix + ("; ".join(parts) if parts else ("該当なし" if lang == "ja" else "nothing that fits")) + "."
+    return {"headline": head, "body": body[0].upper() + body[1:] if lang == "en" else body}

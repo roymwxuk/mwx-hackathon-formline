@@ -156,8 +156,8 @@ def _goals_text(m: Moment, roles: _Roles, with_xg: bool) -> tuple[str, list[str]
     return "; ".join(parts), [g.event_id for g in goals]
 
 
-def situation_pack(m: Moment) -> FactsPack:
-    roles = _Roles()
+def situation_pack(m: Moment, roles: _Roles | None = None) -> FactsPack:
+    roles = roles or _Roles()  # shared when merged into a typed question's facts
     now = max(m.events, key=_key)
     goals, sources = _goals_text(m, roles, with_xg=False)
     facts: dict = {
@@ -179,8 +179,8 @@ def situation_pack(m: Moment) -> FactsPack:
     return FactsPack("situation", m.event, facts, roles.roles, sources)
 
 
-def score_pack(m: Moment) -> FactsPack:
-    roles = _Roles()
+def score_pack(m: Moment, roles: _Roles | None = None) -> FactsPack:
+    roles = roles or _Roles()
     goals, sources = _goals_text(m, roles, with_xg=True)
     facts: dict = {"score_now": _score_text(m.score, m.home, m.away, m.clubs), "goals": goals}
     misses = sorted((s for s in m.shots if s.outcome != "goal"), key=lambda s: -_xg(s, m))[:2]
@@ -196,7 +196,7 @@ def score_pack(m: Moment) -> FactsPack:
     return FactsPack("score", m.event, facts, roles.roles, sources)
 
 
-def team_stats_pack(m: Moment) -> FactsPack:
+def team_stats_pack(m: Moment, roles: _Roles | None = None) -> FactsPack:
     passes = [e for e in m.events if e.type == "pass"]
     corners = [p for p in passes if getattr(p, "pass_type", None) == "corner"]
     cards = [e for e in m.events if e.type == "card"]
@@ -219,7 +219,7 @@ def team_stats_pack(m: Moment) -> FactsPack:
     return FactsPack("team_stats", m.event, facts, {}, [])
 
 
-def player_tonight_pack(m: Moment) -> FactsPack:
+def player_tonight_pack(m: Moment, roles: _Roles | None = None) -> FactsPack:
     pid = m.player_id
     mine = [s for s in m.shots if s.player_id == pid]
     player = m.players.get(pid)
@@ -242,6 +242,10 @@ def player_tonight_pack(m: Moment) -> FactsPack:
         facts["speed_vs_norm"] = (f"average speed with his stronger foot tonight "
                                   f"{round(sum(strong) / len(strong))} km/h; his season norm "
                                   f"{round(norm)} km/h")
+    if roles is not None:  # merged: name him in the facts with the shared placeholder
+        facts = {"player": roles("PLAYER", pid), **facts}
+        return FactsPack("player_tonight", m.event, facts, roles.roles,
+                         [s.event_id for s in mine])
     return FactsPack("player_tonight", m.event, facts, {"PLAYER": pid},
                      [s.event_id for s in mine])
 

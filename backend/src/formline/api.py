@@ -220,10 +220,10 @@ async def ask(match_id: str, body: AskBody) -> dict:
 
 
 class AskFreeBody(BaseModel):
-    """A question the viewer typed, asked in the context of the latest comment's moment."""
+    """A question the viewer typed, about the match as of the latest event it has received."""
 
-    moment: str = Field(max_length=80)
-    seq: int = Field(ge=0)
+    event_id: str = Field(max_length=40)
+    version: int = Field(ge=1)
     text: str = Field(min_length=1, max_length=MAX_TEXT)
     lang: Literal["en", "ja"]
 
@@ -236,22 +236,29 @@ def client_key(request: Request) -> str:
     return forwarded or (request.client.host if request.client else "unknown")
 
 
+@lru_cache(maxsize=1)
+def _short_names(data_dir: Path) -> dict[str, str]:
+    """Club id -> short name ("NOR"): viewers type them."""
+    league = json.loads((data_dir / "league.json").read_text(encoding="utf-8"))
+    return {c["club_id"]: c["short_name"] for c in league["clubs"]}
+
+
 @app.post("/matches/{match_id}/ask/free")
 async def ask_free(match_id: str, body: AskFreeBody, request: Request) -> dict:
-    """Answer a typed question: the Question Router maps it to a catalog question (or
-    declines), then the Analyst answers that, verified. Limited per viewer."""
+    """Answer a typed question: the Question Router retrieves the fact sections that answer
+    it, the Analyst answers the question from them, verified (or it is declined). Limited
+    per viewer."""
     path = settings.data_dir / "feeds" / f"{match_id}.jsonl"
     if not path.exists():
         raise HTTPException(404, f"Unknown match {match_id}")
     if not FREE_QUESTIONS.allow(client_key(request)):
         raise HTTPException(429, "Too many questions; try again in a few minutes.")
-    said = answers_path(settings.data_dir, match_id)
-    precomputed = _answers(said, said.stat().st_mtime) if said.exists() else {}
     try:
-        return await answer_free(body.moment, body.seq, body.text, body.lang,
+        return await answer_free(body.event_id, body.version, body.text, body.lang,
                                  _feed(path, path.stat().st_mtime),
                                  match_context(settings.data_dir, match_id),
-                                 ask_runner(settings.data_dir), precomputed,
-                                 norm=history_engine(settings.data_dir).season_norm)
+                                 ask_runner(settings.data_dir),
+                                 norm=history_engine(settings.data_dir).season_norm,
+                                 short_names=_short_names(settings.data_dir))
     except AskError as exc:
         raise HTTPException(422, str(exc)) from None
