@@ -72,12 +72,13 @@ def payload(pack: FactsPack, lang: str, names: dict[str, str], feedback: str | N
 
 async def answer_verified(pack: FactsPack, lang: str, runner: LLMRunner, league: LeagueNames,
                           match_clubs: tuple[str, str],
-                          viewer_question: str | None = None) -> Answer:
+                          viewer_question: str | None = None,
+                          scorers_tonight: frozenset[str] | None = None) -> Answer:
     """`viewer_question` set: a typed question, answered freely from `pack` (the retrieved
     sections) with a coverage verdict; otherwise the catalog question of the pack."""
     names = role_names(pack, lang, league)
     free = viewer_question is not None
-    ctx = AnswerContext(pack, lang, match_clubs, free=free)
+    ctx = AnswerContext(pack, lang, match_clubs, free=free, scorers_tonight=scorers_tonight)
     prompt = (FREE_PROMPT if free else PROMPT).text.replace("{lang}", lang)
     feedback: str | None = None
     rejections: list[str] = []

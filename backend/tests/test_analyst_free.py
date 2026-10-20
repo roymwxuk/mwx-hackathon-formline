@@ -11,7 +11,7 @@ from formline import api
 from formline.agents.fakes import FakeAgents
 from formline.agents.llm import LLMConfig, make_runner
 from formline.agents.verifier import league_names
-from formline.analyst.ask import REPHRASE_JA, AskError, answer_free, known_events
+from formline.analyst.ask import REPHRASE_JA, AskError, answer_free, known_events, window_note
 from formline.analyst.followups import Moment, moment_kind
 from formline.analyst.router import check_route, player_clarification, shooters, squad
 from formline.analyst.sections import facts_for
@@ -424,3 +424,12 @@ def test_the_free_ask_endpoint_answers_declines_and_limits(client, match):
     codes = [client.post(f"/matches/{LIVE}/ask/free", json={**body, "text": "weather?"}).status_code
              for _ in range(12)]
     assert 200 in codes and codes[-1] == 429  # 10 per viewer per 10 minutes
+
+
+def test_a_game_window_outside_1_to_5_is_named_in_the_answer():
+    """75-case eval limit01-03: 0, 2.5 and 10 games were answered silently as 1, 3 and 5."""
+    for text in ("How did Okafor do over his last 0 games?", "his last 2.5 games", "last 10 matches"):
+        assert window_note(text, "en") == "Only the last 1–5 whole games are available.", text
+    assert window_note("オカフォーの直近10試合は？", "ja")
+    for text in ("How did Okafor do in his last 3 games?", "last game", "直近5試合"):
+        assert window_note(text, "en") is None, text
