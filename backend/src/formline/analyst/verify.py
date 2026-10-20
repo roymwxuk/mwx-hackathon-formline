@@ -37,6 +37,7 @@ MARKERS = {"en": ("estimate", "est.", "model", "about", "around", "roughly", "~"
 # so the words of the league's club names in katakana are rejected.
 JA_CLUB_WORDS = ("アスレチック", "アスレティック", "ローバーズ", "タウン", "ユナイテッド", "シティ",
                  "ケストレル", "ゲート", "ハーバーサイド", "エルダー", "ソーンム", "コラン")
+KATAKANA_RUN = re.compile(r"[ァ-ヺー・]+")
 
 
 @dataclass(frozen=True)
@@ -183,7 +184,9 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
     if roles:
         failures.append(Failure("jargon", f"internal labels or role placeholders shown ({', '.join(roles)}); "
                                           "use the player names from NAMES and plain words"))
-    if ctx.lang == "ja" and (found := [w for w in JA_CLUB_WORDS if w in text]):
+    # the whole katakana word ("ノースゲート"), not the fragment: the model removes what it is told
+    if ctx.lang == "ja" and (found := list(dict.fromkeys(
+            run for run in KATAKANA_RUN.findall(text) if any(w in run for w in JA_CLUB_WORDS)))):
         # name the words and the spellings: viewers type clubs in katakana and the model echoes them
         spellings = " / ".join(league.clubs[cid][0] for cid in ctx.match_clubs)
         failures.append(Failure("entities", f"remove {'、'.join(found)}: write club names exactly "

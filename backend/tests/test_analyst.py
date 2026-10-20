@@ -180,3 +180,6 @@ def test_a_japanese_answer_must_not_translate_club_names(match):
     echo = {**ok, "headline": "ハーバーサイドの得点王"}
     feedback = verify_answer(echo, ctx, league).feedback()
     assert "ハーバーサイド" in feedback and "Harbourside Athletic" in feedback
+    # eval j06: the whole word the model wrote, not the matched fragment ("ゲート")
+    feedback = verify_answer({**ok, "headline": "ノースゲートの得点王"}, ctx, league).feedback()
+    assert "remove ノースゲート:" in feedback

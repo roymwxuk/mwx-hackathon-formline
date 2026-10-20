@@ -229,8 +229,9 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
         except ResearchFailed as exc:
             outcome = exc.outcome
             fallback_reason.append(str(exc))
-        except Exception:  # a framework or tool error: fall back, never fail
+        except Exception as exc:  # a framework or tool error: fall back, never fail
             log.exception("researcher failed")
+            fallback_reason.append(f"{type(exc).__name__}: {exc}"[:300])  # e.g. a 429
             outcome = "fallback_error"
     if pack is None:  # the one-shot Router, from the reserved budget
         try:

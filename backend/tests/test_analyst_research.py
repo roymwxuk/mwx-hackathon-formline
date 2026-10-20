@@ -186,6 +186,16 @@ def test_a_bad_final_reply_falls_back_to_the_router(match, final, outcome):
     assert out["retrieved"]["club_id"] == match[1].away
 
 
+@pytest.mark.parametrize("final", ['{"done": true} {"done": true}',
+                                   '{"done": true} {"recommendation": "watch Reyner"}'])
+def test_a_repeated_final_reply_is_read_once(match, final):
+    """Eval r01/v02: the model repeated its final JSON; the first object is the reply."""
+    def turns(turn, results):
+        return [("get_match_so_far", {})] if turn == 1 else final
+    res = run(match, turns)
+    assert not res.cannot_answer and res.session.lookups
+
+
 def test_a_research_timeout_falls_back(match, monkeypatch):
     async def slow(*args, **kwargs):
         await asyncio.sleep(1)
