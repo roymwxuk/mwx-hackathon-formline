@@ -146,7 +146,8 @@ malformed final reply on a hat-trick question). Every fallback ended correctly b
   *Done:* `Answer.rejections` holds each failed attempt's feedback; the `ask_free` log line
   carries `source`, `attempts` and `rejections`; eval rows copy them into `analyst`. Reruns
   can now report first-attempt answer success. *Rerun 1 found the cause; see Reruns.*
-- **B. Hide rejected tool calls** (`ok: false`) from the viewer's "Looked up" list.
+- **B. Hide rejected tool calls** (`ok: false`) from the viewer's "Looked up" list. *Not
+  needed: the UI already shows only successful lookups (finding 2).*
 - **C. Fix j04** once A shows the cause (prompt or verifier), and make the typed-question
   template fallback language-clean, or decline instead of dumping facts. *j04 fixed
   (`d0fdae9`, rerun 2). Template fallback: the fact strings are English, so a Japanese
