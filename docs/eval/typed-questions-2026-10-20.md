@@ -107,6 +107,9 @@ cache (0 cache hits).
 ## Proposed follow-ups (owner decides; each is small)
 - **A. Log verifier rejection reasons and attempts** per typed answer (log line and eval row),
   then rerun j04 to see why it fails. This is telemetry only, with no behaviour change.
+  *Done:* `Answer.rejections` holds each failed attempt's feedback; the `ask_free` log line
+  carries `source`, `attempts` and `rejections`; eval rows copy them into `analyst`. Reruns
+  can now report first-attempt answer success. The j04 rerun is still to do (about ¥0.5).
 - **B. Hide rejected tool calls** (`ok: false`) from the viewer's "Looked up" list.
 - **C. Fix j04** once A shows the cause (prompt or verifier), and make the typed-question
   template fallback language-clean, or decline instead of dumping facts.

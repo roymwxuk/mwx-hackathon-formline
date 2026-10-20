@@ -181,9 +181,14 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     def left() -> float:
         return DEADLINE_S - (loop.time() - start)
 
-    def done(outcome: str, steps: list, retrieved=None, answer=None, declined=None) -> dict:
-        log.info(json.dumps({"event": "ask_free", "outcome": outcome, "steps": len(steps),
-                             "seconds": round(loop.time() - start, 2)}))
+    def done(outcome: str, steps: list, retrieved=None, answer=None, declined=None,
+             analyst: Answer | None = None) -> dict:
+        record = {"event": "ask_free", "outcome": outcome, "steps": len(steps),
+                  "seconds": round(loop.time() - start, 2)}
+        if analyst is not None:  # why answers were rejected, for diagnosis (never shown)
+            record |= {"source": analyst.source, "attempts": analyst.attempts,
+                       "rejections": list(analyst.rejections)}
+        log.info(json.dumps(record, ensure_ascii=False))
         return {"retrieved": retrieved, "answer": answer, "declined": declined,
                 "research": steps, "outcome": outcome}
 
@@ -245,7 +250,7 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     except TimeoutError:
         a = _template(pack, lang, ctx)
     if a.coverage == "none":
-        return done("cannot_answer", steps, retrieved, declined=DECLINE[lang])
+        return done("cannot_answer", steps, retrieved, declined=DECLINE[lang], analyst=a)
     answer = {**answer_payload("free", lang, a, pack, known), "coverage": a.coverage,
               "cached": False}
-    return done(outcome, steps, retrieved, answer)
+    return done(outcome, steps, retrieved, answer, analyst=a)

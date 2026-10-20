@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import logging
 import re
 import subprocess
 import tempfile
@@ -47,6 +48,23 @@ def as_of(feed, minute: float) -> tuple[str, int]:
             break
         last = msg
     return last.event_id, last.version
+
+
+class AskLog(logging.Handler):
+    """Keeps the last `ask_free` log record: the Analyst's attempts and rejection reasons, as
+    production logs them."""
+
+    def __init__(self) -> None:
+        super().__init__(logging.INFO)
+        self.last: dict | None = None
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            data = json.loads(record.getMessage())
+        except ValueError:
+            return
+        if data.get("event") == "ask_free":
+            self.last = data
 
 
 def sha(path: Path) -> str:
@@ -95,6 +113,10 @@ async def run(questions: list[dict], out: Path) -> None:
                          fake_responder=FakeAgents(), cache_path=cache)
     out.with_suffix(".meta.json").write_text(
         json.dumps(meta(runner, data), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    asklog = AskLog()
+    logger = logging.getLogger("formline.ask")
+    logger.addHandler(asklog)
+    logger.setLevel(logging.INFO)
     print(f"model: {runner.kind}; {len(questions)} questions -> {out}")
     with out.open("x", encoding="utf-8") as f:
         for q in questions:
@@ -105,6 +127,7 @@ async def run(questions: list[dict], out: Path) -> None:
                 event_id, version = as_of(feed, float(q["at"]))
             m, _ = moment_as_of(event_id, version, feed, ctx, norm)
             calls, hits = runner.budget.calls, runner.cache_hits
+            asklog.last = None
             t0 = time.perf_counter()
             try:
                 res = await answer_free(event_id, version, q["text"], q["lang"], feed, ctx,
@@ -119,6 +142,8 @@ async def run(questions: list[dict], out: Path) -> None:
                    "research": res.get("research"), "retrieved": res.get("retrieved"),
                    "answer": asdict(answer) if hasattr(answer, "__dataclass_fields__") else answer,
                    "declined": res.get("declined"), "error": error,
+                   "analyst": {k: (asklog.last or {}).get(k)
+                               for k in ("source", "attempts", "rejections")},
                    "gold_facts": gold_facts(q.get("gold"), m, ctx, norm)}
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
