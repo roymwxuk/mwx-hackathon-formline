@@ -176,3 +176,7 @@ def test_a_japanese_answer_must_not_translate_club_names(match):
     for club in ("北ゲート・ローバーズ", "ノースゲート・ローバーズ", "エルダーウィック・タウン"):
         bad = {**ok, "body": f"{club}の守備が固かった。"}
         assert "entities" in {f.check for f in verify_answer(bad, ctx, league).failures}, club
+    # the retry feedback names the offending word and the spelling to use instead
+    echo = {**ok, "headline": "ハーバーサイドの得点王"}
+    feedback = verify_answer(echo, ctx, league).feedback()
+    assert "ハーバーサイド" in feedback and "Harbourside Athletic" in feedback
