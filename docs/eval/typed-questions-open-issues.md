@@ -12,10 +12,10 @@ known after a real-model rerun.
 
 | # | Issue | Severity | State |
 |---|---|---|---|
-| 1 | "Reyner scored tonight" when he had not (v03, the owner's wording) | **High**: a false fact on a likely demo question | Deterministic check added, unit-tested; **not yet rechecked on the model** |
-| 2 | League-leader overclaim (scope01) | Medium | Deterministic check added, unit-tested; not yet rechecked |
-| 3 | Requested game windows outside 1–5 adjusted silently (limit02/03) | Medium | Fixed note added in code, unit-tested; not yet rechecked |
-| 4 | Wrong club in the question (identity01/03) | Medium | identity03 fixed on recheck; identity01's headline still echoes the wrong club |
+| 1 | "Reyner scored tonight" when he had not (v03, the owner's wording) | **High**: a false fact on a likely demo question | Deterministic check added; **second recheck 3 / 3 no false claim** |
+| 2 | League-leader overclaim (scope01) | Medium | Deterministic check added; second recheck pass (the check caught the first attempt) |
+| 3 | Requested game windows outside 1–5 adjusted silently (limit02/03) | Medium | Fixed note added in code; second recheck pass on both |
+| 4 | Wrong club in the question (identity01/03) | Medium | identity03 fixed on recheck; identity01's headline still echoes the wrong club (second recheck too): documented |
 | 5 | Researcher final reply repeated or in prose ("malformed") | Low (slower, still correct) | Fixed, unit-tested and rechecked (r01, v02, o04 no longer fall back) |
 | 6 | Japanese answers echoing a katakana club name | Medium | Fixed and rechecked (j04, j06) |
 | 7 | Verifier false positives that cost retries or a template | Low–medium | Certainty negation fixed (u01 rechecked); dates and minute binding still open |
@@ -23,6 +23,23 @@ known after a real-model rerun.
 | 9 | Provider errors: 429 rate limit, content filter | Medium for a public demo | Open; reasons now logged; quota not checked |
 | 10 | Run-to-run variation | Medium | Open; single runs cannot measure it |
 | 11 | Docs and deployment out of date | Housekeeping | Open |
+
+## Second recheck (2026-10-20, after the deterministic checks)
+
+Runs `typed-questions-75-fix2-1.jsonl` (v03, scope01, identity01, limit02, limit03) and
+`typed-questions-75-fix2-v03-2/3.jsonl`; branch commit `26a756f`, Foundry `gpt-4.1-mini`,
+26 model calls (about ¥1). Numbers checked against the engine's history by hand.
+
+| id | Result | Notes |
+|---|---|---|
+| v03 ×3 | **3 / 3 no false claim** | Two answers say "Ito scored tonight" (correct); one names Reyner and Okafor as season leaders without naming tonight's scorer and says "both have had significant chances tonight" (safe but weak). The scorer check never had to fire: the model got it right on the first attempt in all three. |
+| scope01 | **Pass** | First attempt said who leads the league and was rejected by the new check; the retry: "Reyner leads Harbourside but not the whole league … Okafor has scored 10". |
+| limit02 | **Pass** | Last 1 game (1 goal, 6 shots, 4 on target, 26 of 35 passes: correct) plus the fixed note; coverage partial. |
+| limit03 | **Pass** | Last 3 games (2 goals, 12 shots, 5 on target: correct) plus the note; coverage partial. Two retries for invented percentages (62, 71). |
+| identity01 | **Fail (headline only)** | Body: "Tomas Reyner plays for Harbourside Athletic, not Northgate. He has scored 5 goals this season" (correct). Headline: "Northgate's Tomas Reyner has no season goals" (false, no number, so no check sees it). |
+
+Issues 1–3 are now closed for these cases. Issue 4's headline remains, documented as a
+known limitation (don't use a wrong-club question in the demo).
 
 ## 1. False "scored tonight" claims (v03)
 

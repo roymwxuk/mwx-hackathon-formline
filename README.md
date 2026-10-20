@@ -272,8 +272,10 @@ in the question. Prompt lines alone did not hold for these on a recheck, so they
 deterministic checks for typed answers: a "scored tonight" sentence may name only tonight's
 scorers so far, league-leader claims are rejected, and an out-of-range game window adds a
 fixed note and marks the answer partial. Parsing, katakana-feedback and negated-certainty
-fixes were rechecked on the model (7 of 11 failing or weak cases fixed); the deterministic
-checks are unit-tested. What is still open and why:
+fixes were rechecked on the model (7 of 11 failing or weak cases fixed). A second recheck
+after the deterministic checks: the recommendation question asked 3 times with no false
+"scored tonight", the league-leader and both game-window cases pass; the wrong-club case
+still gets a misleading headline over a correct body. What is still open and why:
 [docs/eval/typed-questions-open-issues.md](docs/eval/typed-questions-open-issues.md).
 
 From `backend/`, check the dataset and offline scorer without inference:
