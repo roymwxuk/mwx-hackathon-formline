@@ -135,6 +135,15 @@ def test_certainty_claim_is_caught(slow):
     assert "certainty" in checks(v)
 
 
+def test_a_denied_certainty_claim_is_not_a_claim(slow):
+    """Eval u01: "no one can say he will score" was rejected as a certainty claim."""
+    ins, league = slow
+    denied = verify(good(sub="84 km/h; no one can say he will score."), ctx(ins), league)
+    assert "certainty" not in checks(denied)
+    for claim in ("84 km/h. No doubt he will score.", "84 km/h, not slow; he will score."):
+        assert "certainty" in checks(verify(good(sub=claim), ctx(ins), league)), claim
+
+
 def test_wrong_language_is_caught(slow):
     ins, league = slow
     v = verify(good(), ctx(ins, lang="ja"), league)

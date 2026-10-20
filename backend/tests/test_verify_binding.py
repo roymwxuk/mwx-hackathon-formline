@@ -80,3 +80,29 @@ def test_bound_numbers_reads_clauses_and_owned_sections():
     b = bound_numbers(p)
     assert b["PLAYER_A"] == {"5"} and b["PLAYER_B"] == {"3"}
     assert {"10", "2.0", "2"} <= b["PLAYER_C"]
+
+
+def scorer_check(setting, body, lang="en", scorers=frozenset({ITO})):
+    league, clubs = setting
+    roles = {"PLAYER_A": REYNER, "PLAYER_B": ITO}
+    answer = {"headline": "Players to watch", "body": body, "coverage": "full"}
+    ctx = AnswerContext(pack({}, roles), lang, clubs, free=True, scorers_tonight=scorers)
+    return [f.detail for f in verify_answer(answer, ctx, league).failures]
+
+
+def test_only_tonights_scorers_are_said_to_have_scored_tonight(setting):
+    """75-case eval v03: at 30' (only Ito had scored) "Reyner ... scoring tonight" passed."""
+    wrong = scorer_check(setting, "Reyner leads Harbourside this season, scoring tonight.")
+    assert any("Reyner has not scored tonight" in d and "Ito" in d for d in wrong)
+    for fine in ("Ito scored tonight.", "Reyner has not scored tonight.",
+                 "Reyner has scored 5 times this season and has 2 shots tonight."):
+        assert not any("scored tonight" in d for d in scorer_check(setting, fine)), fine
+    assert any("has not scored tonight" in d for d in scorer_check(setting, "レイナーは今夜ゴールを決めた。", "ja"))
+    assert not any("has not scored tonight" in d
+                   for d in scorer_check(setting, "レイナーは今夜まだ得点していない。", "ja"))
+
+
+def test_no_league_wide_claims(setting):
+    """75-case eval scope01: FACTS cover only the two clubs of this match."""
+    assert any("leads the league" in d for d in scorer_check(setting, "Okafor leads the league."))
+    assert not any("league" in d for d in scorer_check(setting, "Reyner leads Harbourside but not the league."))

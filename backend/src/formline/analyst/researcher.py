@@ -60,8 +60,8 @@ async def research(text: str, lang: str, m: Moment, ctx: MatchContext, runner: L
         "researcher", PROMPT.text,
         json.dumps(payload(text, lang, m, ctx, dict(short_names or {})), ensure_ascii=False),
         session.tools(), max_model_calls)
-    try:
-        final = json.loads(strip_fences(reply or ""))
+    try:  # the first JSON object: the model sometimes repeats it ('{"done": true} {"done": true}')
+        final, _ = json.JSONDecoder().raw_decode(strip_fences(reply or "").strip())
     except (json.JSONDecodeError, TypeError):
         raise ResearchFailed("fallback_malformed", f"final reply is not JSON: {reply!r:.80}") from None
     if not isinstance(final, dict):

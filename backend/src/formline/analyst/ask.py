@@ -14,6 +14,7 @@ answer it, and the Analyst answers the viewer's own question from only those fac
 import asyncio
 import json
 import logging
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
@@ -131,6 +132,19 @@ FALLBACK_RESERVE = 2 + 3
 # The template lists fact strings, which are English: in Japanese it would be a mixed dump,
 # so a Japanese viewer is asked to rephrase instead (eval j04, 2026-10-20).
 REPHRASE_JA = "うまく回答をまとめられませんでした。言い方を変えて、もう一度質問してください。"
+# A requested number of recent games the tools cannot serve (0, 2.5, 10): the Researcher uses
+# the nearest of 1–5, and the answer says so (75-case eval limit01–03)
+WINDOW = re.compile(r"(?:last|past|previous)\s+(\d+(?:\.\d+)?)\s*(?:games?|matches)|直近\s*(\d+(?:\.\d+)?)\s*試合",
+                    re.IGNORECASE)
+WINDOW_NOTE = {"en": "Only the last 1–5 whole games are available.",
+               "ja": "（直近1〜5試合までの対応です）"}
+
+
+def window_note(text: str, lang: str) -> str | None:
+    hit = WINDOW.search(text)
+    if not hit or re.fullmatch(r"[1-5]", hit.group(1) or hit.group(2)):
+        return None
+    return WINDOW_NOTE[lang]
 
 
 def _steps(session, lang: str) -> list[dict]:
@@ -229,8 +243,9 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
         except ResearchFailed as exc:
             outcome = exc.outcome
             fallback_reason.append(str(exc))
-        except Exception:  # a framework or tool error: fall back, never fail
+        except Exception as exc:  # a framework or tool error: fall back, never fail
             log.exception("researcher failed")
+            fallback_reason.append(f"{type(exc).__name__}: {exc}"[:300])  # e.g. a 429
             outcome = "fallback_error"
     if pack is None:  # the one-shot Router, from the reserved budget
         try:
@@ -254,7 +269,10 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     try:
         a = await asyncio.wait_for(
             answer_verified(pack, lang, runner, ctx.league, (ctx.home, ctx.away),
-                            viewer_question=text[:MAX_TEXT]), max(2.0, left()))
+                            viewer_question=text[:MAX_TEXT],
+                            scorers_tonight=frozenset(s.player_id for s in m.shots
+                                                      if s.outcome == "goal")),
+            max(2.0, left()))
     except TimeoutError:
         a = _template(pack, lang, ctx)
     if a.source == "template" and lang == "ja":
@@ -263,4 +281,6 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
         return done("cannot_answer", steps, retrieved, declined=DECLINE[lang], analyst=a)
     answer = {**answer_payload("free", lang, a, pack, known), "coverage": a.coverage,
               "cached": False}
+    if note := window_note(text, lang):  # "last 0 / 2.5 / 10 games": say so, in code
+        answer |= {"body": f"{answer['body']} {note}", "coverage": "partial"}
     return done(outcome, steps, retrieved, answer, analyst=a)

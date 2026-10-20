@@ -50,6 +50,7 @@ CERTAINTY = {
            "always scores", "sure to"),
     "ja": ("必ず", "確実", "間違いなく", "絶対"),
 }
+NEGATION = re.compile(r"\b(not|no|nobody|never|cannot|impossible)\b|n't")
 
 
 @dataclass(frozen=True)
@@ -251,9 +252,18 @@ def _check_estimates(text: str, ctx: VerifyContext) -> list[Failure]:
     return []
 
 
+def _negated(low: str, at: int) -> bool:
+    """English only: a negation earlier in the same clause ("no one can say he will score")
+    denies the claim. Japanese stays strict: in 絶対に止められない the ない is not a denial."""
+    clause = re.split(r"[.;:!?,]", low[:at])[-1]
+    return bool(NEGATION.search(clause))
+
+
 def _check_certainty(text: str, ctx: VerifyContext) -> list[Failure]:
     low = text.lower()
-    hits = [w for w in CERTAINTY[ctx.lang] if w in low]
+    hits = [w for w in CERTAINTY[ctx.lang] if w in low
+            and not (ctx.lang == "en" and all(_negated(low, m.start())
+                                               for m in re.finditer(re.escape(w), low)))]
     if hits:
         return [Failure("certainty", f"remove certainty claims ({', '.join(hits)}); everything is "
                                      "an estimate")]

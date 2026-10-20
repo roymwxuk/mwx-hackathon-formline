@@ -1,0 +1,23 @@
+{
+  "started_at": "2026-10-20T14:39:45+00:00",
+  "commit": "26a756f",
+  "dirty": false,
+  "model": "foundry",
+  "deployment": "gpt-4.1-mini",
+  "prompts": [
+    "analyst@v2+1a6a6274",
+    "analyst_free@v4+71f12eb8",
+    "insight_selector@v1+36568e2c",
+    "narrator@v3+69af0e9d",
+    "researcher@v3+8b9e81ad",
+    "router@v8+455fc57c",
+    "suggester@v1+6059ffaa"
+  ],
+  "match_id": "mtc_s26_md11_har_nor",
+  "data": {
+    "feeds/mtc_s26_md11_har_nor.jsonl": "a7fa926c576e",
+    "league.json": "219690d3e831",
+    "matches.json": "c27b75d4337b"
+  },
+  "questions": "1439327c2c47"
+}

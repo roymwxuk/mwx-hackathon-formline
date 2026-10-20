@@ -37,6 +37,7 @@ MARKERS = {"en": ("estimate", "est.", "model", "about", "around", "roughly", "~"
 # so the words of the league's club names in katakana are rejected.
 JA_CLUB_WORDS = ("アスレチック", "アスレティック", "ローバーズ", "タウン", "ユナイテッド", "シティ",
                  "ケストレル", "ゲート", "ハーバーサイド", "エルダー", "ソーンム", "コラン")
+KATAKANA_RUN = re.compile(r"[ァ-ヺー・]+")
 
 
 @dataclass(frozen=True)
@@ -45,6 +46,7 @@ class AnswerContext:
     lang: str
     match_clubs: tuple[str, str]  # club ids
     free: bool = False  # a typed question: the reply also carries `coverage`
+    scorers_tonight: frozenset[str] | None = None  # player ids with a goal so far (typed only)
 
 
 def _strings(value) -> list[str]:
@@ -99,6 +101,56 @@ def bound_numbers(pack: FactsPack) -> dict[str, set[str]]:
                 bound[r] |= nums
     visit(pack.facts, None)
     return {r: _with_whole(n) for r, n in bound.items()}
+
+
+SENTENCE = re.compile(r"(?<=[.!?。！？])\s*|;")
+# "scored tonight", "scoring tonight", "tonight's goal": not "scored 5 this season ... tonight"
+_NEAR = r"(?:(?!season|last|recent|game)[^.;]){0,30}?"
+TONIGHT_GOAL = {
+    "en": re.compile(rf"\bscor(?:e|ed|es|ing)\b{_NEAR}\btonight\b|\btonight\b{_NEAR}\bscor(?:e|ed|es|ing)\b"
+                     r"|\btonight's (?:goal|scorer)", re.IGNORECASE),
+    "ja": re.compile(r"(?:今夜|今日|この試合)[^。！？]{0,12}?(?:得点|ゴール)"),
+}
+DENIED = {"en": re.compile(r"\b(?:not|no|never|without|yet to)\b|n't", re.IGNORECASE),
+          "ja": re.compile(r"ない|ません|無得点|なし")}
+# a league-wide rank: FACTS cover only the two clubs of this match ("leads Harbourside but not
+# the league" is fine)
+LEAGUE_CLAIM = {
+    "en": re.compile(r"\b(?:lead(?:s|ing)?|top(?:s|ping)?|best|most)\b(?:(?!\bnot\b|n't)[^.;]){0,25}?"
+                     r"\b(?:the |whole |entire )*league\b|\bleague(?:'s)? (?:top|leading|best)", re.IGNORECASE),
+    "ja": re.compile(r"リーグ(?:の)?(?:得点王|トップ|首位|最多|1位|一位)"),
+}
+
+
+def _check_tonight_goals(text: str, ctx: AnswerContext, league: LeagueNames) -> list[Failure]:
+    """Eval v03: "Reyner ... scoring tonight" when only Ito had scored. A sentence that says
+    someone scored tonight may name only players with a goal so far (denials are fine)."""
+    if ctx.scorers_tonight is None:
+        return []
+    scorer_forms = set().union(*(_forms(*league.players[p], ctx.lang) for p in ctx.scorers_tonight
+                                 if p in league.players)) if ctx.scorers_tonight else set()
+    out = []
+    for sentence in SENTENCE.split(text):
+        if not TONIGHT_GOAL[ctx.lang].search(sentence) or DENIED[ctx.lang].search(sentence):
+            continue
+        for pid, (en, ja) in league.players.items():
+            if pid in ctx.scorers_tonight:
+                continue
+            forms = _forms(en, ja, ctx.lang) - scorer_forms  # a surname shared with a scorer is ambiguous
+            if any((re.search(rf"\b{re.escape(f)}\b", sentence) if ctx.lang == "en" else f in sentence)
+                   for f in forms):
+                scorers = ", ".join(sorted(league.players[p][0] for p in ctx.scorers_tonight
+                                           if p in league.players)) or "nobody"
+                out.append(Failure("entities", f"{en} has not scored tonight; tonight's scorers so far: "
+                                               f"{scorers}"))
+    return out
+
+
+def _check_league_claims(text: str, ctx: AnswerContext) -> list[Failure]:
+    if LEAGUE_CLAIM[ctx.lang].search(text):
+        return [Failure("entities", "FACTS cover only the two clubs of this match: do not say who "
+                                    "leads the league")]
+    return []
 
 
 def _check_binding(text: str, ctx: AnswerContext, league: LeagueNames) -> list[Failure]:
@@ -179,11 +231,14 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
     failures += _check_certainty(text, vctx)
     if ctx.free:  # typed answers merge several players' facts: bind numbers to their player
         failures += _check_binding(text, ctx, league)
+        failures += _check_tonight_goals(text, ctx, league) + _check_league_claims(text, ctx)
     roles = [r for r in SNAKE_CASE.findall(text)] + [r for r in ctx.pack.roles if r in text]
     if roles:
         failures.append(Failure("jargon", f"internal labels or role placeholders shown ({', '.join(roles)}); "
                                           "use the player names from NAMES and plain words"))
-    if ctx.lang == "ja" and (found := [w for w in JA_CLUB_WORDS if w in text]):
+    # the whole katakana word ("ノースゲート"), not the fragment: the model removes what it is told
+    if ctx.lang == "ja" and (found := list(dict.fromkeys(
+            run for run in KATAKANA_RUN.findall(text) if any(w in run for w in JA_CLUB_WORDS)))):
         # name the words and the spellings: viewers type clubs in katakana and the model echoes them
         spellings = " / ".join(league.clubs[cid][0] for cid in ctx.match_clubs)
         failures.append(Failure("entities", f"remove {'、'.join(found)}: write club names exactly "
