@@ -350,7 +350,7 @@ Moment ─► Selector ─fan-out─► 4 × Narrator (EN/JA × casual/analyst) 
    comparison level and the length limits, and returns `{tag, headline, sub}`. Writing JA
    directly from facts (not translating EN) keeps both languages checkable.
 3. **Verifier: deterministic.** Numbers by kind, entities, estimate wording, certainty
-   claims, language, structure. Being deterministic makes it measurable (99.6% catch rate,
+   claims, language, structure. Being deterministic makes it measurable (99.3% catch rate,
    0 false positives) and its failure details double as retry feedback.
 4. **Overlay Composer: deterministic.** `bars` and `rows` are built from facts by the
    catalog, so card numbers are correct by construction; the LLM never produces them.

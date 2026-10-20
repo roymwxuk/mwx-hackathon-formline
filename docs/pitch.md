@@ -109,7 +109,7 @@ forced selection.
 
 The repository measures its own claims:
 
-- **Verifier:** catches **99.6%** of 1,075 injected errors (wrong numbers, wrong players
+- **Verifier:** catches **99.3%** of 1,066 injected errors (wrong numbers, wrong players
   or clubs, missing estimate wording, certainty claims, wrong language, bad structure),
   with **0** false positives.
 - **Feed robustness:** **300 / 300** chaotic replays (duplicates, reordering, late

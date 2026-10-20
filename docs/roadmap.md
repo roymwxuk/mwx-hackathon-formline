@@ -111,7 +111,7 @@ production. Signals and status:
 | Signal | Status |
 |---|---|
 | Reliability: failure recovery, retries, fallbacks, deterministic replays | ✅ |
-| Correctness controls: verifier (99.6% catch rate), lineage, corrections | ✅ |
+| Correctness controls: verifier (99.3% catch rate), lineage, corrections | ✅ |
 | Tests and docs: 233 backend + 41 frontend tests, ADR-001 to ADR-010 | ✅ |
 | Config via environment, no secrets in code | ✅ managed identity for Foundry, no keys |
 | Cost controls: LLM call budget, response cache, scale to zero, budget alert | ✅ |

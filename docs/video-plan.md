@@ -15,7 +15,7 @@ moments first.
 | 65:24 | VAR disallows the goal | Correction banner; card corrected and the placement secondary withdrawn; baselines rebuilt | Two viewers page |
 
 Then: architecture diagram (`docs/architecture/architecture.png`), the measured numbers
-(verifier 99.6%, convergence 300/300, shrinkage 30% / 45%), and the Azure services.
+(verifier 99.3%, convergence 300/300, shrinkage 30% / 45%), and the Azure services.
 
 ## Recording notes
 
