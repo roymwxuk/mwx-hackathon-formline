@@ -157,4 +157,4 @@ the speed card here. Video moments: `docs/video-plan.md`.
 | Realism | 14/14 checks within range of 2024/25 league figures | `docs/realism-report.md` |
 | Feed robustness | 300/300 chaotic replays converge exactly | `python -m formline.convergence` |
 | Shrinkage | 30% lower error than raw averages (45% for 1–4 shots) | `docs/shrinkage-accuracy.md` |
-| Verifier | 99.6% of 1,075 injected errors caught, 0 false positives | `docs/verifier-catch-rate.md` |
+| Verifier | 99.3% of 1,066 injected errors caught, 0 false positives | `docs/verifier-catch-rate.md` |
