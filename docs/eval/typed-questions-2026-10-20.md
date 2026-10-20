@@ -89,8 +89,10 @@ cache (0 cache hits).
    questions is unreadable in Japanese (English fact strings mixed in) and leaves out the
    section that answers the question. We can't see *why* the answers were rejected:
    verifier rejection reasons aren't logged per attempt.
-2. **Rejected tool calls are shown to viewers** (v04): steps with `ok: false` appear in
-   "Looked up" under raw tool names.
+2. **Rejected tool calls in the API's `research` list** (v04): steps with `ok: false` keep
+   raw tool names. *Corrected 2026-10-20:* the viewer's "Looked up" line renders
+   `retrieved.label`, which lists successful lookups only, so viewers never see these. No
+   change needed.
 3. **Researcher fallback rate 14%** (5/35): 2 malformed final replies, both false-premise
    questions about Reyner at 66′ (d02, h02); 2 timeouts (v01, o02, about 15 s), at least one
    likely caused by the 429; 1 content-filter block (h03). All fallbacks ended correctly, so
@@ -147,7 +149,11 @@ malformed final reply on a hat-trick question). Every fallback ended correctly b
 - **B. Hide rejected tool calls** (`ok: false`) from the viewer's "Looked up" list.
 - **C. Fix j04** once A shows the cause (prompt or verifier), and make the typed-question
   template fallback language-clean, or decline instead of dumping facts. *j04 fixed
-  (`d0fdae9`, rerun 2). The template fallback is still a mixed EN/JA dump when it fires.*
+  (`d0fdae9`, rerun 2). Template fallback: the fact strings are English, so a Japanese
+  typed answer that would fall back to the template now asks the viewer to rephrase
+  (outcome `declined_template`); English keeps its verified template. The `ask_free` log
+  line also records `fallback_reason` (e.g. the Researcher's malformed reply), so the
+  hat-trick fallbacks (h02, j05) can be diagnosed on the next run.*
 - **D. Check the deployment's tokens-per-minute quota** before the public demo (a cloud
   step; owner's go).
 - Reruns go to new files (`typed-questions-rerun-1.jsonl`); this baseline stays as is.

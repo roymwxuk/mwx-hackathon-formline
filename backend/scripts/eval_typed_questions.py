@@ -143,7 +143,7 @@ async def run(questions: list[dict], out: Path) -> None:
                    "answer": asdict(answer) if hasattr(answer, "__dataclass_fields__") else answer,
                    "declined": res.get("declined"), "error": error,
                    "analyst": {k: (asklog.last or {}).get(k)
-                               for k in ("source", "attempts", "rejections")},
+                               for k in ("source", "attempts", "rejections", "fallback_reason")},
                    "gold_facts": gold_facts(q.get("gold"), m, ctx, norm)}
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
