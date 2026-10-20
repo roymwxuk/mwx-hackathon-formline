@@ -104,15 +104,50 @@ cache (0 cache hits).
 7. **The overturned goal is handled correctly** before (d09) and after (d01, d10) the
    correction, and false-premise questions (d02, c04, h02, j05) never accept the premise.
 
+## Reruns
+Separate files; the baseline above is unchanged.
+
+**Rerun 1** (`typed-questions-rerun-1.jsonl`, commit `3c89571`, j04 only, 6 calls): same
+failure, now with reasons. All three attempts were rejected with
+`[entities] write club names exactly as in FACTS (not in katakana or translated)`: the
+viewer typed ハーバーサイド and the model echoed it. The verifier rejects katakana club
+words on purpose (there is no official Japanese club name to check against), but the
+feedback didn't say which word, so the model repeated it.
+
+**Fix** (`d0fdae9`): the feedback names the offending words and the two clubs' FACTS
+spellings ("remove ハーバーサイド: write club names exactly as in FACTS (Harbourside
+Athletic / Northgate Rovers)…"); `analyst_free` v3 says not to echo a club typed in
+katakana. The verifier rule is unchanged.
+
+**Rerun 2** (`typed-questions-rerun-2.jsonl`, commit `d0fdae9`, the 6 Japanese questions,
+23 calls):
+
+| id | Outcome | Analyst | Score |
+|---|---|---|---|
+| j01 | answered | first attempt | ✓ 23分 |
+| j02 | answered | 2nd attempt (rejected: ゲート) | ✓ 1勝1分3敗, 8–13; Okafor scored in 3 of them |
+| j03 | answered | first attempt | ✓ Japan, born in Swansea |
+| j04 | answered | 2nd attempt (rejected: ゲート) | **✓ now passes**: Reyner, 1 goal in 3, 11 shots, 4 on target; scored against Northgate Rovers on 17 Oct |
+| j05 | fallback_malformed | first attempt | ✓ no hat-trick, 0 goals |
+| r03 | fallback_timeout (16.1 s) | first attempt | ✓ Reyner and Okafor, from season facts |
+
+6/6 answered by the model and verified (no template); 4/6 on the first attempt, 2/6
+after one retry, both for a katakana club word the new feedback fixed. With j04 passing,
+answerable questions are **27/27** relevant across the baseline and reruns.
+
+Still open: Researcher fallbacks (r03 timed out; j05, like h02 in the baseline, got a
+malformed final reply on a hat-trick question). Every fallback ended correctly but slower.
+
 ## Proposed follow-ups (owner decides; each is small)
 - **A. Log verifier rejection reasons and attempts** per typed answer (log line and eval row),
   then rerun j04 to see why it fails. This is telemetry only, with no behaviour change.
   *Done:* `Answer.rejections` holds each failed attempt's feedback; the `ask_free` log line
   carries `source`, `attempts` and `rejections`; eval rows copy them into `analyst`. Reruns
-  can now report first-attempt answer success. The j04 rerun is still to do (about ¥0.5).
+  can now report first-attempt answer success. *Rerun 1 found the cause; see Reruns.*
 - **B. Hide rejected tool calls** (`ok: false`) from the viewer's "Looked up" list.
 - **C. Fix j04** once A shows the cause (prompt or verifier), and make the typed-question
-  template fallback language-clean, or decline instead of dumping facts.
+  template fallback language-clean, or decline instead of dumping facts. *j04 fixed
+  (`d0fdae9`, rerun 2). The template fallback is still a mixed EN/JA dump when it fires.*
 - **D. Check the deployment's tokens-per-minute quota** before the public demo (a cloud
   step; owner's go).
 - Reruns go to new files (`typed-questions-rerun-1.jsonl`); this baseline stays as is.
