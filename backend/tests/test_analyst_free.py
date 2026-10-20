@@ -11,7 +11,7 @@ from formline import api
 from formline.agents.fakes import FakeAgents
 from formline.agents.llm import LLMConfig, make_runner
 from formline.agents.verifier import league_names
-from formline.analyst.ask import AskError, answer_free, known_events
+from formline.analyst.ask import REPHRASE_JA, AskError, answer_free, known_events
 from formline.analyst.followups import Moment, moment_kind
 from formline.analyst.router import check_route, player_clarification, shooters, squad
 from formline.analyst.sections import facts_for
@@ -345,6 +345,16 @@ def test_an_injected_claim_cannot_get_past_the_verifier(match):
     assert len(analyst_calls) == 3  # rejected three times (37 is not in the facts)
     assert out["answer"]["source"] == "template" and "37" not in text_of(out)
     assert out["answer"]["coverage"] == "partial"
+
+
+def test_a_japanese_template_fallback_asks_to_rephrase(match):
+    """The template lists English fact strings: in Japanese it is replaced by a request to
+    rephrase, never a mixed-language dump."""
+    bad = with_analyst({"headline": "オカフォーの夜", "body": "オカフォーは今夜37得点。",
+                        "coverage": "full"})
+    out = ask(match, "オカフォーは今夜何点取った？", lang="ja", responder=Scripted(bad))
+    assert out["outcome"] == "declined_template" and out["answer"] is None
+    assert out["declined"] == REPHRASE_JA
 
 
 def test_coverage_is_checked(match):

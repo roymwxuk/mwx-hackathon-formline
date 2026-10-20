@@ -660,3 +660,18 @@ endless loop stopped by the allowance, repeated lookups, bad final replies, time
 budget, the name check, ties. Real-model relevance, latency and cost are measured
 separately, not assumed.
 
+**Measured** (2026-10-20, single-match smoke evaluation, 38 EN/JA questions on
+`gpt-4.1-mini`; [results](eval/typed-questions-2026-10-20.md)). The chained questions
+worked as designed (top scorer → his last 3 games, in English and Japanese). 26 of 27
+answerable questions got relevant, correct answers (27 of 27 after one fix), with no false
+claims confirmed. Median 6.2 s and p90 11.0 s per question (the plan estimated 5–12 s);
+127 model calls, median 3 per question. The Researcher fell back to the Router on 5 of 35
+model-calling questions (2 malformed final replies, 2 timeouts, 1 content-filter block),
+and every fallback still ended correctly, so the fallback design paid off at the cost of
+latency. The one failure was not the Researcher's: a Japanese viewer named a club in
+katakana, the Analyst echoed it, and the verifier rejected all three attempts with a generic
+message. The fix keeps the verifier rule and names the offending word in its feedback
+(`analyst_free` v3); a Japanese answer that still fails asks the viewer to rephrase instead
+of showing the English-only template. Attempts, rejection reasons and the Researcher's
+fallback reason are now logged per question.
+

@@ -128,6 +128,9 @@ log = logging.getLogger("formline.ask")
 DEADLINE_S = 25.0
 RESEARCH_TIMEOUT_S = 12.0
 FALLBACK_RESERVE = 2 + 3
+# The template lists fact strings, which are English: in Japanese it would be a mixed dump,
+# so a Japanese viewer is asked to rephrase instead (eval j04, 2026-10-20).
+REPHRASE_JA = "うまく回答をまとめられませんでした。言い方を変えて、もう一度質問してください。"
 
 
 def _steps(session, lang: str) -> list[dict]:
@@ -181,9 +184,18 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
     def left() -> float:
         return DEADLINE_S - (loop.time() - start)
 
-    def done(outcome: str, steps: list, retrieved=None, answer=None, declined=None) -> dict:
-        log.info(json.dumps({"event": "ask_free", "outcome": outcome, "steps": len(steps),
-                             "seconds": round(loop.time() - start, 2)}))
+    fallback_reason: list[str] = []  # why the Researcher failed, if it did (logged only)
+
+    def done(outcome: str, steps: list, retrieved=None, answer=None, declined=None,
+             analyst: Answer | None = None) -> dict:
+        record = {"event": "ask_free", "outcome": outcome, "steps": len(steps),
+                  "seconds": round(loop.time() - start, 2)}
+        if fallback_reason:
+            record["fallback_reason"] = fallback_reason[0]
+        if analyst is not None:  # why answers were rejected, for diagnosis (never shown)
+            record |= {"source": analyst.source, "attempts": analyst.attempts,
+                       "rejections": list(analyst.rejections)}
+        log.info(json.dumps(record, ensure_ascii=False))
         return {"retrieved": retrieved, "answer": answer, "declined": declined,
                 "research": steps, "outcome": outcome}
 
@@ -216,6 +228,7 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
             outcome = "fallback_budget"
         except ResearchFailed as exc:
             outcome = exc.outcome
+            fallback_reason.append(str(exc))
         except Exception:  # a framework or tool error: fall back, never fail
             log.exception("researcher failed")
             outcome = "fallback_error"
@@ -244,8 +257,10 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
                             viewer_question=text[:MAX_TEXT]), max(2.0, left()))
     except TimeoutError:
         a = _template(pack, lang, ctx)
+    if a.source == "template" and lang == "ja":
+        return done("declined_template", steps, retrieved, declined=REPHRASE_JA, analyst=a)
     if a.coverage == "none":
-        return done("cannot_answer", steps, retrieved, declined=DECLINE[lang])
+        return done("cannot_answer", steps, retrieved, declined=DECLINE[lang], analyst=a)
     answer = {**answer_payload("free", lang, a, pack, known), "coverage": a.coverage,
               "cached": False}
-    return done(outcome, steps, retrieved, answer)
+    return done(outcome, steps, retrieved, answer, analyst=a)

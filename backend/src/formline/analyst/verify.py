@@ -183,9 +183,12 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
     if roles:
         failures.append(Failure("jargon", f"internal labels or role placeholders shown ({', '.join(roles)}); "
                                           "use the player names from NAMES and plain words"))
-    if ctx.lang == "ja" and any(w in text for w in JA_CLUB_WORDS):
-        failures.append(Failure("entities", "write club names exactly as in FACTS (not in katakana "
-                                            "or translated)"))
+    if ctx.lang == "ja" and (found := [w for w in JA_CLUB_WORDS if w in text]):
+        # name the words and the spellings: viewers type clubs in katakana and the model echoes them
+        spellings = " / ".join(league.clubs[cid][0] for cid in ctx.match_clubs)
+        failures.append(Failure("entities", f"remove {'、'.join(found)}: write club names exactly "
+                                            f"as in FACTS ({spellings}), not in katakana, or name "
+                                            "the player instead"))
     if ctx.lang == "ja" and not JAPANESE.search(text):
         failures.append(Failure("language", "write in Japanese"))
     if ctx.lang == "en" and KANA.search(text):

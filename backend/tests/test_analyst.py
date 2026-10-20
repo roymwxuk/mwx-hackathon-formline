@@ -124,6 +124,23 @@ def test_a_misbehaving_model_falls_back_to_a_verified_template(match):
         a = asyncio.run(answer_verified(pack, lang, runner, league,
                                         (gm.match.home_club_id, gm.match.away_club_id)))
         assert a.source == "template" and a.attempts == 3 and a.headline
+        assert len(a.rejections) == 3 and all("[format]" in r for r in a.rejections)
+
+
+def test_rejection_reasons_are_kept_for_diagnosis(match):
+    """A wrong number is rejected with the verifier's reason, then the retry passes."""
+    _, gm, players, clubs, league = match
+    events = sorted(current_events(gm.feed), key=lambda e: (e.period, e.match_clock_ms))
+    shot = next(e for e in events if e.type == "shot")
+    pack = shot_pack(shot, events, players, clubs, gm.match.home_club_id, gm.match.away_club_id)
+    shooter = league.players[shot.player_id][0].split()[-1]
+    good = {"headline": f"{shooter}'s effort", "body": f"From {pack.facts['distance']}, a modest chance."}
+    replies = iter([{**good, "body": "From 99 m, a modest chance."}, good])
+    runner = make_runner(LLMConfig(), fake_responder=lambda texts: json.dumps(next(replies)))
+    a = asyncio.run(answer_verified(pack, "en", runner, league,
+                                    (gm.match.home_club_id, gm.match.away_club_id)))
+    assert a.source == "llm" and a.attempts == 2
+    assert len(a.rejections) == 1 and "[numbers]" in a.rejections[0]
 
 
 def test_comment_messages_are_json_ready(comments):
@@ -159,3 +176,7 @@ def test_a_japanese_answer_must_not_translate_club_names(match):
     for club in ("北ゲート・ローバーズ", "ノースゲート・ローバーズ", "エルダーウィック・タウン"):
         bad = {**ok, "body": f"{club}の守備が固かった。"}
         assert "entities" in {f.check for f in verify_answer(bad, ctx, league).failures}, club
+    # the retry feedback names the offending word and the spelling to use instead
+    echo = {**ok, "headline": "ハーバーサイドの得点王"}
+    feedback = verify_answer(echo, ctx, league).feedback()
+    assert "ハーバーサイド" in feedback and "Harbourside Athletic" in feedback
