@@ -2,8 +2,7 @@
 
 **Status:** working notes after the 75-case smoke evaluation
 ([results](typed-questions-75-2026-10-20.md)) and one recheck. Branch `feat/eval-75`
-(worktree `.claude/worktrees/eval75`), latest commit `f63a652`, not pushed; `feat/tracking`
-is at `d635951` (pushed by Codex) and does not have these fixes yet.
+(worktree `.claude/worktrees/eval75`), rebased onto `feat/tracking` `c3b0289`, not pushed.
 
 Everything below is from one synthetic match and single runs per question unless stated. A
 fix marked "unit-tested" is proven in code; whether the model then answers well is only
@@ -171,12 +170,9 @@ form") remain probabilistic.
 
 ## 11. Docs and deployment
 
-- README's verifier catch rate says 99.6% of 1,075; the current measurement is 99.3% of
-  1,066 (`docs/verifier-catch-rate.md`, regenerated). The change predates these fixes.
-- README, ADR-013 and the results docs report the 38-case numbers; the 75-case results and
-  the fixes are not in the README yet.
-- `feat/eval-75` must be merged into `feat/tracking` (Codex pushed `feat/tracking`, so this
-  is a normal merge or fast-forward onto `d635951`).
+- Done: README catch rate (99.3% of 1,066), the 75-case results, the deterministic checks
+  and new limitations; ADR-013 update. Revisit after the second recheck.
+- `feat/eval-75` is rebased onto `feat/tracking` (`c3b0289`) and can be fast-forwarded.
 - The local backend still runs older code and prompts until restarted. Azure runs
   `c6ec320` and is stopped.
 

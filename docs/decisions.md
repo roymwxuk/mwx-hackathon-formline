@@ -675,3 +675,18 @@ message. The fix keeps the verifier rule and names the offending word in its fee
 of showing the English-only template. Attempts, rejection reasons and the Researcher's
 fallback reason are now logged per question.
 
+**Update (2026-10-20, 75-case run; [results](eval/typed-questions-75-2026-10-20.md),
+[open issues](eval/typed-questions-open-issues.md)).** 61 pass, 6 safe but weak, 8 fail.
+Most failures were claims without a number ("Reyner scored tonight", "Okafor leads the
+league", "last 2.5 games" answered silently as 3), so every existing check passed. Prompt
+lines were tried first and did not hold on a recheck (the false "scored tonight" came back
+in 2 of 3 runs). *Options:* more prompt lines, an LLM judge, or narrow deterministic checks.
+*Decision:* deterministic checks on typed answers only: a "scored tonight" sentence may name
+only players with a goal so far (denials allowed), league-leader claims are rejected because
+the facts cover only the two clubs of the match, and an out-of-range game window adds a
+fixed note after verification and marks coverage partial. *Why:* each is a false fact on a
+likely demo question; code checks are testable and cost nothing per call, while a judge adds
+a model call and is itself probabilistic. The cost is phrase coverage: other wordings slip
+through, and a true sentence naming a scorer and a non-scorer together causes a retry. The
+overlay-card catch rate is unchanged (99.3% of 1,066, 0 false positives).
+

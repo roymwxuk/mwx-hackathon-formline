@@ -78,14 +78,14 @@ Example cards from the demo match (63:44, Foundry-narrated, verified):
 
 | Claim | Result | How it is measured |
 |---|---|---|
-| The verifier catches wrong numbers and names | **99.6%** of 1,075 injected errors, **0** false positives | [docs/verifier-catch-rate.md](docs/verifier-catch-rate.md) |
+| The verifier catches wrong numbers and names | **99.3%** of 1,066 injected errors, **0** false positives | [docs/verifier-catch-rate.md](docs/verifier-catch-rate.md) |
 | Messy feeds converge to the same state | **300 / 300** chaotic replays equal the batch rebuild | `python -m formline.convergence`, `hypothesis` tests in CI |
 | Shrinkage makes baselines more accurate | **30%** lower error than raw averages (**45%** for 1–4 shots) | [docs/shrinkage-accuracy.md](docs/shrinkage-accuracy.md) |
 | The synthetic data is football-realistic | **14 / 14** event checks within range of league aggregates | [docs/realism-report.md](docs/realism-report.md) |
 | Tracking agrees with the events | **99.5%** of players on their event spots (within 0.5 m); distance covered is low (about 8 km per 90, real 10–12 km), reported honestly | [realism report, tracking section](docs/realism-report.md) |
 | Agents produce usable text | **80 / 80** Foundry card texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
 | The Match Analyst writes verified commentary | **96 / 96** comments and **190 / 192** follow-up answers written by the model and verified (2 template fallbacks); **48 / 48** question picks by the Suggester | `formline-gen analyst` run summary, ADR-011 |
-| Typed questions address the viewer's question | Original single-match Foundry baseline, 38 EN/JA questions: **26 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** ambiguous names clarified; median **6.2 s**, p90 **11.0 s**. The failed Japanese case passed a separate post-fix rerun; this is not a complete passing run of the current version. | [baseline and reruns](docs/eval/typed-questions-2026-10-20.md), [separate structured review](docs/eval/typed-questions-baseline.scores.md) |
+| Typed questions address the viewer's question | Original single-match Foundry baseline, 38 EN/JA questions: **26 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** ambiguous names clarified; median **6.2 s**, p90 **11.0 s**. The failed Japanese case passed a separate post-fix rerun; this is not a complete passing run of the current version. 75-case run (37 harder cases added): **61 pass, 6 safe but weak, 8 fail**; median **5.4 s**, p90 **11.1 s**; fixes since then are unit-tested and partly rechecked. | [baseline and reruns](docs/eval/typed-questions-2026-10-20.md), [separate structured review](docs/eval/typed-questions-baseline.scores.md), [75-case results](docs/eval/typed-questions-75-2026-10-20.md), [open issues](docs/eval/typed-questions-open-issues.md) |
 | Cost controls | Apps scale to zero; response caching and per-run model-call budgets. Historical run estimates are not a current billing total or a monetary cap. | [ADR-009 and ADR-011](docs/decisions.md) |
 
 ## How it works
@@ -202,13 +202,13 @@ the template narrations of all 22 live-match insights × 4 variants (88 cards):
 
 | Error family | Injected | Caught |
 |---|---|---|
-| Numbers (off by one, ±10%, swapped digits, from another insight) | 313 | 99% |
+| Numbers (off by one, ±10%, swapped digits, from another insight) | 304 | 98% |
 | Entities (teammate, opponent, other club) | 264 | 100% |
 | Missing estimate wording | 58 | 100% |
 | Certainty claims | 88 | 100% |
 | Structure (too long, missing slot, extra slot) | 264 | 100% |
 | Wrong language | 88 | 100% |
-| **Overall** | **1,075** | **99.6%**, with 0 false positives on 88 clean cards |
+| **Overall** | **1,066** | **99.3%**, with 0 false positives on 88 clean cards |
 
 The misses are role confusions: a real fact in the wrong place (his norm shown as this
 shot's speed). Details: [docs/verifier-catch-rate.md](docs/verifier-catch-rate.md).
@@ -260,6 +260,21 @@ results are preserved. Expansion details and criteria:
 [60 cases](docs/eval/typed-questions-expansion-60.md),
 [75 cases](docs/eval/typed-questions-expansion-75.md). Expanded-run results are not included
 in the original baseline figures above.
+
+**75-case run** (same match, one run, one scorer;
+[results](docs/eval/typed-questions-75-2026-10-20.md)): **61 pass, 6 safe but weak, 8 fail**.
+The original 38 scored 35 / 2 / 1 on the current code; the 37 new cases 26 / 4 / 7.
+251 model calls, median 5.4 s, p90 11.1 s. Clarifications, false-premise and injection cases
+and the VAR rollback held. The failures were mostly claims without a number, which the
+verifier cannot see: "Reyner scored tonight" when he had not, "Okafor leads the league" when
+the facts cover only two clubs, "last 0 / 2.5 games" silently answered as 1 / 3, a wrong club
+in the question. Prompt lines alone did not hold for these on a recheck, so they became
+deterministic checks for typed answers: a "scored tonight" sentence may name only tonight's
+scorers so far, league-leader claims are rejected, and an out-of-range game window adds a
+fixed note and marks the answer partial. Parsing, katakana-feedback and negated-certainty
+fixes were rechecked on the model (7 of 11 failing or weak cases fixed); the deterministic
+checks are unit-tested. What is still open and why:
+[docs/eval/typed-questions-open-issues.md](docs/eval/typed-questions-open-issues.md).
 
 From `backend/`, check the dataset and offline scorer without inference:
 
@@ -411,7 +426,7 @@ overridden through the variables in `scripts/azure/common.sh`.
 
 | Area | What is in place |
 |---|---|
-| Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.6% of injected errors with 0 false positives |
+| Correctness | Deterministic engine; every overlay cites its source events; verifier catches 99.3% of injected errors with 0 false positives |
 | Reliability | Agent retries with feedback, template fallback after 3 failures, selector falls back to rules; idempotent, event-sourced ingestion that converges under chaos (300/300); resumable SSE streams |
 | Security | Managed identity for Foundry, public images without credentials, non-root containers, CORS limited to the viewer; `/ask` validates catalog questions and moment/sequence. Typed questions are capped at 200 characters and 10 per client address per 10 minutes, treated as data, and checked against retrieved facts. The four hostile baseline cases did not confirm false claims or reveal prompts; this is evidence from those cases, not a general injection-proof guarantee. |
 | Cost | Scale to zero, ingress off when not in use, LLM response cache and per-run call budget, budget alerts |
@@ -471,7 +486,7 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
   replayed (`?live=true` runs the agents live). The verifier checks facts, not style.
 - **Single replica, JSONL event log** baked into the image (the event log interface is
   ready for Postgres); no infrastructure as code yet.
-- **Verifier misses role confusions** (a real fact in the wrong place, 0.4% of injected errors).
+- **Verifier misses role confusions** (a real fact in the wrong place, 0.7% of injected errors).
   For typed answers, numbers are bound to the player named in the same clause (Codex's review
   reproduced swapped goal counts passing before); two numbers of the same player (goals vs
   shots) are still not told apart, and passing the verifier does not prove the answer
@@ -493,8 +508,14 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Typed questions are slower when the Researcher falls back** (5 of 35 model-calling
   cases in the original smoke evaluation, with baseline responses up to 16.5 s). One 429
   (tokens-per-minute limit of the model deployment) was seen with a single viewer, so many
-  viewers at once would need concurrency controls or more quota. Published baseline measurements cover one match and
-  38 questions, scored by one reviewer; the 75-case dataset is still limited to that match.
+  viewers at once would need concurrency controls or more quota. Published measurements cover one match,
+  38 and 75 questions, single runs scored by one reviewer, so run-to-run variation is not
+  measured (one recommendation question passed once and failed twice on the same facts).
+- **Typed-answer checks are phrase-based.** "Scored tonight" and league-leader claims are
+  matched within a sentence in English and Japanese; other wordings ("found the net") are
+  not caught. Unknown player or club names get the generic decline rather than "name not
+  found", a wrong club in the question can still reach the headline, and two verifier false
+  positives (dates with leading zeros, one card minute) cost retries.
 
 ## Documentation
 
