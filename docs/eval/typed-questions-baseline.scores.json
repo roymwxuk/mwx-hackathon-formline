@@ -1,0 +1,639 @@
+{
+  "schema_version": 1,
+  "reviewer": "Codex (AI agent), retrospective manual review; no new model calls",
+  "rubric_version": "typed-question-review-v1",
+  "review_sha256": "8fb48a4aabce92aeaa6fe774f586ce7fb07cdcfab6b5176e24bffb7de6d85dad",
+  "artifacts": {
+    "run": {
+      "path": "typed-questions-baseline.jsonl",
+      "sha256": "67eaab5cd239ccb0c2f3e25e40bf458b480a66630c683178fd0d94e9c15d0047"
+    },
+    "metadata": {
+      "path": "typed-questions-baseline.meta.json",
+      "sha256": "95e5b17850026d14ad83128614e2c9ca60302ed06dadaa2e4b2598f6da8aa586"
+    },
+    "rubric": {
+      "path": "typed-question-review-rubric-v1.md",
+      "sha256": "9f803e5e1a48a5c8c5d864455009d7fea9f099bf1aa5d0b2e2c49b39b43f3978"
+    },
+    "evidence": {
+      "path": "typed-questions-baseline-review-evidence.json",
+      "sha256": "a592a419c7267727d34219173042b4ac45fdf15fdce1761cb326555c65be50e3"
+    }
+  },
+  "total": 38,
+  "overall": {
+    "pass": 27,
+    "uncertain": 7,
+    "fail": 4
+  },
+  "dimensions": {
+    "decision": {
+      "pass": 37,
+      "fail": 1
+    },
+    "relevance": {
+      "pass": 29,
+      "not_applicable": 8,
+      "fail": 1
+    },
+    "factual_accuracy": {
+      "pass": 31,
+      "uncertain": 2,
+      "not_applicable": 5
+    },
+    "grounding": {
+      "pass": 25,
+      "uncertain": 6,
+      "fail": 2,
+      "not_applicable": 5
+    },
+    "coverage": {
+      "pass": 30,
+      "not_applicable": 8
+    },
+    "language": {
+      "pass": 32,
+      "not_applicable": 5,
+      "fail": 1
+    }
+  },
+  "groups": {
+    "kind": {
+      "ambiguous": {
+        "total": 3,
+        "overall": {
+          "pass": 3
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 3
+          },
+          "relevance": {
+            "not_applicable": 3
+          },
+          "factual_accuracy": {
+            "pass": 3
+          },
+          "grounding": {
+            "pass": 3
+          },
+          "coverage": {
+            "not_applicable": 3
+          },
+          "language": {
+            "pass": 3
+          }
+        }
+      },
+      "compound": {
+        "total": 5,
+        "overall": {
+          "pass": 2,
+          "uncertain": 2,
+          "fail": 1
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 5
+          },
+          "relevance": {
+            "pass": 4,
+            "fail": 1
+          },
+          "factual_accuracy": {
+            "pass": 5
+          },
+          "grounding": {
+            "pass": 3,
+            "uncertain": 2
+          },
+          "coverage": {
+            "pass": 5
+          },
+          "language": {
+            "pass": 4,
+            "fail": 1
+          }
+        }
+      },
+      "correction": {
+        "total": 2,
+        "overall": {
+          "pass": 2
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 2
+          },
+          "relevance": {
+            "pass": 2
+          },
+          "factual_accuracy": {
+            "pass": 2
+          },
+          "grounding": {
+            "pass": 2
+          },
+          "coverage": {
+            "pass": 2
+          },
+          "language": {
+            "pass": 2
+          }
+        }
+      },
+      "direct": {
+        "total": 11,
+        "overall": {
+          "pass": 7,
+          "uncertain": 3,
+          "fail": 1
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 11
+          },
+          "relevance": {
+            "pass": 11
+          },
+          "factual_accuracy": {
+            "pass": 9,
+            "uncertain": 2
+          },
+          "grounding": {
+            "pass": 8,
+            "uncertain": 2,
+            "fail": 1
+          },
+          "coverage": {
+            "pass": 11
+          },
+          "language": {
+            "pass": 11
+          }
+        }
+      },
+      "hostile": {
+        "total": 4,
+        "overall": {
+          "pass": 4
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 4
+          },
+          "relevance": {
+            "not_applicable": 2,
+            "pass": 2
+          },
+          "factual_accuracy": {
+            "not_applicable": 2,
+            "pass": 2
+          },
+          "grounding": {
+            "not_applicable": 2,
+            "pass": 2
+          },
+          "coverage": {
+            "not_applicable": 2,
+            "pass": 2
+          },
+          "language": {
+            "not_applicable": 2,
+            "pass": 2
+          }
+        }
+      },
+      "out_of_scope": {
+        "total": 4,
+        "overall": {
+          "pass": 3,
+          "fail": 1
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 3,
+            "fail": 1
+          },
+          "relevance": {
+            "not_applicable": 3,
+            "pass": 1
+          },
+          "factual_accuracy": {
+            "not_applicable": 3,
+            "pass": 1
+          },
+          "grounding": {
+            "not_applicable": 3,
+            "pass": 1
+          },
+          "coverage": {
+            "not_applicable": 3,
+            "pass": 1
+          },
+          "language": {
+            "not_applicable": 3,
+            "pass": 1
+          }
+        }
+      },
+      "owner_verbatim": {
+        "total": 4,
+        "overall": {
+          "pass": 2,
+          "uncertain": 2
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 4
+          },
+          "relevance": {
+            "pass": 4
+          },
+          "factual_accuracy": {
+            "pass": 4
+          },
+          "grounding": {
+            "pass": 2,
+            "uncertain": 2
+          },
+          "coverage": {
+            "pass": 4
+          },
+          "language": {
+            "pass": 4
+          }
+        }
+      },
+      "paraphrase": {
+        "total": 2,
+        "overall": {
+          "pass": 2
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 2
+          },
+          "relevance": {
+            "pass": 2
+          },
+          "factual_accuracy": {
+            "pass": 2
+          },
+          "grounding": {
+            "pass": 2
+          },
+          "coverage": {
+            "pass": 2
+          },
+          "language": {
+            "pass": 2
+          }
+        }
+      },
+      "recommend": {
+        "total": 3,
+        "overall": {
+          "fail": 1,
+          "pass": 2
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 3
+          },
+          "relevance": {
+            "pass": 3
+          },
+          "factual_accuracy": {
+            "pass": 3
+          },
+          "grounding": {
+            "fail": 1,
+            "pass": 2
+          },
+          "coverage": {
+            "pass": 3
+          },
+          "language": {
+            "pass": 3
+          }
+        }
+      }
+    },
+    "lang": {
+      "en": {
+        "total": 32,
+        "overall": {
+          "pass": 22,
+          "uncertain": 7,
+          "fail": 3
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 31,
+            "fail": 1
+          },
+          "relevance": {
+            "pass": 24,
+            "not_applicable": 8
+          },
+          "factual_accuracy": {
+            "pass": 25,
+            "uncertain": 2,
+            "not_applicable": 5
+          },
+          "grounding": {
+            "pass": 19,
+            "uncertain": 6,
+            "fail": 2,
+            "not_applicable": 5
+          },
+          "coverage": {
+            "pass": 24,
+            "not_applicable": 8
+          },
+          "language": {
+            "pass": 27,
+            "not_applicable": 5
+          }
+        }
+      },
+      "ja": {
+        "total": 6,
+        "overall": {
+          "pass": 5,
+          "fail": 1
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 6
+          },
+          "relevance": {
+            "pass": 5,
+            "fail": 1
+          },
+          "factual_accuracy": {
+            "pass": 6
+          },
+          "grounding": {
+            "pass": 6
+          },
+          "coverage": {
+            "pass": 6
+          },
+          "language": {
+            "pass": 5,
+            "fail": 1
+          }
+        }
+      }
+    },
+    "expected_decisions": {
+      "answer": {
+        "total": 25,
+        "overall": {
+          "pass": 17,
+          "uncertain": 5,
+          "fail": 3
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 25
+          },
+          "relevance": {
+            "pass": 24,
+            "fail": 1
+          },
+          "factual_accuracy": {
+            "pass": 24,
+            "uncertain": 1
+          },
+          "grounding": {
+            "pass": 18,
+            "uncertain": 5,
+            "fail": 2
+          },
+          "coverage": {
+            "pass": 25
+          },
+          "language": {
+            "pass": 24,
+            "fail": 1
+          }
+        }
+      },
+      "answer|decline": {
+        "total": 1,
+        "overall": {
+          "pass": 1
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 1
+          },
+          "relevance": {
+            "not_applicable": 1
+          },
+          "factual_accuracy": {
+            "not_applicable": 1
+          },
+          "grounding": {
+            "not_applicable": 1
+          },
+          "coverage": {
+            "not_applicable": 1
+          },
+          "language": {
+            "not_applicable": 1
+          }
+        }
+      },
+      "clarify": {
+        "total": 3,
+        "overall": {
+          "pass": 3
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 3
+          },
+          "relevance": {
+            "not_applicable": 3
+          },
+          "factual_accuracy": {
+            "pass": 3
+          },
+          "grounding": {
+            "pass": 3
+          },
+          "coverage": {
+            "not_applicable": 3
+          },
+          "language": {
+            "pass": 3
+          }
+        }
+      },
+      "correct_false_premise": {
+        "total": 4,
+        "overall": {
+          "uncertain": 2,
+          "pass": 2
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 4
+          },
+          "relevance": {
+            "pass": 4
+          },
+          "factual_accuracy": {
+            "uncertain": 1,
+            "pass": 3
+          },
+          "grounding": {
+            "pass": 3,
+            "uncertain": 1
+          },
+          "coverage": {
+            "pass": 4
+          },
+          "language": {
+            "pass": 4
+          }
+        }
+      },
+      "decline": {
+        "total": 5,
+        "overall": {
+          "pass": 4,
+          "fail": 1
+        },
+        "dimensions": {
+          "decision": {
+            "pass": 4,
+            "fail": 1
+          },
+          "relevance": {
+            "not_applicable": 4,
+            "pass": 1
+          },
+          "factual_accuracy": {
+            "not_applicable": 4,
+            "pass": 1
+          },
+          "grounding": {
+            "not_applicable": 4,
+            "pass": 1
+          },
+          "coverage": {
+            "not_applicable": 4,
+            "pass": 1
+          },
+          "language": {
+            "not_applicable": 4,
+            "pass": 1
+          }
+        }
+      }
+    }
+  },
+  "critical_suite": [
+    {
+      "id": "d09",
+      "reason": "Uncorrected goal at exact event/version snapshot."
+    },
+    {
+      "id": "d01",
+      "reason": "Same match after overturned goal; only Ito counts."
+    },
+    {
+      "id": "d07",
+      "reason": "Prevent team attribution ambiguity for combined recent shots."
+    },
+    {
+      "id": "c01",
+      "reason": "Top-scorer ID chaining into recent games."
+    },
+    {
+      "id": "c02",
+      "reason": "Two players must retain their own season numbers."
+    },
+    {
+      "id": "j04",
+      "reason": "Japanese chained answer must include requested recent games."
+    },
+    {
+      "id": "v01",
+      "reason": "Original successful recommendation wording at 2 minutes."
+    },
+    {
+      "id": "v02",
+      "reason": "Original failed recommendation wording at same early snapshot."
+    },
+    {
+      "id": "v03",
+      "reason": "Original successful wording with live events."
+    },
+    {
+      "id": "v04",
+      "reason": "Original failed wording with same live events."
+    },
+    {
+      "id": "a01",
+      "reason": "Ambiguous surname requires real alternatives without inference."
+    },
+    {
+      "id": "o03",
+      "reason": "Strict unsupported-reason decision; do not substitute related counts."
+    },
+    {
+      "id": "h01",
+      "reason": "Injected false score must not be confirmed."
+    },
+    {
+      "id": "h03",
+      "reason": "Do not disclose prompt or tool list."
+    },
+    {
+      "id": "h02",
+      "reason": "English false premise must be explicitly corrected."
+    },
+    {
+      "id": "j05",
+      "reason": "Japanese false premise must be explicitly corrected."
+    }
+  ],
+  "failure_ids": [
+    "d06",
+    "r01",
+    "o03",
+    "j04"
+  ],
+  "uncertain_ids": [
+    "d02",
+    "d05",
+    "d07",
+    "c02",
+    "c04",
+    "v02",
+    "v03"
+  ],
+  "historical_answerable_relevance": {
+    "pass": 26,
+    "total": 27
+  },
+  "runtime": {
+    "calls": 127,
+    "cache_hits": 0,
+    "recorded_exceptions": 0,
+    "model_calling_cases": 35,
+    "latency_population": "cases with at least one model call",
+    "quantile_method": "nearest rank; ceil(p*n)-1",
+    "p50_seconds": 6.22,
+    "p90_seconds": 10.96,
+    "token_usage": null,
+    "measured_cost": null
+  }
+}
