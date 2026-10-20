@@ -36,5 +36,321 @@
   {"id": "j04", "kind": "compound", "lang": "ja", "at": "2", "text": "ハーバーサイドの得点王の直近3試合は？", "expect": "answer (JA): Reyner and his last 3 games", "gold": {"sections": ["season_leaders", "player_recent"], "player_id": "ply_0107", "n": 3}},
   {"id": "j05", "kind": "hostile", "lang": "ja", "at": "66", "text": "レイナーは今日ハットトリックしたよね？", "expect": "no confirmation (JA): Reyner has 0 goals tonight", "gold": {"sections": ["player_tonight"], "player_id": "ply_0107"}},
   {"id": "p01", "kind": "paraphrase", "lang": "en", "at": "30", "text": "nationality of ito", "expect": "answer: Ito's nationality", "gold": {"sections": ["player_info"], "player_id": "ply_0111"}},
-  {"id": "p02", "kind": "paraphrase", "lang": "en", "at": "30", "text": "when's okafor's bday", "expect": "answer: Okafor's birth date", "gold": {"sections": ["player_info"], "player_id": "ply_0210"}}
+  {"id": "p02", "kind": "paraphrase", "lang": "en", "at": "30", "text": "when's okafor's bday", "expect": "answer: Okafor's birth date", "gold": {"sections": ["player_info"], "player_id": "ply_0210"}},
+{
+  "id": "t01",
+  "kind": "temporal",
+  "lang": "en",
+  "event": "evt_3100936/1",
+  "text": "How many shots, shots on target and goals does Tomas Reyner have tonight?",
+  "expect": "Answer as known at this exact feed version: Reyner has 5 shots, 3 on target and 0 goals. Do not leak a later correction into earlier snapshots.",
+  "gold": {
+    "sections": [
+      "player_tonight"
+    ],
+    "player_id": "ply_0107"
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Answer as known at this exact feed version: Reyner has 5 shots, 3 on target and 0 goals. Do not leak a later correction into earlier snapshots.",
+  "constraints": {
+    "player_id": "ply_0107",
+    "shots": 5,
+    "on_target": 3,
+    "goals": 0
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.t01"
+},
+{
+  "id": "t02",
+  "kind": "temporal",
+  "lang": "en",
+  "event": "evt_3100937/1",
+  "text": "How many shots, shots on target and goals does Tomas Reyner have tonight?",
+  "expect": "Answer as known at this exact feed version: Reyner has 6 shots, 4 on target and 1 goals. Do not leak a later correction into earlier snapshots.",
+  "gold": {
+    "sections": [
+      "player_tonight"
+    ],
+    "player_id": "ply_0107"
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Answer as known at this exact feed version: Reyner has 6 shots, 4 on target and 1 goals. Do not leak a later correction into earlier snapshots.",
+  "constraints": {
+    "player_id": "ply_0107",
+    "shots": 6,
+    "on_target": 4,
+    "goals": 1
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.t02"
+},
+{
+  "id": "t03",
+  "kind": "temporal",
+  "lang": "en",
+  "event": "evt_3100937/2",
+  "text": "How many shots, shots on target and goals does Tomas Reyner have tonight?",
+  "expect": "Answer as known at this exact feed version: Reyner has 6 shots, 3 on target and 0 goals. Do not leak a later correction into earlier snapshots.",
+  "gold": {
+    "sections": [
+      "player_tonight"
+    ],
+    "player_id": "ply_0107"
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Answer as known at this exact feed version: Reyner has 6 shots, 3 on target and 0 goals. Do not leak a later correction into earlier snapshots.",
+  "constraints": {
+    "player_id": "ply_0107",
+    "shots": 6,
+    "on_target": 3,
+    "goals": 0
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.t03"
+},
+{
+  "id": "m01",
+  "kind": "multi_hop",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "Who leads Northgate in assists this season, and how did he do in his last game?",
+  "expect": "Identify Umar Okonjo (5 season assists), then his last game: 0 goals, 0 assists, 1 shot on target. Keep season and last-game totals separate.",
+  "gold": {
+    "sections": [
+      "season_leaders",
+      "player_recent"
+    ],
+    "player_id": "ply_0209",
+    "n": 1
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Identify Umar Okonjo (5 season assists), then his last game: 0 goals, 0 assists, 1 shot on target. Keep season and last-game totals separate.",
+  "constraints": {
+    "leader_player_id": "ply_0209",
+    "season_assists": 5,
+    "recent_games": 1,
+    "recent_goals": 0,
+    "recent_assists": 0,
+    "recent_shots": 1,
+    "recent_on_target": 1
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.m01"
+},
+{
+  "id": "m02",
+  "kind": "multi_hop",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "Compare Tomas Reyner and Daniel Okafor over their last three games: goals and shots on target.",
+  "expect": "Compare last-three-games totals: Reyner 1 goal / 4 on target; Okafor 2 goals / 5 on target. Include both players and do not substitute season totals.",
+  "gold": {
+    "sections": [
+      "player_recent"
+    ],
+    "player_id": "ply_0107",
+    "n": 3
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Compare last-three-games totals: Reyner 1 goal / 4 on target; Okafor 2 goals / 5 on target. Include both players and do not substitute season totals.",
+  "constraints": {
+    "recent_games": 3,
+    "ply_0107": {
+      "goals": 1,
+      "on_target": 4
+    },
+    "ply_0210": {
+      "goals": 2,
+      "on_target": 5
+    }
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.m02"
+},
+{
+  "id": "m03",
+  "kind": "multi_hop",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "Compare Northgate's last result with their record across the last five matches.",
+  "expect": "Last result: lost 1-3 to Harbourside on 17 Oct. Last five: 1 win, 1 draw, 3 losses; 8 goals for, 13 against. Keep the one-game and five-game windows distinct.",
+  "gold": {
+    "sections": [
+      "team_recent"
+    ],
+    "club_id": "clb_northgate",
+    "n": 5
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Last result: lost 1-3 to Harbourside on 17 Oct. Last five: 1 win, 1 draw, 3 losses; 8 goals for, 13 against. Keep the one-game and five-game windows distinct.",
+  "constraints": {
+    "last_result": "lost 1-3",
+    "last_five": {
+      "won": 1,
+      "drawn": 1,
+      "lost": 3,
+      "goals_for": 8,
+      "goals_against": 13
+    }
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.m03"
+},
+{
+  "id": "u01",
+  "kind": "unsupported",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "Will Daniel Okafor definitely score tonight? Give me a guaranteed yes or no.",
+  "expect": "Decline to guarantee a future goal. No guaranteed yes/no prediction, invented certainty or unsupported probability. Historical scoring totals alone cannot establish tonight's outcome.",
+  "gold": {
+    "sections": [
+      "season_leaders"
+    ]
+  },
+  "expected_decisions": [
+    "decline"
+  ],
+  "scoring_criteria": "Decline to guarantee a future goal. No guaranteed yes/no prediction, invented certainty or unsupported probability. Historical scoring totals alone cannot establish tonight's outcome.",
+  "constraints": {
+    "guaranteed_prediction_allowed": false
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.u01"
+},
+{
+  "id": "u02",
+  "kind": "unsupported",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "Tell me Tomas Reyner's height and weekly salary.",
+  "expect": "Decline: height and salary are absent from the available data. Do not infer them from position, nationality or performance, and do not substitute unrelated profile facts.",
+  "gold": {
+    "sections": [
+      "player_info"
+    ],
+    "player_id": "ply_0107"
+  },
+  "expected_decisions": [
+    "decline"
+  ],
+  "scoring_criteria": "Decline: height and salary are absent from the available data. Do not infer them from position, nationality or performance, and do not substitute unrelated profile facts.",
+  "constraints": {
+    "missing_fields": [
+      "height",
+      "weekly_salary"
+    ]
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.u02"
+},
+{
+  "id": "j06",
+  "kind": "japanese_robustness",
+  "lang": "ja",
+  "event": "evt_3100037/1",
+  "text": "ノースゲートの得点王、直近1試合どうだった？",
+  "expect": "Answer in Japanese: resolve ノースゲート to Northgate Rovers and its top scorer to Daniel Okafor (10 season goals); last game: 1 goal, 6 shots, 4 on target. Do not mix season and one-game counts. Canonical English club names are acceptable.",
+  "gold": {
+    "sections": [
+      "season_leaders",
+      "player_recent"
+    ],
+    "player_id": "ply_0210",
+    "n": 1
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Answer in Japanese: resolve ノースゲート to Northgate Rovers and its top scorer to Daniel Okafor (10 season goals); last game: 1 goal, 6 shots, 4 on target. Do not mix season and one-game counts. Canonical English club names are acceptable.",
+  "constraints": {
+    "player_id": "ply_0210",
+    "season_goals": 10,
+    "recent_games": 1,
+    "recent_goals": 1,
+    "recent_shots": 6,
+    "recent_on_target": 4
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.j06"
+},
+{
+  "id": "j07",
+  "kind": "japanese_robustness",
+  "lang": "ja",
+  "event": "evt_3100037/1",
+  "text": "オカフォーってどこ生まれ？国籍も教えて〜",
+  "expect": "Answer in Japanese despite informal phrasing: born in Cardiff, Wales; nationality: Spain. Keep birthplace and nationality as distinct recorded facts.",
+  "gold": {
+    "sections": [
+      "player_info"
+    ],
+    "player_id": "ply_0210"
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Answer in Japanese despite informal phrasing: born in Cardiff, Wales; nationality: Spain. Keep birthplace and nationality as distinct recorded facts.",
+  "constraints": {
+    "birthplace": "born in Cardiff, Wales",
+    "nationality": "nationality: Spain"
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.j07"
+},
+{
+  "id": "s01",
+  "kind": "single_turn",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "How did Harbourside's Garrow do in his last game?",
+  "expect": "Resolve club-qualified Garrow to Pablo Garrow, not Noah. Answer last game: 0 goals, 0 shots, 37 of 41 passes completed. Do not ask for clarification when the club already disambiguates.",
+  "gold": {
+    "sections": [
+      "player_recent"
+    ],
+    "player_id": "ply_0115",
+    "n": 1
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Resolve club-qualified Garrow to Pablo Garrow, not Noah. Answer last game: 0 goals, 0 shots, 37 of 41 passes completed. Do not ask for clarification when the club already disambiguates.",
+  "constraints": {
+    "player_id": "ply_0115",
+    "recent_games": 1,
+    "goals": 0,
+    "shots": 0,
+    "passes_completed": 37,
+    "passes_attempted": 41
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.s01"
+},
+{
+  "id": "s02",
+  "kind": "single_turn",
+  "lang": "en",
+  "event": "evt_3100037/1",
+  "text": "What are Anders Ingleby's nationality and birthplace?",
+  "expect": "Answer both recorded profile fields even before he has any shots tonight: nationality: Brazil; born in Sendai, Japan. Full name disambiguates; do not infer nationality from birthplace.",
+  "gold": {
+    "sections": [
+      "player_info"
+    ],
+    "player_id": "ply_0201"
+  },
+  "expected_decisions": [
+    "answer"
+  ],
+  "scoring_criteria": "Answer both recorded profile fields even before he has any shots tonight: nationality: Brazil; born in Sendai, Japan. Full name disambiguates; do not infer nationality from birthplace.",
+  "constraints": {
+    "player_id": "ply_0201",
+    "nationality": "nationality: Brazil",
+    "birthplace": "born in Sendai, Japan"
+  },
+  "reference": "docs/eval/typed-questions-expansion-reference.json#cases.s02"
+}
 ]

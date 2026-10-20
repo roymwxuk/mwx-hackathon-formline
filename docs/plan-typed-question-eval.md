@@ -1,10 +1,16 @@
 # Plan: real-model smoke evaluation of typed questions
 
-**Status:** Harness built and dry-run with the fake model (2026-10-19/20); revised after
-Codex's review (2026-10-20 00:07). The Foundry run waits for the owner's go.
+**Status:** The original 38-question Foundry baseline and two selected reruns are complete;
+see `docs/eval/typed-questions-2026-10-20.md`. The active dataset now has **50 cases**:
+the original 38 plus 12 targeted additions with locally checked deterministic references.
+The 12 additions have **not** been evaluated with a real model. See
+`docs/eval/typed-questions-expansion-50.md` for scope, snapshots and scoring criteria.
 **Follows:** `docs/plan-agentic-research.md`, section "Real-model evaluation" (review point 6
 in `private/researcher-plan-review.md`).
-**Branch:** `feat/typed-eval` (on top of `feat/tracking`).
+**Branch:** Integrated into `feat/tracking` (original implementation: `feat/typed-eval`).
+
+The counts, targets and cost estimates below describe the historical 38-case evaluation.
+Do not treat them as measured results or release criteria for the expanded 50-case set.
 
 ## Why
 The verifier checks that every number and name in an answer matches the engine's facts. It
