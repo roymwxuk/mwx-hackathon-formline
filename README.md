@@ -10,6 +10,9 @@ and **Microsoft Foundry**, checked number by number, and running on **Azure Cont
 Built for the *Inside the Game* Developer Hackathon (Microsoft × Premier League). Target
 category: **Best Multi-Agent Orchestration**. All data is synthetic.
 
+**Live demo:** https://formline-web.bravestone-2a024c10.japaneast.azurecontainerapps.io
+(scales to zero, so the first load takes about 30 s). Demo video: *(link after publishing)*.
+
 ![Two viewers, same moment: a Japanese casual fan following Reyner and an English analyst](docs/ui/live/hero-two-viewers-64m.png)
 
 *Same moment, same engine output, two viewers. Left: casual, Japanese, following Reyner.
