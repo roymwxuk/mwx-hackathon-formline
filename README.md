@@ -53,7 +53,8 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
   The panel has two tabs: *Commentary* and *Ask the analyst*: the latest moment's two
   suggested questions, a box to type your own, and the answers asked so far. A typed question
   goes through a Researcher agent that chooses fact tools, reads their results and chains
-  lookups (e.g. season leaders → the top scorer's last three games). Python computes the
+  lookups (e.g. season leaders → the top scorer's last three games;
+  [screenshot](docs/ui/live/analyst-researcher-chain.png)). Python computes the
   facts; the Match Analyst writes the answer, and a deterministic verifier checks numbers,
   entities and estimate wording. A one-shot Question Router is the Researcher's fallback.
   Match weather, synthetic player biographies, recent performances and evidence-based
