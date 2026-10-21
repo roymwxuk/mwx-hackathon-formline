@@ -1,7 +1,8 @@
 """Real-model smoke evaluation of typed questions (docs/plan-typed-question-eval.md).
 
 Usage: uv run python scripts/eval_typed_questions.py --out FILE.jsonl [--only d01,c01]
-Asks every question in scripts/typed_questions.json through `answer_free`, in process (no
+       [--questions FILE.json]
+Asks every question in scripts/typed_questions.json (or --questions) through `answer_free`, in process (no
 rate limit), as of the stated minute of the live match. Each row records the outcome, the
 lookups, the answer, model calls, cache hits and latency, plus the gold facts: the
 deterministic sections that answer the question, rendered with real names, to score the
@@ -76,7 +77,7 @@ def git(*args: str) -> str:
     return done.stdout.strip()
 
 
-def meta(runner, data: Path) -> dict:
+def meta(runner, data: Path, questions: Path) -> dict:
     return {"started_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "commit": git("rev-parse", "--short", "HEAD"),
             "dirty": bool(git("status", "--porcelain", "--", "..")),
@@ -86,7 +87,7 @@ def meta(runner, data: Path) -> dict:
             "match_id": LIVE,
             "data": {name: sha(data / name) for name in
                      (f"feeds/{LIVE}.jsonl", "league.json", "matches.json")},
-            "questions": sha(QUESTIONS)}
+            "questions": {"file": questions.name, "sha": sha(questions)}}
 
 
 def gold_facts(gold: dict | None, m, ctx, norm) -> dict | None:
@@ -101,7 +102,7 @@ def gold_facts(gold: dict | None, m, ctx, norm) -> dict | None:
     return json.loads(ROLE.sub(lambda r: names.get(r.group(), r.group()), text))
 
 
-async def run(questions: list[dict], out: Path) -> None:
+async def run(questions: list[dict], out: Path, source: Path) -> None:
     data = settings.data_dir
     feed = read_feed(data / "feeds" / f"{LIVE}.jsonl")
     ctx = match_context(data, LIVE)
@@ -112,7 +113,7 @@ async def run(questions: list[dict], out: Path) -> None:
     runner = make_runner(replace(LLMConfig.from_settings(), max_calls=400),
                          fake_responder=FakeAgents(), cache_path=cache)
     out.with_suffix(".meta.json").write_text(
-        json.dumps(meta(runner, data), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        json.dumps(meta(runner, data, source), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     asklog = AskLog()
     logger = logging.getLogger("formline.ask")
     logger.addHandler(asklog)
@@ -156,15 +157,16 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, required=True, help="a new .jsonl file")
     ap.add_argument("--only", help="comma-separated question ids")
+    ap.add_argument("--questions", type=Path, default=QUESTIONS, help="a question set (JSON)")
     args = ap.parse_args()
     if args.out.exists():
         raise SystemExit(f"{args.out} exists: give each run its own file")
-    questions = json.loads(QUESTIONS.read_text(encoding="utf-8"))
+    questions = json.loads(args.questions.read_text(encoding="utf-8"))
     if args.only:
         keep = set(args.only.split(","))
         questions = [q for q in questions if q["id"] in keep]
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    asyncio.run(run(questions, args.out))
+    asyncio.run(run(questions, args.out, args.questions))
 
 
 if __name__ == "__main__":

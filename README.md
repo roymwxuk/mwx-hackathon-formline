@@ -89,7 +89,7 @@ Example cards from the demo match (63:44, Foundry-narrated, verified):
 | Tracking agrees with the events | **99.5%** of players on their event spots (within 0.5 m); distance covered is low (about 8 km per 90, real 10–12 km), reported honestly | [realism report, tracking section](docs/realism-report.md) |
 | Agents produce usable text | **80 / 80** Foundry card texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
 | The Match Analyst writes verified commentary | **96 / 96** comments and **190 / 192** follow-up answers written by the model and verified (2 template fallbacks); **48 / 48** question picks by the Suggester | `formline-gen analyst` run summary, ADR-011 |
-| Typed questions address the viewer's question | Original single-match Foundry baseline, 38 EN/JA questions: **26 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** ambiguous names clarified; median **6.2 s**, p90 **11.0 s**. Full rerun of the same 38 on `main` (2026-10-21, one run): **27 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** clarified; median **5.9 s**, p90 **13.7 s** (two provider rate-limit retries). 75-case run (37 harder cases added): **61 pass, 6 safe but weak, 8 fail**; median **5.4 s**, p90 **11.1 s**; fixes since then are unit-tested and partly rechecked. | [baseline and reruns](docs/eval/typed-questions-2026-10-20.md), [full rerun on main](docs/eval/typed-questions-38-rerun-2026-10-21.md), [separate structured review](docs/eval/typed-questions-baseline.scores.md), [75-case results](docs/eval/typed-questions-75-2026-10-20.md), [open issues](docs/eval/typed-questions-open-issues.md) |
+| Typed questions address the viewer's question | Original single-match Foundry baseline, 38 EN/JA questions: **26 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** ambiguous names clarified; median **6.2 s**, p90 **11.0 s**. Full rerun of the same 38 on `main` (2026-10-21, one run): **27 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** clarified; median **5.9 s**, p90 **13.7 s** (two provider rate-limit retries). 75-case run (37 harder cases added): **61 pass, 6 safe but weak, 8 fail**; median **5.4 s**, p90 **11.1 s**; fixes since then are unit-tested and partly rechecked. Ten further variants: **5 / 8** answerable fully correct. | [baseline and reruns](docs/eval/typed-questions-2026-10-20.md), [full rerun on main](docs/eval/typed-questions-38-rerun-2026-10-21.md), [separate structured review](docs/eval/typed-questions-baseline.scores.md), [75-case results](docs/eval/typed-questions-75-2026-10-20.md), [open issues](docs/eval/typed-questions-open-issues.md) |
 | Cost controls | Apps scale to zero; response caching and per-run model-call budgets. Historical run estimates are not a current billing total or a monetary cap. | [ADR-009 and ADR-011](docs/decisions.md) |
 
 ## How it works
@@ -282,6 +282,17 @@ after the deterministic checks: the recommendation question asked 3 times with n
 still gets a misleading headline over a correct body. What is still open and why:
 [docs/eval/typed-questions-open-issues.md](docs/eval/typed-questions-open-issues.md).
 
+**Ten further variants** (Codex's set, new wordings and combinations of existing cases, not a
+held-out benchmark; one run, 2026-10-21;
+[results](docs/eval/typed-questions-extra-10-results.md)): on the 8 answerable cases,
+**6 / 8** relevant, **6 / 8** grounded, **5 / 8** both; the sample-size and "guarantee the
+next scorer" cases answered cautiously. Two new failures: a false hat-trick premise was
+accepted and an invented hat-trick passed the verifier, and correct derived differences
+(99 − 88 = 11 km/h) were rejected because they are not in FACTS. The run also exposed a
+regression in that day's certainty fix (honest refusals such as "no player can be guaranteed
+to score" rejected), fixed and rechecked on the model; the final check agrees with the
+previous one on all 262 saved English answers.
+
 From `backend/`, check the dataset and offline scorer without inference:
 
 ```sh
@@ -289,7 +300,8 @@ From `backend/`, check the dataset and offline scorer without inference:
 ```
 
 `uv run python scripts/eval_typed_questions.py --out <new-file.jsonl>` uses the active
-75-case dataset by default. It calls Foundry when configured and incurs model usage; use a
+75-case dataset by default; `--questions <file.json>` runs another set (its hash goes into
+the run's metadata). It calls Foundry when configured and incurs model usage; use a
 new output path and score results separately. The existing 400-call budget may be exhausted
 in a failure-heavy run; report budget failures separately from model-quality failures.
 
@@ -499,7 +511,9 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
   addresses the question, which is evaluated separately.
 - **The Analyst verifier checks facts, not judgement.** Every number, name and estimate is
   checked, but a qualitative claim can slip through: a few answers call the teams "balanced
-  in possession", which the facts do not hold (they only count completed passes).
+  in possession", which the facts do not hold (they only count completed passes), and one
+  answer accepted a false hat-trick premise. Differences the model computes correctly from
+  two facts are rejected, since only FACTS values are allowed.
 - **Typed questions are answered from 13 fact sections**, including the season before
   tonight (season leaders, a player's or team's last 1–5 games, from the 30 past matches). A question needing facts outside
   them (team news, a player's age or injuries, the referee's reasons, a time window other
@@ -519,7 +533,8 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
   measured (one recommendation question passed once and failed twice on the same facts).
 - **Typed-answer checks are phrase-based.** "Scored tonight" and league-leader claims are
   matched within a sentence in English and Japanese; other wordings ("found the net") are
-  not caught. Unknown player or club names get the generic decline rather than "name not
+  not caught. Certainty claims are excused only by an explicit denial right before them
+  ("no one can say he will score", "no guarantee"), from a fixed list of English phrasings. Unknown player or club names get the generic decline rather than "name not
   found", a wrong club in the question can still reach the headline, and two verifier false
   positives (dates with leading zeros, one card minute) cost retries.
 

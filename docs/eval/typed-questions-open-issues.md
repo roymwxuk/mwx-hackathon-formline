@@ -144,6 +144,9 @@ attempt. Cost: one retry for most Japanese questions that name a club (about 3 s
 | Case | Effect | State |
 |---|---|---|
 | "No guarantee Okafor will score" rejected as a certainty claim (u01) | template dump | **Fixed** (English negation earlier in the clause); rechecked |
+| That fix was too wide: "Ito has not been tested and Okafor will definitely score" and "Nobody can deny he will score" passed (audit) | false pass | **Fixed**: only an explicit denial of certainty right before the claim ("no one can say", "no guarantee", "not guaranteed") excuses it; clauses also break at and/but; each occurrence checked on its own. Agrees with the old check on all 262 saved English answers ([extra-10 results](typed-questions-extra-10-results.md)) |
+| Hat-trick premise accepted and invented (ext10_05) | false pass | Open: claims without numbers; see [extra-10 results](typed-questions-extra-10-results.md) |
+| Correct derived differences (99 − 88 = 11) rejected (ext10_03) | template | Open: differences are not in FACTS |
 | Birth date written 4月8日 against "04"/"08" in FACTS (j03) | one retry | Open: numbers with leading zeros are not normalised |
 | Minute 49 (Marchetti's second yellow) rejected as "not a number of Marchetti" (o03) | three rejections, template | Open: likely the binding check not linking card minutes to the player; needs a look |
 | A true sentence naming a scorer and a non-scorer (new check, issue 1) | possible retry | By design; watch on recheck |

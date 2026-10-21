@@ -144,6 +144,45 @@ def test_a_denied_certainty_claim_is_not_a_claim(slow):
         assert "certainty" in checks(verify(good(sub=claim), ctx(ins), league)), claim
 
 
+@pytest.mark.parametrize("sub", [
+    "84 km/h; nobody knows if he will score.",
+    "84 km/h; there is no certainty he will score.",
+    "84 km/h; it is not guaranteed.",
+    "84 km/h; I can't say whether he will score.",
+    # Eval ext10_10: three honest refusals were rejected and the answer fell back.
+    "84 km/h; no guaranteed next scorer from shots or season form.",
+    "84 km/h; no player can be guaranteed to score next.",
+    "84 km/h; a goal cannot be guaranteed.",
+    "84 km/h; tonight's shots and season form do not guarantee who will score next.",
+    "84 km/h; no one can guarantee he will score.",
+    "84 km/h; however, no data guarantees who will score next (model estimate).",
+    "84 km/h; no definite next scorer can be guaranteed.",
+    "84 km/h; there is no data guaranteeing he will score.",
+    "84 km/h; nobody promises he will score.",
+])
+def test_explicit_denials_of_certainty_pass(slow, sub):
+    ins, league = slow
+    assert "certainty" not in checks(verify(good(sub=sub), ctx(ins), league))
+
+
+@pytest.mark.parametrize("sub", [
+    # Audit finding: an unrelated negation earlier in the clause excused the claim.
+    "84 km/h; he has not been tested and he will definitely score.",
+    "84 km/h; he has not been tested, he will definitely score.",
+    "84 km/h; he was not at his best but he will score.",
+    "84 km/h; he never panics, he is sure to finish.",
+    # Denying a doubt is an assertion, not a denial (Codex review).
+    "84 km/h; nobody can deny he will score.",
+    "84 km/h; no one doubts he will score.",
+    "84 km/h; no doubt he is sure to score.",
+    # One denial cannot excuse a later assertion of the same phrase.
+    "84 km/h; no one can say he will score. He will score next time.",
+])
+def test_unrelated_negation_does_not_excuse_certainty(slow, sub):
+    ins, league = slow
+    assert "certainty" in checks(verify(good(sub=sub), ctx(ins), league)), sub
+
+
 def test_wrong_language_is_caught(slow):
     ins, league = slow
     v = verify(good(), ctx(ins, lang="ja"), league)
