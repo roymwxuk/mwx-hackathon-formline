@@ -145,8 +145,9 @@ The repository measures its own claims:
   the verifier, with no template fallbacks. The Match Analyst wrote **96 / 96** comments and
   **190 / 192** follow-up answers that passed verification.
 - **Typed questions** (single-match smoke evaluations, scored by hand against the engine's
-  facts): **26 / 27** answerable questions relevant in a 38-question EN/JA baseline, with
-  no false claim confirmed, ambiguous names clarified and nothing leaked to injection.
+  facts): **27 / 27** answerable questions relevant in a full run of the 38-question EN/JA
+  set on the current code (26 / 27 in the first baseline), with no false claim confirmed,
+  ambiguous names clarified and nothing leaked to injection.
   On a harder 75-case set: 61 pass, 6 safe but weak, 8 fail. Most failures were claims
   without a number, so they became deterministic checks and were rechecked on the model.
   The remaining limits are documented. Median 5.4 s per question.
