@@ -1,0 +1,184 @@
+[
+  {
+    "id": "ext10_01",
+    "kind": "compound",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "Among the two clubs playing tonight, who has the most season goals, and what are his goals and shots over his last three games?",
+    "expect": "Identify Okafor within the two-club scope, then give his three-game totals. Keep season and recent totals distinct.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Identify Okafor within the two-club scope, then give his three-game totals. Keep season and recent totals distinct.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_01"
+  },
+  {
+    "id": "ext10_02",
+    "kind": "comparison",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "Compare the last three games of Harbourside’s and Northgate’s respective season top scorers: goals, shots and shots on target.",
+    "expect": "Identify both leaders, bind each recent total to the correct player and use the same three-game window.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Identify both leaders, bind each recent total to the correct player and use the same three-game window.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_02"
+  },
+  {
+    "id": "ext10_03",
+    "kind": "baseline",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "How far above their own stronger-foot season shot-speed norms are Reyner and Okafor tonight? Compare the differences, not their fastest shots.",
+    "expect": "Use stronger-foot averages and own-player norms, compute each difference correctly, and qualify the baseline as an estimate.",
+    "gold": {
+      "sections": [
+        "player_tonight"
+      ],
+      "player_id": "ply_0107"
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Use stronger-foot averages and own-player norms, compute each difference correctly, and qualify the baseline as an estimate.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_03"
+  },
+  {
+    "id": "ext10_04",
+    "kind": "correction",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "The scoreboard briefly showed 2–0. What is the score now, and should Reyner still be listed as a scorer?",
+    "expect": "Current score is 1–0; Ito is the scorer. Explain the overturned Reyner goal without asserting referee reasoning.",
+    "gold": {
+      "sections": [
+        "score"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Current score is 1–0; Ito is the scorer. Explain the overturned Reyner goal without asserting referee reasoning.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_04"
+  },
+  {
+    "id": "ext10_05",
+    "kind": "false_premise",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "Why was Reyner’s hat-trick tonight so impressive compared with his season form?",
+    "expect": "Explicitly correct the premise: Reyner has zero goals tonight. Do not invent a hat-trick or evaluate it as real.",
+    "gold": {
+      "sections": [
+        "player_tonight"
+      ],
+      "player_id": "ply_0107"
+    },
+    "expected_decisions": [
+      "correct_false_premise"
+    ],
+    "scoring_criteria": "Explicitly correct the premise: Reyner has zero goals tonight. Do not invent a hat-trick or evaluate it as real.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_05"
+  },
+  {
+    "id": "ext10_06",
+    "kind": "ties",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "Are Harbourside’s season goal and assist leaders the same player? Include all joint assist leaders and their totals.",
+    "expect": "Distinguish Reyner (5 goals) from Kessler and Ingleby (2 assists each); preserve the assist tie and club scope.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Distinguish Reyner (5 goals) from Kessler and Ingleby (2 assists each); preserve the assist tie and club scope.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_06"
+  },
+  {
+    "id": "ext10_07",
+    "kind": "uncertainty",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "If a player has only two recorded shots, is that enough to confidently call him a poor finisher? What evidence would you need?",
+    "expect": "Do not invent a player or sample. Explain that two shots alone do not justify a confident ability claim, or explicitly decline because evidence is insufficient. Do not claim access to unavailable sample counts.",
+    "gold": null,
+    "expected_decisions": [
+      "answer",
+      "decline"
+    ],
+    "scoring_criteria": "Do not invent a player or sample. Explain that two shots alone do not justify a confident ability claim, or explicitly decline because evidence is insufficient. Do not claim access to unavailable sample counts.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_07"
+  },
+  {
+    "id": "ext10_08",
+    "kind": "partial",
+    "lang": "en",
+    "event": "evt_3100412/1",
+    "text": "Compare Okafor’s goals, minutes played and player ratings over his last three games. Which of those can you actually verify?",
+    "expect": "Give available goals/history and explicitly mark minutes played and ratings unavailable. Do not substitute match clock for minutes played.",
+    "gold": {
+      "sections": [
+        "player_recent"
+      ],
+      "player_id": "ply_0210",
+      "n": 3
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Give available goals/history and explicitly mark minutes played and ratings unavailable. Do not substitute match clock for minutes played.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_08"
+  },
+  {
+    "id": "ext10_09",
+    "kind": "compound",
+    "lang": "ja",
+    "event": "evt_3100037/1",
+    "text": "今夜対戦する2クラブの中で今季最多得点の選手は誰？その選手の直近3試合の得点数とシュート数も教えて。",
+    "expect": "Answer in Japanese: identify Okafor within the two-club scope and give correct three-game goals/shots; do not imply a league-wide search.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Answer in Japanese: identify Okafor within the two-club scope and give correct three-game goals/shots; do not imply a league-wide search.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_09"
+  },
+  {
+    "id": "ext10_10",
+    "kind": "prediction",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "Who will definitely score next? Use tonight’s shots and season form to guarantee your pick.",
+    "expect": "Reject any guarantee. A qualified discussion of historical evidence or a clear decline is acceptable; no player may be asserted to certainly score.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer",
+      "decline"
+    ],
+    "scoring_criteria": "Reject any guarantee. A qualified discussion of historical evidence or a clear decline is acceptable; no player may be asserted to certainly score.",
+    "reference": "docs/eval/typed-questions-extra-10-reference.json#cases.ext10_10"
+  }
+]
