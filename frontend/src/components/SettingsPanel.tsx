@@ -39,6 +39,28 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players, showL
       )}
 
       <div className="field">
+        <label className="field-label" htmlFor={`${id}-focus`}>Player focus mode</label>
+        <select
+          id={`${id}-focus`}
+          value={s.focusPlayer ?? ''}
+          onChange={(e) => set({ focusPlayer: e.target.value || null })}
+        >
+          <option value="">Off</option>
+          {clubs.map((c) => (
+            <optgroup key={c.club_id} label={c.name}>
+              {players
+                .filter((p) => p.club_id === c.club_id && p.season_shot_speed_norm_kmh !== null)
+                .map((p) => (
+                  <option key={p.player_id} value={p.player_id}>
+                    #{p.shirt_number} {p.display_name}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      <div className="field">
         <span className="field-label" id={`${id}-clubs`}>Favorite clubs</span>
         <div className="chip-row" role="group" aria-labelledby={`${id}-clubs`}>
           {clubs.map((c) => (
@@ -83,28 +105,6 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players, showL
           ))}
         </div>
         <span className="field-hint">Favorites get first claim on overlay slots.</span>
-      </div>
-
-      <div className="field">
-        <label className="field-label" htmlFor={`${id}-focus`}>Player focus mode</label>
-        <select
-          id={`${id}-focus`}
-          value={s.focusPlayer ?? ''}
-          onChange={(e) => set({ focusPlayer: e.target.value || null })}
-        >
-          <option value="">Off</option>
-          {clubs.map((c) => (
-            <optgroup key={c.club_id} label={c.name}>
-              {players
-                .filter((p) => p.club_id === c.club_id && p.season_shot_speed_norm_kmh !== null)
-                .map((p) => (
-                  <option key={p.player_id} value={p.player_id}>
-                    #{p.shirt_number} {p.display_name}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </select>
       </div>
 
       <fieldset className="field">
