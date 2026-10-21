@@ -148,7 +148,7 @@ attempt. Cost: one retry for most Japanese questions that name a club (about 3 s
 | Hat-trick premise accepted and invented (ext10_05) | false pass | Open: claims without numbers; see [extra-10 results](typed-questions-extra-10-results.md) |
 | Correct derived differences (99 − 88 = 11) rejected (ext10_03) | template | Open: differences are not in FACTS |
 | Opponents from `player_recent` FACTS rejected as "a club not in this match" (a37_07) | template | **Fixed**: a club FACTS name is allowed; rechecked on the model ([37-case results](typed-questions-answerable-37-results.md)) |
-| False-premise questions declined with the generic scope message (d02, c04 in the 37-case run) | weak answer | Open: Researcher run-to-run variation; both passed on Oct 21 |
+| False-premise questions declined with the generic scope message (d02, c04 in the 37-case run) | weak answer | Open: Researcher run-to-run variation; d02 answered cleanly in 1 of 5 runs, c04 failed in 1 of 5 |
 | Birth date written 4月8日 against "04"/"08" in FACTS (j03) | one retry | Open: numbers with leading zeros are not normalised |
 | Minute 49 (Marchetti's second yellow) rejected as "not a number of Marchetti" (o03) | three rejections, template | Open: likely the binding check not linking card minutes to the player; needs a look |
 | A true sentence naming a scorer and a non-scorer (new check, issue 1) | possible retry | By design; watch on recheck |

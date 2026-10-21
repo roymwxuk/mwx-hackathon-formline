@@ -59,6 +59,38 @@ still rejected). Rerun of a37_07 alone (`typed-questions-answerable-37-fix-a07.j
 Harbourside Athletic (1–3). He scored 2 goals": relevant and grounded. This is a
 single-case recheck; the 34 / 37 above stays the result of the complete run.
 
+## Run b (second complete run, after the fix)
+
+`typed-questions-answerable-37-b.jsonl`, commit `b706554` (clean, includes the past-opponent
+fix), same dataset hash, fresh cache; 125 model calls, median 4.7 s, p90 8.2 s.
+
+| | Relevance | Grounding (answered cases) |
+|---|---|---|
+| Original 27 | **26 / 27** | 25 / 26 |
+| New 10 | **10 / 10** | 9 / 10 |
+| **All 37** | **36 / 37** | **34 / 36** |
+
+- **d02** failed again: the Researcher returned "cannot answer" after one lookup.
+- **c04** passed: "Reyner Has Not Scored Tonight Despite Several Shots", with his best chance
+  (14 %, model estimate) and his last three games.
+- **a37_07** and **a37_10** passed on the model's own answer.
+- Grounding: a37_03 again leaves the norms unqualified; r02 adds "Garrow for chances
+  created", which FACTS do not hold (they give his assists and shots).
+- Checked outside the packs: Okafor scored in 3 of Northgate's last 5 games (j02), his best
+  passing game was 36 of 42 (d06), both players had 2 shots on target at 30′ (c02).
+
+### Across both runs
+
+| | Run a | Run b |
+|---|---|---|
+| Relevance | 34 / 37 | 36 / 37 |
+| Grounding | 33 / 35 | 34 / 36 |
+
+35 of 37 questions were relevant in both runs. **d02 failed both times**; c04 failed once.
+Together with the earlier runs, d02 has answered cleanly in 1 of 5 runs: the one stable
+weakness is a false-premise question about the overturned goal, which the Researcher tends to
+decline instead of correcting. a37_07's run-a failure was the verifier bug fixed in between.
+
 ## Not to be combined
 
 This is one 37-case run. It does not combine the Oct 21 27 / 27 with a separate ten. The
