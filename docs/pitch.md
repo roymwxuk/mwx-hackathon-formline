@@ -11,10 +11,11 @@ written by verified AI agents on Microsoft Foundry and Azure.
 ## Short description (about 70 words)
 
 Formline turns a live stream of match events into on-screen insights that compare each shot
-with the shooter's own history, such as "118 km/h, 31 above his norm, his fastest this
-season." A multi-agent workflow on Microsoft Agent Framework and Microsoft Foundry writes
-the cards in English and Japanese for casual fans and analysts. A deterministic verifier
-checks every number. It all runs on Azure Container Apps.
+with the shooter's own history: "118 km/h, 31 above his norm, his fastest this season."
+Agents on Microsoft Agent Framework and Microsoft Foundry write the cards in English and
+Japanese for casual fans and analysts, and answer viewers' own questions through a
+tool-using Researcher. A deterministic verifier checks every number. It runs on Azure
+Container Apps.
 
 ## Full pitch
 
@@ -43,6 +44,11 @@ Formline is a live insight engine for studio and streaming. As a match unfolds, 
   of one player against his own norm. "My metric" switches the card: at 40:12 a shot-speed
   viewer sees "84 km/h, 8 below his norm" while everyone else sees the placement insight
   for the same shot.
+- **Answers the viewer's questions.** A Match Analyst comments on every shot, corner and
+  card and offers follow-up questions. Viewers can also type their own question ("how did
+  the top scorer do in his last 3 games?"). A Researcher agent looks up the season leaders,
+  finds the top scorer, fetches his last three games and answers from those facts. It says
+  so when the data cannot answer (injuries, the referee's reasons).
 - **Stays correct when the feed is messy.** Duplicate, late, out-of-order and corrected
   events are absorbed. When VAR overturns a goal, every dependent card is corrected or
   withdrawn through its lineage, and the baselines are rebuilt from the event log.
@@ -70,7 +76,7 @@ The five stages of the brief, end to end:
    JSON, with its source event ids, streamed over resumable server-sent events.
 5. **Personalize.** The viewer filters and ranks the cards per viewer settings.
 
-**The agents** (Microsoft Agent Framework `WorkflowBuilder`, shared state, explicit
+**The card agents** (Microsoft Agent Framework `WorkflowBuilder`, shared state, explicit
 handoffs):
 
 - **Insight Selector** (rules plus LLM): rules build a shortlist (salience, cooldowns,
@@ -85,19 +91,34 @@ handoffs):
 - **Overlay Composer** (deterministic): fills the catalog template, so the numbers in bars
   and rows are correct by construction.
 
+**The analyst agents** (the viewer's questions):
+
+- **Match Analyst** (LLM with its own verifier): writes comments and answers from a facts
+  pack that code computes. It retries with feedback, then falls back to a template.
+- **Question Suggester** (LLM, checked in code): picks 2–3 follow-up questions per comment
+  from a fixed catalog.
+- **Researcher** (LLM with 14 Agent Framework tools): decides which facts a typed question
+  needs, reads each result and chains ids into the next lookup. Code admits each tool call
+  (at most 5), validates arguments, charges every model round-trip to a budget, and applies
+  one 25 s deadline.
+- **Question Router** (LLM, one shot): the Researcher's fallback when research times out,
+  runs out of budget or replies badly.
+
 **Why multi-agent.** A single prompt would have to choose, write four audiences, check
 itself and format JSON at once, with nothing between it and the screen. Splitting the roles
 puts deterministic checks at every handoff, lets four audiences be written in parallel,
 and gives each failure a defined recovery path: retry with feedback, rules fallback for the
 Selector, template fallback for text. A correction (VAR) re-enters the same workflow as a
-forced selection.
+forced selection. For typed questions, the agent that decides what to look up never writes
+the answer, and the agent that writes it only sees facts computed by code. The verifier sits
+between them and the screen.
 
 ### Microsoft and Azure technologies
 
 | Technology | How Formline uses it |
 |---|---|
-| **Microsoft Agent Framework** (Python) | The multi-agent workflow: `WorkflowBuilder` graph, fan-out to four Narrators, a switch-case retry cycle with the Verifier, shared state, `Agent` and chat clients |
-| **Microsoft Foundry** | A Foundry project with a `gpt-4.1-mini` deployment behind the Selector and Narrators (`FoundryChatClient`) |
+| **Microsoft Agent Framework** (Python) | The multi-agent workflow: `WorkflowBuilder` graph, fan-out to four Narrators, a switch-case retry cycle with the Verifier, shared state, `Agent` and chat clients; the Researcher's 14 function tools and tool-calling loop |
+| **Microsoft Foundry** | A Foundry project with a `gpt-4.1-mini` deployment behind every LLM agent: Selector, Narrators, Match Analyst, Suggester, Researcher and Router (`FoundryChatClient`) |
 | **Azure Container Apps** | Hosts the backend (FastAPI) and the viewer (Next.js); scales to zero; HTTPS ingress for long-lived streams |
 | **Microsoft Entra ID** | The backend's managed identity holds the "Foundry User" role, so there are no API keys anywhere |
 | **Azure Monitor (Log Analytics)** | Container logs from both apps |
@@ -121,9 +142,17 @@ The repository measures its own claims:
   Tracking puts **99.5%** of players on their event spots; the report also shows honestly
   where it falls short (players cover about 8 km per 90, against 10–12 km in real football).
 - **Agents in practice:** **80 / 80** Foundry-written card texts for the demo match passed
-  the verifier, with no template fallbacks; about ¥21 in model costs for every run so far.
-- **Engineering:** 233 backend and 41 frontend tests, ten design decision records, CI on
-  every push.
+  the verifier, with no template fallbacks. The Match Analyst wrote **96 / 96** comments and
+  **190 / 192** follow-up answers that passed verification.
+- **Typed questions** (single-match smoke evaluations, scored by hand against the engine's
+  facts): **26 / 27** answerable questions relevant in a 38-question EN/JA baseline, with
+  no false claim confirmed, ambiguous names clarified and nothing leaked to injection.
+  On a harder 75-case set: 61 pass, 6 safe but weak, 8 fail. Most failures were claims
+  without a number, so they became deterministic checks and were rechecked on the model.
+  The remaining limits are documented. Median 5.4 s per question.
+- **Engineering:** 375 backend and 75 frontend tests, 13 design decision records, CI on
+  every push. Model costs for all development and evaluation runs: roughly ¥150–200
+  (estimated from call counts).
 
 ### Production readiness and impact
 
@@ -142,5 +171,9 @@ their language, with numbers that hold up.
 ### Links
 
 - Repository: https://github.com/roymwxuk/mwx-hackathon-formline
+- Live demo: https://formline-web.bravestone-2a024c10.japaneast.azurecontainerapps.io (scales
+  to zero; the first load takes about 30 s)
 - Demo video: *(add the URL after publishing)*
 - Architecture diagram: `docs/architecture/architecture.png`
+- Screenshots: `docs/ui/live/hero-two-viewers-64m.png` (two viewers),
+  `docs/ui/live/analyst-researcher-chain.png` (a chained typed question)
