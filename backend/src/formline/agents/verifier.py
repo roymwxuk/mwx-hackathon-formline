@@ -60,7 +60,9 @@ DENIAL = re.compile(
     r"|\bno\s+(?:guarantee|certainty|telling|way of knowing)"
     r"|\bnot\s+(?:certain|sure|clear)|\b(?:unclear|uncertain))"
     r"(?:\s+(?:if|whether|that))?(?:\s+[\w'’-]+){0,3}\s+$"
-    r"|(?:\bnot|\bnever|n't)\s+$")
+    # "no guaranteed scorer", "cannot be guaranteed", "no player can be guaranteed"
+    r"|(?:\bnot|\bno|\bnever|n't|\bcannot|\bno\s+[\w'’-]+\s+(?:can|could|will|would|is|are))"
+    r"\s+(?:be\s+)?$")
 CLAUSE_BREAK = re.compile(r"[.;:!?,]|\b(?:and|but|so|yet|while|because|though|although)\b")
 
 

@@ -149,6 +149,10 @@ def test_a_denied_certainty_claim_is_not_a_claim(slow):
     "84 km/h; there is no certainty he will score.",
     "84 km/h; it is not guaranteed.",
     "84 km/h; I can't say whether he will score.",
+    # Eval ext10_10: three honest refusals were rejected and the answer fell back.
+    "84 km/h; no guaranteed next scorer from shots or season form.",
+    "84 km/h; no player can be guaranteed to score next.",
+    "84 km/h; a goal cannot be guaranteed.",
 ])
 def test_explicit_denials_of_certainty_pass(slow, sub):
     ins, league = slow
