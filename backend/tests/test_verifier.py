@@ -156,6 +156,9 @@ def test_a_denied_certainty_claim_is_not_a_claim(slow):
     "84 km/h; tonight's shots and season form do not guarantee who will score next.",
     "84 km/h; no one can guarantee he will score.",
     "84 km/h; however, no data guarantees who will score next (model estimate).",
+    "84 km/h; no definite next scorer can be guaranteed.",
+    "84 km/h; there is no data guaranteeing he will score.",
+    "84 km/h; nobody promises he will score.",
 ])
 def test_explicit_denials_of_certainty_pass(slow, sub):
     ins, league = slow
@@ -171,6 +174,7 @@ def test_explicit_denials_of_certainty_pass(slow, sub):
     # Denying a doubt is an assertion, not a denial (Codex review).
     "84 km/h; nobody can deny he will score.",
     "84 km/h; no one doubts he will score.",
+    "84 km/h; no doubt he is sure to score.",
     # One denial cannot excuse a later assertion of the same phrase.
     "84 km/h; no one can say he will score. He will score next time.",
 ])

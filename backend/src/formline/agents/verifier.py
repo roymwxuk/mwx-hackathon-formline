@@ -56,14 +56,16 @@ CERTAINTY = {
 # score") is not a denial.
 DENIAL = re.compile(
     r"(?:\b(?:no ?one|nobody|no\s+[\w'’-]+)\s+(?:(?:can|could|will|would)\s+)?"
-    r"(?:says?|knows?|tells?|predicts?|promises?|guarantees?)"
+    r"(?:say|know|tell|predict|promis(?=e|ing)|guarantee)(?:e?s|ing)?"
     r"|\b(?:can't|cannot|can not|couldn't|could not|don't|do not|doesn't|does not|won't|will not)"
     r"\s+(?:say|know|tell|predict|promise|guarantee)"
     r"|\bno\s+(?:guarantee|certainty|telling|way of knowing)"
     r"|\bnot\s+(?:certain|sure|clear)|\b(?:unclear|uncertain))"
     r"(?:\s+(?:if|whether|that))?(?:\s+[\w'’-]+){0,3}\s+$"
-    # "no guaranteed scorer", "cannot be guaranteed", "no player can be guaranteed"
-    r"|(?:\bnot|\bno|\bnever|n't|\bcannot|\bno\s+[\w'’-]+\s+(?:can|could|will|would|is|are))"
+    # "no guaranteed scorer", "cannot be guaranteed", "no definite next scorer can be guaranteed"
+    # ("no doubt he is sure to" stays a claim)
+    r"|(?:\bnot|\bno|\bnever|n't|\bcannot"
+    r"|\bno\s+(?!doubt\b)(?:[\w'’-]+\s+){1,3}(?:can|could|will|would|is|are))"
     r"\s+(?:be\s+)?$")
 CLAUSE_BREAK = re.compile(r"[.;:!?,]|\b(?:and|but|so|yet|while|because|though|although)\b")
 
