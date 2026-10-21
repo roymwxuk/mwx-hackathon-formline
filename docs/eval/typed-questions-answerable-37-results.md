@@ -51,6 +51,14 @@ Claims outside the frozen packs, rebuilt at the same snapshot: Harbourside down 
 a37_09 (same wording as ext10_09) now has a correct headline. a37_10's Researcher errored
 and the Router fallback produced a correct answer (13.0 s).
 
+## a37_07 after the fix
+
+The entity check now allows a club that FACTS name (`5f130ad`; a club absent from FACTS is
+still rejected). Rerun of a37_07 alone (`typed-questions-answerable-37-fix-a07.jsonl`,
+3 calls): first-attempt answer, "Corranvale City (2–2), Thornmoor United (0–3), and
+Harbourside Athletic (1–3). He scored 2 goals": relevant and grounded. This is a
+single-case recheck; the 34 / 37 above stays the result of the complete run.
+
 ## Not to be combined
 
 This is one 37-case run. It does not combine the Oct 21 27 / 27 with a separate ten. The

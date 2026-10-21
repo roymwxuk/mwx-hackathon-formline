@@ -89,7 +89,7 @@ Example cards from the demo match (63:44, Foundry-narrated, verified):
 | Tracking agrees with the events | **99.5%** of players on their event spots (within 0.5 m); distance covered is low (about 8 km per 90, real 10–12 km), reported honestly | [realism report, tracking section](docs/realism-report.md) |
 | Agents produce usable text | **80 / 80** Foundry card texts verified for the demo match (no template fallbacks) | `formline-gen overlays` run summary |
 | The Match Analyst writes verified commentary | **96 / 96** comments and **190 / 192** follow-up answers written by the model and verified (2 template fallbacks); **48 / 48** question picks by the Suggester | `formline-gen analyst` run summary, ADR-011 |
-| Typed questions address the viewer's question | Original single-match Foundry baseline, 38 EN/JA questions: **26 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** ambiguous names clarified; median **6.2 s**, p90 **11.0 s**. Full rerun of the same 38 on `main` (2026-10-21, one run): **27 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** clarified; median **5.9 s**, p90 **13.7 s** (two provider rate-limit retries). 75-case run (37 harder cases added): **61 pass, 6 safe but weak, 8 fail**; median **5.4 s**, p90 **11.1 s**; fixes since then are unit-tested and partly rechecked. Ten further variants: **5 / 8** answerable fully correct. | [baseline and reruns](docs/eval/typed-questions-2026-10-20.md), [full rerun on main](docs/eval/typed-questions-38-rerun-2026-10-21.md), [separate structured review](docs/eval/typed-questions-baseline.scores.md), [75-case results](docs/eval/typed-questions-75-2026-10-20.md), [open issues](docs/eval/typed-questions-open-issues.md) |
+| Typed questions address the viewer's question | Original single-match Foundry baseline, 38 EN/JA questions: **26 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** ambiguous names clarified; median **6.2 s**, p90 **11.0 s**. Full rerun of the same 38 on `main` (2026-10-21, one run): **27 / 27** answerable questions relevant, **0** false claims confirmed, **3 / 3** clarified; median **5.9 s**, p90 **13.7 s** (two provider rate-limit retries). 75-case run (37 harder cases added): **61 pass, 6 safe but weak, 8 fail**; median **5.4 s**, p90 **11.1 s**; fixes since then are unit-tested and partly rechecked. 37 answerable questions, one complete run on the current code: **34 / 37** relevant. Ten further variants: **5 / 8** answerable fully correct. | [baseline and reruns](docs/eval/typed-questions-2026-10-20.md), [full rerun on main](docs/eval/typed-questions-38-rerun-2026-10-21.md), [separate structured review](docs/eval/typed-questions-baseline.scores.md), [75-case results](docs/eval/typed-questions-75-2026-10-20.md), [open issues](docs/eval/typed-questions-open-issues.md) |
 | Cost controls | Apps scale to zero; response caching and per-run model-call budgets. Historical run estimates are not a current billing total or a monetary cap. | [ADR-009 and ADR-011](docs/decisions.md) |
 
 ## How it works
@@ -281,6 +281,13 @@ after the deterministic checks: the recommendation question asked 3 times with n
 "scored tonight", the league-leader and both game-window cases pass; the wrong-club case
 still gets a misleading headline over a correct body. What is still open and why:
 [docs/eval/typed-questions-open-issues.md](docs/eval/typed-questions-open-issues.md).
+
+**37 answerable questions** (the original 27 plus 10 supported additions; one complete run on
+the current code, 2026-10-22; [results](docs/eval/typed-questions-answerable-37-results.md)):
+**34 / 37** relevant (original 27: 25 / 27; new 10: 9 / 10), **33 / 35** grounded among
+answered cases; median 5.5 s, p90 9.3 s. Two false-premise questions that passed on Oct 21
+got the generic decline from the Researcher this time (run-to-run variation), and a question
+about past opponents exposed a verifier false positive, since fixed and rechecked.
 
 **Ten further variants** (Codex's set, new wordings and combinations of existing cases, not a
 held-out benchmark; one run, 2026-10-21;
