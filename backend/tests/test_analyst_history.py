@@ -13,6 +13,7 @@ from formline.analyst.followups import Moment, moment_kind
 from formline.analyst.router import check_route
 from formline.analyst.sections import facts_for
 from formline.analyst.store import MatchContext, history_rows, player_season_stats
+from formline.analyst.verify import AnswerContext, verify_answer
 from formline.analyst.writer import AnalystWriter, write_comments
 from formline.engine.log import current_events
 from formline.generator.season import generate_season
@@ -97,6 +98,24 @@ def test_a_players_last_three_games(match):
     assert facts["totals"].startswith(f"over these 3 game(s): {goals} goal(s)")
     ja = ask(match, "レイナーの直近3試合は？", "ja")
     assert ja["retrieved"]["label"] == "レイナーの直近3試合"
+
+
+def test_past_opponents_named_in_facts_pass_the_verifier(match):
+    """Eval a37_07: opponents from a player's last games were rejected as clubs not in this
+    match, so the answer fell back to a template without them."""
+    _, ctx, _, _ = match
+    pack = facts_for(["player_recent"], moment(match), player_id=REYNER, history=ctx.history, n=3)
+    games = [r for r in ctx.history if REYNER in r["players"]][-3:]
+    opponents = {r["away"] if r["home"] == ctx.home else r["home"] for r in games} - {ctx.home, ctx.away}
+    assert opponents, "the fixture needs a past opponent outside tonight's match"
+    named = ctx.clubs[next(iter(opponents))]
+    actx = AnswerContext(pack, "en", (ctx.home, ctx.away), free=True)
+    ok = {"headline": "Reyner's last three games", "body": f"He played {named}.", "coverage": "full"}
+    assert verify_answer(ok, actx, ctx.league).ok, verify_answer(ok, actx, ctx.league).failures
+    absent = next(name for cid, name in ctx.clubs.items()
+                  if cid not in (ctx.home, ctx.away) and name not in str(pack.facts))
+    bad = {**ok, "body": f"He played {absent}."}
+    assert "entities" in {f.check for f in verify_answer(bad, actx, ctx.league).failures}
 
 
 def test_a_teams_last_five_games(match):

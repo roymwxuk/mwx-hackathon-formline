@@ -3,7 +3,8 @@
 Reuses the card verifier's wording checks (estimates, certainty, jargon, language) and
 adds rules for answers that may name several players and both clubs:
 - numbers   every number must appear in the facts (or the match score and minute);
-- entities  only the players in the pack's roles, and only the two clubs of this match;
+- entities  only the players in the pack's roles, and only the two clubs of this match or
+            a club FACTS name (a past opponent);
 - structure headline and body present, within length limits, nothing else.
 """
 
@@ -217,8 +218,10 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
             if hit:
                 failures.append(Failure("entities", f"names a player who is not in the facts ({form})"))
                 break
+    # a past opponent is fine when FACTS name it (a player's or a team's last games, eval a37_07)
+    in_facts = " ".join(_strings(ctx.pack.facts))
     for cid, (name, short) in league.clubs.items():
-        if cid in ctx.match_clubs:
+        if cid in ctx.match_clubs or name in in_facts:
             continue
         if re.search(rf"\b({re.escape(name)}|{re.escape(short)})\b", text):
             failures.append(Failure("entities", f"names a club not in this match ({name})"))
