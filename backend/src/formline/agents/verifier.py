@@ -50,7 +50,18 @@ CERTAINTY = {
            "always scores", "sure to"),
     "ja": ("必ず", "確実", "間違いなく", "絶対"),
 }
-NEGATION = re.compile(r"\b(not|no|nobody|never|cannot|impossible)\b|n't")
+# A denial of certainty must sit right before the claim: "no one can say he will score",
+# "there is no guarantee Okafor will score", "it isn't guaranteed". A bare negation elsewhere
+# ("Ito has not been tested and Okafor will definitely score", "nobody can deny he will
+# score") is not a denial.
+DENIAL = re.compile(
+    r"(?:\b(?:no ?one|nobody)\s+(?:(?:can|could|will|would)\s+)?(?:says?|knows?|tells?|predicts?|promises?)"
+    r"|\b(?:can't|cannot|can not|couldn't|could not|don't|doesn't|won't)\s+(?:say|know|tell|predict|promise)"
+    r"|\bno\s+(?:guarantee|certainty|telling|way of knowing)"
+    r"|\bnot\s+(?:certain|sure|clear)|\b(?:unclear|uncertain))"
+    r"(?:\s+(?:if|whether|that))?(?:\s+[\w'’-]+){0,3}\s+$"
+    r"|(?:\bnot|\bnever|n't)\s+$")
+CLAUSE_BREAK = re.compile(r"[.;:!?,]|\b(?:and|but|so|yet|while|because|though|although)\b")
 
 
 @dataclass(frozen=True)
@@ -253,10 +264,11 @@ def _check_estimates(text: str, ctx: VerifyContext) -> list[Failure]:
 
 
 def _negated(low: str, at: int) -> bool:
-    """English only: a negation earlier in the same clause ("no one can say he will score")
-    denies the claim. Japanese stays strict: in 絶対に止められない the ない is not a denial."""
-    clause = re.split(r"[.;:!?,]", low[:at])[-1]
-    return bool(NEGATION.search(clause))
+    """English only: a denial of certainty just before the claim, in the same clause, denies
+    it ("no one can say he will score"). Japanese stays strict: in 絶対に止められない the ない
+    is not a denial."""
+    clause = CLAUSE_BREAK.split(low[:at])[-1]
+    return bool(DENIAL.search(clause))
 
 
 def _check_certainty(text: str, ctx: VerifyContext) -> list[Failure]:
