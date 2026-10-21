@@ -155,6 +155,7 @@ def test_a_denied_certainty_claim_is_not_a_claim(slow):
     "84 km/h; a goal cannot be guaranteed.",
     "84 km/h; tonight's shots and season form do not guarantee who will score next.",
     "84 km/h; no one can guarantee he will score.",
+    "84 km/h; however, no data guarantees who will score next (model estimate).",
 ])
 def test_explicit_denials_of_certainty_pass(slow, sub):
     ins, league = slow

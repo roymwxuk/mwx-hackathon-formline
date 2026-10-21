@@ -55,7 +55,7 @@ CERTAINTY = {
 # ("Ito has not been tested and Okafor will definitely score", "nobody can deny he will
 # score") is not a denial.
 DENIAL = re.compile(
-    r"(?:\b(?:no ?one|nobody)\s+(?:(?:can|could|will|would)\s+)?"
+    r"(?:\b(?:no ?one|nobody|no\s+[\w'’-]+)\s+(?:(?:can|could|will|would)\s+)?"
     r"(?:says?|knows?|tells?|predicts?|promises?|guarantees?)"
     r"|\b(?:can't|cannot|can not|couldn't|could not|don't|do not|doesn't|does not|won't|will not)"
     r"\s+(?:say|know|tell|predict|promise|guarantee)"
