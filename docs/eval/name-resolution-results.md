@@ -1,0 +1,44 @@
+# Name resolution (ADR-014): model checks
+
+Plan: [plan-name-resolution.md](../plan-name-resolution.md). Code: `453a0c7`. Same 90 cases,
+rubric and reference facts as [the model comparison](model-comparison-results.md); per-case
+scores in [model-comparison-scores.json](model-comparison-scores.json), metrics in
+[model-comparison-metrics.md](model-comparison-metrics.md).
+
+## gpt-6-luna, one run (owner asked for GPT-6 first)
+
+`typed-questions-90-luna-names-a.jsonl`: 1,000 output tokens (automatic for GPT-6), Researcher
+prompt v4, 269 model calls, median 6.5 s, p90 11.6 s, 695,200 input / 20,198 output tokens
+(11,949 reasoning, at most 788 in one call), no reply cut off.
+
+| | Luna 1,000 before the fix (a / b) | **Luna with the fix** |
+|---|---|---|
+| Relevant answer or correct behaviour | 82 / 82 | **85** |
+| Strict (answerable also grounded) | 79 / 81 | **83** |
+| Answerable relevant (of 61) | 57 / 56 | 57 |
+| Behaviour correct / weak / wrong (of 29) | 25-3-1 / 26-2-1 | **28 / 1 / 0** |
+| Latency p90 | 13.4 / 15.0 s | 11.6 s |
+
+**The fix works**: unknown01, unknown02 and unknown03 returned `not_found` with **0 model calls**:
+
+- "I can't find Milo Vexford among tonight's players or clubs. Check the spelling, or ask with the club name."
+- "I can't find Ashfen Wanderers among tonight's players or clubs. …"
+- "ゾラン・ベルスコは今夜の選手・クラブの中に見つかりません。綴りを確認するか、クラブ名を添えて質問してください。"
+
+**Other changes against both earlier Luna runs at 1,000 tokens**
+
+- Fixed: v02, v03 (no "last season" this time), j03, pa02, a37_09, and var01 / var02 behaviour.
+- Regressed:
+  - **c03** "Has Northgate's top scorer had a shot tonight?": the Researcher fetched only the
+    season leaders, and the answer says tonight's shots are not in the data.
+  - **r01**: "Okafor scored in each of his last two listed games"; he scored in one of them.
+  - **m01**: the Researcher returned an empty final reply (the Luna tool-loop issue seen before),
+    and the Router fallback did not reach Okonjo's own game.
+
+None of the three involves a name lookup, so the new prompt line (v4) is not an obvious cause,
+but one run cannot rule it out. The `gpt-4.1-mini` check below decides whether the change goes
+live, since that is the live model.
+
+## gpt-4.1-mini
+
+Not run yet.
