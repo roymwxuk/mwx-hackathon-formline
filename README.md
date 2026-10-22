@@ -565,9 +565,11 @@ docs/       roadmap, milestone logs, decisions (ADRs), reports, contracts, UI sc
 - **Typed-answer checks are phrase-based.** "Scored tonight" and league-leader claims are
   matched within a sentence in English and Japanese; other wordings ("found the net") are
   not caught. Certainty claims are excused only by an explicit denial right before them
-  ("no one can say he will score", "no guarantee"), from a fixed list of English phrasings. Unknown player or club names get the generic decline rather than "name not
-  found", a wrong club in the question can still reach the headline, and two verifier false
-  positives (dates with leading zeros, one card minute) cost retries.
+  ("no one can say he will score", "no guarantee"), from a fixed list of English phrasings.
+  An unknown name is caught only in full-name shapes (two or more capitalised words, or
+  katakana with "・"); a single unknown surname goes to the Researcher, which can look it up
+  and reply "not found". A wrong club in the question can still reach the headline, and two
+  verifier false positives (dates with leading zeros, one card minute) cost retries.
 
 ## Documentation
 

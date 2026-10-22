@@ -139,7 +139,7 @@ export interface FreeAnswer {
   declined: string | null;
   /** The Researcher's tool calls, in order (empty when the one-shot Router answered). */
   research?: { tool: string; ok: boolean; label: string }[];
-  /** answered | cannot_answer | clarify | fallback_* | timeout | budget_exhausted */
+  /** answered | cannot_answer | clarify | not_found | fallback_* | timeout | budget_exhausted */
   outcome?: string;
 }
 

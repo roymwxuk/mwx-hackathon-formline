@@ -9,14 +9,17 @@ own question from only those facts, and the verifier checks every number and nam
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 from formline.agents.llm import LLMRunner
 from formline.agents.selector import strip_fences
+from formline.agents.verifier import LeagueNames
 from formline.analyst.followups import Moment
 from formline.analyst.sections import MAX_RECENT, MAX_SECTIONS, SECTIONS
+from formline.analyst.verify import JA_CLUB_WORDS, KATAKANA_FULL_NAME
 from formline.prompts import load
+from formline.schema.biography import COUNTRIES, PLACES
 
 MAX_TEXT = 200
 MAX_ATTEMPTS = 2
@@ -124,6 +127,68 @@ def player_clarification(text: str, lang: str, m: Moment,
             return f"どの選手ですか？ {choices}。フルネームまたはクラブ名を添えて質問してください。"
         return f"Which player do you mean: {choices}? Please ask again using the full name or club."
     return None
+
+
+# Full-name shapes only (docs/plan-name-resolution.md): a katakana name with "・"
+# (KATAKANA_FULL_NAME), or two or more capitalised words left after every known name is
+# removed. A single unknown word ("Okafur") is not flagged; the Researcher can look it up.
+LATIN_WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
+POSSESSIVE = re.compile(r"['’]s\b")
+
+
+def known_names(league: LeagueNames, extra: Iterable[str] = ()) -> set[str]:
+    """Every name in the data, casefolded: players and clubs in both scripts, whole and in
+    parts, plus the extra names a question may use (venue, referee, places, countries)."""
+    out: set[str] = set()
+    for en, ja in league.players.values():
+        out |= {en, ja, *en.split(), *ja.split("・")}
+    for name, short in league.clubs.values():
+        out |= {name, short, *name.split()}
+    for name in extra:
+        out |= {name, *name.split()}
+    return {n.casefold() for n in out if n}
+
+
+def data_names(info: Mapping) -> list[str]:
+    """Names besides players and clubs that FACTS can contain: the venue, the referee,
+    countries and birthplaces (schema/biography.py)."""
+    places = [city for cities in PLACES.values() for city in cities]
+    return [info.get("venue", ""), (info.get("conditions") or {}).get("referee", ""),
+            *COUNTRIES, *places]
+
+
+def unknown_names(text: str, known: set[str]) -> list[str]:
+    """Names in the question that match no player, club or other name in the data."""
+    found = []
+    for run in KATAKANA_FULL_NAME.findall(text):
+        if run.casefold() in known or any(w in run for w in JA_CLUB_WORDS):
+            continue  # a player's full name, or a club written in katakana
+        found.append(run)
+    latin = POSSESSIVE.sub("", text)
+    # known multi-word names first, longest first, so their words cannot join a run
+    for name in sorted((k for k in known if " " in k), key=len, reverse=True):
+        latin = re.sub(rf"(?<![\w]){re.escape(name)}(?![\w])", " | ", latin, flags=re.IGNORECASE)
+    run: list[str] = []
+    for token in re.split(r"(\s+)", latin) + [" | "]:
+        word = token.strip()
+        if not word:
+            continue
+        if LATIN_WORD.fullmatch(word) and word[0].isupper() and word.casefold() not in known:
+            run.append(word)
+            continue
+        if len(run) >= 2:
+            found.append(" ".join(run))
+        run = []
+    return found
+
+
+def not_found_reply(names: list[str], lang: str) -> str:
+    shown = "、".join(names) if lang == "ja" else ", ".join(names)
+    if lang == "ja":
+        return (f"{shown}は今夜の選手・クラブの中に見つかりません。"
+                "綴りを確認するか、クラブ名を添えて質問してください。")
+    return (f"I can't find {shown} among tonight's players or clubs. Check the spelling, "
+            "or ask with the club name.")
 
 
 async def route(text: str, lang: str, m: Moment, names: dict[str, tuple[str, str]],

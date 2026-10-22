@@ -28,7 +28,16 @@ from formline.analyst.followups import (
     moment_kind,
 )
 from formline.analyst.researcher import MAX_MODEL_CALLS, ResearchFailed, research
-from formline.analyst.router import DECLINE, MAX_TEXT, player_clarification, route
+from formline.analyst.router import (
+    DECLINE,
+    MAX_TEXT,
+    data_names,
+    known_names,
+    not_found_reply,
+    player_clarification,
+    route,
+    unknown_names,
+)
 from formline.analyst.sections import LABELS, facts_for
 from formline.analyst.sections import label as section_label
 from formline.analyst.store import MatchContext
@@ -192,6 +201,12 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
         # Existing clients already display this message without treating it as an error.
         return {"retrieved": None, "answer": None, "declined": clarification, "research": [],
                 "outcome": "clarify"}
+    # A name that matches nobody gets a clear reply before any model can attach another
+    # player's facts to it (eval unknown01-03, docs/plan-name-resolution.md).
+    unknown = unknown_names(text[:MAX_TEXT], known_names(ctx.league, data_names(ctx.info)))
+    if unknown:
+        return {"retrieved": None, "answer": None, "declined": not_found_reply(unknown, lang),
+                "research": [], "outcome": "not_found"}
     loop = asyncio.get_running_loop()
     start = loop.time()
 
@@ -225,6 +240,8 @@ async def answer_free(event_id: str, version: int, text: str, lang: str,
                 research(text[:MAX_TEXT], lang, m, ctx, runner, dict(short_names or {}), norm,
                          allowance), RESEARCH_TIMEOUT_S)
             steps = _steps(res.session, lang)
+            if res.not_found:
+                return done("not_found", steps, declined=not_found_reply([res.not_found], lang))
             if res.cannot_answer:
                 return done("cannot_answer", steps, declined=DECLINE[lang])
             pack = res.session.pack()

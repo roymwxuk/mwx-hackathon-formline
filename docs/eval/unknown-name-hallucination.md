@@ -1,7 +1,8 @@
 # Finding: an unknown player name answered with another player's facts
 
 Found in the 90-case evaluation ([results](typed-questions-90-results.md)), case `unknown03`.
-Status: **open**, not fixed.
+Status: **fixed in code** (2026-10-22, ADR-014, [plan](../plan-name-resolution.md)); a 90-case
+model rerun is pending.
 
 ## What happened
 

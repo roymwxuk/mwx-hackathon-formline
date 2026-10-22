@@ -4,8 +4,8 @@ It may look something up, read the result and look up more (e.g. find the top sc
 his last 3 games), within hard limits enforced in our code: at most 5 tool calls
 (`tools.ResearchSession`, admitted before each call) and a model-call allowance charged on
 every round-trip (`LLMRunner.research`). It writes nothing the viewer sees: its final reply
-is `{"done": true}` or `{"cannot_answer": true}`; the gathered lookups go to the Analyst and
-the Verifier (docs/plan-agentic-research.md).
+is `{"done": true}`, `{"cannot_answer": true}` or `{"not_found": name}` (checked in code);
+the gathered lookups go to the Analyst and the Verifier (docs/plan-agentic-research.md).
 """
 
 import json
@@ -35,6 +35,17 @@ class ResearchFailed(RuntimeError):
 class Research:
     session: ResearchSession
     cannot_answer: bool
+    not_found: str | None = None  # a name that matches no player or club (code-checked)
+
+
+def matches_nobody(name: str, ctx: MatchContext) -> bool:
+    """True only if `name` is no player's or club's name or part of one, in either script:
+    the model's not_found is trusted only when code agrees."""
+    q = name.casefold().strip()
+    if not q:
+        return False
+    names = [n for pair in (*ctx.league.players.values(), *ctx.league.clubs.values()) for n in pair]
+    return not any(q in n.casefold() or n.casefold() in q for n in names if n)
 
 
 def payload(text: str, lang: str, m: Moment, ctx: MatchContext,
@@ -68,6 +79,11 @@ async def research(text: str, lang: str, m: Moment, ctx: MatchContext, runner: L
         raise ResearchFailed("fallback_malformed", "final reply is not a JSON object")
     if final.get("cannot_answer") is True:
         return Research(session, cannot_answer=True)
+    name = final.get("not_found")
+    if isinstance(name, str):
+        # A model mistake must not deny a real player: an unchecked name is a plain decline.
+        return Research(session, cannot_answer=True,
+                        not_found=name.strip()[:60] if matches_nobody(name, ctx) else None)
     if final.get("done") is not True:
         raise ResearchFailed("fallback_malformed", f"unexpected final reply {final!r:.80}")
     if not session.lookups:

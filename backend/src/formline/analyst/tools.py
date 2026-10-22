@@ -230,7 +230,19 @@ class ResearchSession:
                     if q and (q in ctx.league.players[pid][0].casefold() or q in ctx.league.players[pid][1])]
             return json.dumps({"candidates": hits[:6]}, ensure_ascii=False)
 
+        @tool(name="find_club", description="Find a club of this match by (part of) its name or "
+              "short name: id and name. Adds no facts.")
+        def find_club(name: str) -> str:
+            if s.calls >= s.max_calls:
+                return json.dumps({"error": "tool call limit reached; reply with the final JSON"})
+            s.calls += 1
+            s.steps.append({"tool": "find_club", "args": {"name": name}, "ok": True})
+            q = name.casefold().strip()
+            hits = [{"id": cid, "name": ctx.clubs[cid]} for cid in (m.home, m.away)
+                    if q and (q in ctx.clubs[cid].casefold() or q == ctx.league.clubs[cid][1].casefold())]
+            return json.dumps({"candidates": hits}, ensure_ascii=False)
+
         return [get_match_info, get_match_so_far, get_score_explanation, get_team_comparison,
                 get_team_tonight, get_player_profile, get_player_shooting_tonight,
                 get_best_chances, get_discipline, get_last_10_minutes, get_season_leaders,
-                get_player_recent, get_team_recent, find_player]
+                get_player_recent, get_team_recent, find_player, find_club]
