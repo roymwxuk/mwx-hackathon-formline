@@ -1,0 +1,1181 @@
+{
+  "status": "Prepared offline; not evaluated on a model",
+  "source_commit": "b8e3b8f75b9562f4c83699a74fcf4dc3e91c4a47",
+  "baseline_source": "docs/eval/typed-questions-original-38.json",
+  "baseline_sha256": "498dc9c18981109021ecf89fabe9e20f3f1e075fa86aeeb472c6a6893a895d36",
+  "match_id": "mtc_s26_md11_har_nor",
+  "data_sha256": {
+    "feeds/mtc_s26_md01_eld_tho.jsonl": "c9caadf0c4ff828e02ed6987ac0fc0cf0e3bda419946bad147798810ff62b7c6",
+    "feeds/mtc_s26_md01_har_cor.jsonl": "8ea5158d5f343e9a7b37186fe829d2d8de2a98ba1b96cabfdd40947aec126715",
+    "feeds/mtc_s26_md01_kes_nor.jsonl": "5fe4bab54948dc659d46ac5c838aec741acc19d0384dfdf28210f751da1fa231",
+    "feeds/mtc_s26_md02_cor_tho.jsonl": "851620b173f120694b63c91ac20e680bff1cb94a3ef2841ad6f953dde3bae32a",
+    "feeds/mtc_s26_md02_eld_nor.jsonl": "3544da2bb34c0a578bd1baa32eb66b843e26d9e76d1e709b0c1935ff8ea86c9e",
+    "feeds/mtc_s26_md02_kes_har.jsonl": "9b217af9e389650f52cc81c266369895cc99e968b92f4bddf90db14b43857410",
+    "feeds/mtc_s26_md03_cor_nor.jsonl": "ace97b4e232c6b965567a5b4d9d23707a819951acf5c74e4cd5ef22cb2c4e3bf",
+    "feeds/mtc_s26_md03_eld_kes.jsonl": "c4634d3e4ea56c395ead30f213494658797eeccf9bbe579b502b15fc3699b362",
+    "feeds/mtc_s26_md03_har_tho.jsonl": "fa1201108d8eb4cd653f8dbf63986e0fcd45a58709a17825e38a7ca8dd39f339",
+    "feeds/mtc_s26_md04_cor_kes.jsonl": "eccf648128db623cddea181d3cb1647f801da6a56dfd475e53875e938e9c3696",
+    "feeds/mtc_s26_md04_eld_har.jsonl": "687ec9dedd5e49d025566ece3a5f69bb9cb2ffd1f40b3e90adcd807d3c9f91a9",
+    "feeds/mtc_s26_md04_tho_nor.jsonl": "53f16683b8d88a1a0f3a8a59a1a0ad781cd1dc04369fca1ae9425c2d3f58ffbe",
+    "feeds/mtc_s26_md05_cor_eld.jsonl": "da300594f0f2205a29467c9594f5bd5183b540b60be8bcc0720e5075da8cf659",
+    "feeds/mtc_s26_md05_har_nor.jsonl": "80be7b74d8db4bc38272ca1df49ea0fd95bd37d180e4c2016380827dbf132345",
+    "feeds/mtc_s26_md05_tho_kes.jsonl": "6f99e0a925b40732af9fd3b9266752fd5a9ba0bc498106965783c7e39f7aae47",
+    "feeds/mtc_s26_md06_cor_har.jsonl": "ee17d22fb02e25f38fe73c5a589a7d18635b26c03d07968841e410b646fe96d0",
+    "feeds/mtc_s26_md06_nor_kes.jsonl": "f7d3c648f85b696d3f6a758fdfc4c119396af36c73c7cbb1749725c24eb826fe",
+    "feeds/mtc_s26_md06_tho_eld.jsonl": "ae189c8955ed5dd9d093c3a4b9d17028f7610e74026712be65e11155b72d4704",
+    "feeds/mtc_s26_md07_har_kes.jsonl": "70a93263a533cc6945635740c5cc5dd77eaebafcee8bb2f87c7b1a83e6226040",
+    "feeds/mtc_s26_md07_nor_eld.jsonl": "fb73453860d1a5c6e67c84d5add586e5ba7b032a90410ed6382f35fc2a79477a",
+    "feeds/mtc_s26_md07_tho_cor.jsonl": "95648b6b200e10d1ba58665f402efb79c75b5f7eaed921a02cd1979ac920fc0d",
+    "feeds/mtc_s26_md08_kes_eld.jsonl": "56f2c13cf748d84a29b03d52406ce8e51e6656c63f103db650e13b46fbf07d3a",
+    "feeds/mtc_s26_md08_nor_cor.jsonl": "75a44c4c775e4401e89957a91bc48e4a0d2edcbcc45daeffa0b80438f50ba547",
+    "feeds/mtc_s26_md08_tho_har.jsonl": "51dd065827b4c41a8614cbdc8b06b7f6ff7d41b50498fd2a983d82a0059ee715",
+    "feeds/mtc_s26_md09_har_eld.jsonl": "6123baaa6108b48004f417147f8069f933a17f1e5e07e1ddce121e52988514bb",
+    "feeds/mtc_s26_md09_kes_cor.jsonl": "9e4b074b5f817343d7c996b9b766c1776882516e0473563ec13180ac9f2da7ef",
+    "feeds/mtc_s26_md09_nor_tho.jsonl": "951a47cb6f5f2177434fd709ba96bd6c0cab49fb0409fbd5b47348518f21d411",
+    "feeds/mtc_s26_md10_eld_cor.jsonl": "8ea400dbafbe06e02327806f23609fcb407be8635fb289fe28ba1e73ccfa5146",
+    "feeds/mtc_s26_md10_kes_tho.jsonl": "0b24b74bf61d77ff6fdc3d87f479ca74df815ab6234f6a0c5c59463835436544",
+    "feeds/mtc_s26_md10_nor_har.jsonl": "30dfd829fe23e2fe67976acff9fee5dfba4e7a221a79a51aa5efecaf17188df0",
+    "feeds/mtc_s26_md11_har_nor.jsonl": "a7fa926c576ea915c28d55e68d02b91b48d70f2838321480d3c8b50e3a1049d6",
+    "league.json": "219690d3e831a29ae0e4338d11b3f700da30c9638a2edb289d08305179096389",
+    "matches.json": "c27b75d4337b4b12994259e2d2ac2ae3082ce50f9337008aea0574ce94a4fbaa",
+    "sample/league.json": "219690d3e831a29ae0e4338d11b3f700da30c9638a2edb289d08305179096389",
+    "sample/matches.json": "c27b75d4337b4b12994259e2d2ac2ae3082ce50f9337008aea0574ce94a4fbaa"
+  },
+  "limitations": "Application-built deterministic references, not an independent oracle. Original 27 objects unchanged. New ten all require answers, with no refusal or missing-data targets. Existing challenge results are preserved. Novel wording/combinations overlap prior coverage; not a held-out benchmark.",
+  "cases": {
+    "a37_01": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0210",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "games": "3 Oct: home against Corranvale City, drawn 2–2: 1 goal(s), 0 assist(s), 5 shot(s), 1 on target, 36 of 42 passes completed; 10 Oct: home against Thornmoor United, lost 0–3: 0 goal(s), 0 assist(s), 1 shot(s), 0 on target, 40 of 56 passes completed; 17 Oct: home against Harbourside Athletic, lost 1–3: 1 goal(s), 0 assist(s), 6 shot(s), 4 on target, 26 of 35 passes completed",
+              "totals": "over these 3 game(s): 2 goal(s), 0 assist(s), 12 shot(s), 5 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "a37_02": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0107",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Tomas Reyner",
+              "club": "Harbourside Athletic",
+              "games": "3 Oct: away against Thornmoor United, lost 0–1: 0 goal(s), 0 assist(s), 4 shot(s), 0 on target, 24 of 33 passes completed; 10 Oct: home against Elderwick Town, lost 0–1: 0 goal(s), 0 assist(s), 0 shot(s), 0 on target, 29 of 40 passes completed; 17 Oct: away against Northgate Rovers, won 3–1: 1 goal(s), 0 assist(s), 7 shot(s), 4 on target, 21 of 30 passes completed",
+              "totals": "over these 3 game(s): 1 goal(s), 0 assist(s), 11 shot(s), 4 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0210",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "games": "3 Oct: home against Corranvale City, drawn 2–2: 1 goal(s), 0 assist(s), 5 shot(s), 1 on target, 36 of 42 passes completed; 10 Oct: home against Thornmoor United, lost 0–3: 0 goal(s), 0 assist(s), 1 shot(s), 0 on target, 40 of 56 passes completed; 17 Oct: home against Harbourside Athletic, lost 1–3: 1 goal(s), 0 assist(s), 6 shot(s), 4 on target, 26 of 35 passes completed",
+              "totals": "over these 3 game(s): 2 goal(s), 0 assist(s), 12 shot(s), 5 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "a37_03": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0210"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Daniel Okafor",
+              "team": "Northgate Rovers",
+              "shots_tonight": "2 shot(s) tonight, 2 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 16: 76% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 85 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 85 km/h; his season norm 81 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "a37_04": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "a37_05": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "a37_06": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "a37_07": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0210",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "games": "3 Oct: home against Corranvale City, drawn 2–2: 1 goal(s), 0 assist(s), 5 shot(s), 1 on target, 36 of 42 passes completed; 10 Oct: home against Thornmoor United, lost 0–3: 0 goal(s), 0 assist(s), 1 shot(s), 0 on target, 40 of 56 passes completed; 17 Oct: home against Harbourside Athletic, lost 1–3: 1 goal(s), 0 assist(s), 6 shot(s), 4 on target, 26 of 35 passes completed",
+              "totals": "over these 3 game(s): 2 goal(s), 0 assist(s), 12 shot(s), 5 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "a37_08": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0210",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "games": "3 Oct: home against Corranvale City, drawn 2–2: 1 goal(s), 0 assist(s), 5 shot(s), 1 on target, 36 of 42 passes completed; 10 Oct: home against Thornmoor United, lost 0–3: 0 goal(s), 0 assist(s), 1 shot(s), 0 on target, 40 of 56 passes completed; 17 Oct: home against Harbourside Athletic, lost 1–3: 1 goal(s), 0 assist(s), 6 shot(s), 4 on target, 26 of 35 passes completed",
+              "totals": "over these 3 game(s): 2 goal(s), 0 assist(s), 12 shot(s), 5 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "a37_09": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0210",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "games": "3 Oct: home against Corranvale City, drawn 2–2: 1 goal(s), 0 assist(s), 5 shot(s), 1 on target, 36 of 42 passes completed; 10 Oct: home against Thornmoor United, lost 0–3: 0 goal(s), 0 assist(s), 1 shot(s), 0 on target, 40 of 56 passes completed; 17 Oct: home against Harbourside Athletic, lost 1–3: 1 goal(s), 0 assist(s), 6 shot(s), 4 on target, 26 of 35 passes completed",
+              "totals": "over these 3 game(s): 2 goal(s), 0 assist(s), 12 shot(s), 5 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "a37_10": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "d01": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score",
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            },
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "d02": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score",
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            },
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "d03": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "match_info"
+            ]
+          },
+          "facts": {
+            "match_info": {
+              "fixture": "Harbourside Athletic (home) against Northgate Rovers (away)",
+              "venue": "played at Quayside Park, the home ground of Harbourside Athletic",
+              "weather": "clear, 10 °C at kick-off",
+              "attendance": "36,732 spectators (capacity 42,000)",
+              "referee": "referee Adam Kettering",
+              "kick_off": "kick-off 19:00 UTC on 24 October 2026",
+              "now": "minute 2, first half",
+              "season": "season 2026-27, matchday 11",
+              "competition": "a synthetic league of six fictional clubs",
+              "season_so_far": "before tonight: Harbourside Athletic: 10 played, 4 won, 1 drawn, 5 lost, goals 12 for and 12 against; Northgate Rovers: 10 played, 2 won, 2 drawn, 6 lost, goals 17 for and 23 against",
+              "not_in_the_data": "team news, injuries and the referee's reasons for decisions are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "d04": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "match_info"
+            ]
+          },
+          "facts": {
+            "match_info": {
+              "fixture": "Harbourside Athletic (home) against Northgate Rovers (away)",
+              "venue": "played at Quayside Park, the home ground of Harbourside Athletic",
+              "weather": "clear, 10 °C at kick-off",
+              "attendance": "36,732 spectators (capacity 42,000)",
+              "referee": "referee Adam Kettering",
+              "kick_off": "kick-off 19:00 UTC on 24 October 2026",
+              "now": "minute 30, first half",
+              "season": "season 2026-27, matchday 11",
+              "competition": "a synthetic league of six fictional clubs",
+              "season_so_far": "before tonight: Harbourside Athletic: 10 played, 4 won, 1 drawn, 5 lost, goals 12 for and 12 against; Northgate Rovers: 10 played, 2 won, 2 drawn, 6 lost, goals 17 for and 23 against",
+              "not_in_the_data": "team news, injuries and the referee's reasons for decisions are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "d05": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "d06": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_recent"
+            ],
+            "player_id": "ply_0210",
+            "n": 3
+          },
+          "facts": {
+            "player_recent": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "games": "3 Oct: home against Corranvale City, drawn 2–2: 1 goal(s), 0 assist(s), 5 shot(s), 1 on target, 36 of 42 passes completed; 10 Oct: home against Thornmoor United, lost 0–3: 0 goal(s), 0 assist(s), 1 shot(s), 0 on target, 40 of 56 passes completed; 17 Oct: home against Harbourside Athletic, lost 1–3: 1 goal(s), 0 assist(s), 6 shot(s), 4 on target, 26 of 35 passes completed",
+              "totals": "over these 3 game(s): 2 goal(s), 0 assist(s), 12 shot(s), 5 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "d07": {
+      "event_id": "evt_3101239",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.4, Northgate Rovers 1.3",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 7, Northgate Rovers 5"
+            }
+          }
+        }
+      ]
+    },
+    "d08": {
+      "event_id": "evt_3101239",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "team_stats"
+            ]
+          },
+          "facts": {
+            "team_stats": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "shots": "shots: Harbourside Athletic 19, Northgate Rovers 12",
+              "on_target": "on target: Harbourside Athletic 6, Northgate Rovers 7",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.4, Northgate Rovers 1.3",
+              "corners": "corners: Harbourside Athletic 4, Northgate Rovers 3",
+              "cards": "cards: Harbourside Athletic 2, Northgate Rovers 3",
+              "passes_completed": "passes completed: Harbourside Athletic 381 of 451, Northgate Rovers 345 of 423"
+            }
+          }
+        }
+      ]
+    },
+    "d09": {
+      "event_id": "evt_3100937",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 2–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG); Tomas Reyner (Harbourside Athletic) in minute 64, a 5% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            }
+          }
+        }
+      ]
+    },
+    "d10": {
+      "event_id": "evt_3101239",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score",
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.4, Northgate Rovers 1.3",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 7, Northgate Rovers 5"
+            },
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "7 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 98 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "c01": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders",
+              "player_recent"
+            ],
+            "player_id": "ply_0107",
+            "n": 3
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            },
+            "player_recent": {
+              "player": "Tomas Reyner",
+              "club": "Harbourside Athletic",
+              "games": "3 Oct: away against Thornmoor United, lost 0–1: 0 goal(s), 0 assist(s), 4 shot(s), 0 on target, 24 of 33 passes completed; 10 Oct: home against Elderwick Town, lost 0–1: 0 goal(s), 0 assist(s), 0 shot(s), 0 on target, 29 of 40 passes completed; 17 Oct: away against Northgate Rovers, won 3–1: 1 goal(s), 0 assist(s), 7 shot(s), 4 on target, 21 of 30 passes completed",
+              "totals": "over these 3 game(s): 1 goal(s), 0 assist(s), 11 shot(s), 4 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "c02": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "c03": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders",
+              "player_tonight"
+            ],
+            "player_id": "ply_0210"
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            },
+            "player_tonight": {
+              "player": "Daniel Okafor",
+              "team": "Northgate Rovers",
+              "shots_tonight": "2 shot(s) tonight, 2 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 16: 76% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 85 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 85 km/h; his season norm 81 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "c04": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "r01": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "r02": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "r03": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "v01": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "v02": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "v03": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "v04": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders"
+            ]
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            }
+          }
+        }
+      ]
+    },
+    "j01": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0111"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Kenji Ito",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "3 shot(s) tonight, 1 on target, 1 goal(s)",
+              "best_chance": "best chance in minute 22: 14% (model estimate, xG), blocked by a defender",
+              "fastest_shot": "fastest shot 94 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 89 km/h; his season norm 85 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "j02": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "team_recent"
+            ],
+            "club_id": "clb_northgate",
+            "n": 5
+          },
+          "facts": {
+            "team_recent": {
+              "team": "Northgate Rovers",
+              "games": "19 Sep: home against Kestrel Bay FC, lost 3–4 (scorers: Daniel Okafor, Quentin Hartigan); 26 Sep: home against Elderwick Town, won 2–1 (scorers: Lukas Brandt, Rafael Lacombe); 3 Oct: home against Corranvale City, drawn 2–2 (scorers: Daniel Okafor, Noah Garrow); 10 Oct: home against Thornmoor United, lost 0–3 (scorers: no scorers); 17 Oct: home against Harbourside Athletic, lost 1–3 (scorers: Daniel Okafor)",
+              "totals": "over these 5 game(s): 1 won, 1 drawn, 3 lost, goals 8 for and 13 against"
+            }
+          }
+        }
+      ]
+    },
+    "j03": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_info"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_info": {
+              "player": "Tomas Reyner",
+              "club": "Harbourside Athletic",
+              "nationality": "nationality: Japan",
+              "date_of_birth": "date of birth: 1995-04-08 (YYYY-MM-DD)",
+              "birthplace": "born in Swansea, Wales",
+              "profile": "shirt number 9, striker, right-footed",
+              "season_before_tonight": "10 appearance(s), 5 goal(s), 0 assist(s), 33 shot(s), 10 on target",
+              "shot_speed_norm": "season shot-speed norm 88 km/h with his stronger foot (model estimate)",
+              "tonight": "tonight so far: 10 of 11 passes completed, 2 shot(s), 0 foul(s), 1 duel(s), interception(s) or recoveries",
+              "not_in_the_data": "age, height, contract and injuries are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "j04": {
+      "event_id": "evt_3100037",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "season_leaders",
+              "player_recent"
+            ],
+            "player_id": "ply_0107",
+            "n": 3
+          },
+          "facts": {
+            "season_leaders": {
+              "home_club": "Harbourside Athletic",
+              "home_top_scorer": "top scorer: Tomas Reyner with 5 goal(s)",
+              "home_goals": "most goals: Tomas Reyner 5, Kenji Ito 3, Bram Ingleby 1",
+              "home_assists": "most assists: Hugo Kessler 2, Bram Ingleby 2, Leon Quayle 1",
+              "home_shots": "most shots: Tomas Reyner 33, Marco Silvestri 17, Bram Ingleby 16",
+              "away_club": "Northgate Rovers",
+              "away_top_scorer": "top scorer: Daniel Okafor with 10 goal(s)",
+              "away_goals": "most goals: Daniel Okafor 10, Noah Garrow 2, Rafael Lacombe 2",
+              "away_assists": "most assists: Umar Okonjo 5, Noah Garrow 4, Lukas Brandt 2",
+              "away_shots": "most shots: Daniel Okafor 36, Noah Garrow 27, Lukas Brandt 17",
+              "period": "the season before tonight's match"
+            },
+            "player_recent": {
+              "player": "Tomas Reyner",
+              "club": "Harbourside Athletic",
+              "games": "3 Oct: away against Thornmoor United, lost 0–1: 0 goal(s), 0 assist(s), 4 shot(s), 0 on target, 24 of 33 passes completed; 10 Oct: home against Elderwick Town, lost 0–1: 0 goal(s), 0 assist(s), 0 shot(s), 0 on target, 29 of 40 passes completed; 17 Oct: away against Northgate Rovers, won 3–1: 1 goal(s), 0 assist(s), 7 shot(s), 4 on target, 21 of 30 passes completed",
+              "totals": "over these 3 game(s): 1 goal(s), 0 assist(s), 11 shot(s), 4 on target",
+              "not_in_the_data": "minutes played and player ratings are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "p01": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_info"
+            ],
+            "player_id": "ply_0111"
+          },
+          "facts": {
+            "player_info": {
+              "player": "Kenji Ito",
+              "club": "Harbourside Athletic",
+              "nationality": "nationality: England",
+              "date_of_birth": "date of birth: 2005-04-21 (YYYY-MM-DD)",
+              "birthplace": "born in Abuja, Nigeria",
+              "profile": "shirt number 11, left winger, right-footed",
+              "season_before_tonight": "9 appearance(s), 3 goal(s), 0 assist(s), 10 shot(s), 4 on target",
+              "shot_speed_norm": "season shot-speed norm 85 km/h with his stronger foot (model estimate)",
+              "tonight": "tonight so far: 6 of 7 passes completed, 3 shot(s), 1 foul(s), 2 duel(s), interception(s) or recoveries",
+              "not_in_the_data": "age, height, contract and injuries are not in the data"
+            }
+          }
+        }
+      ]
+    },
+    "p02": {
+      "event_id": "evt_3100412",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_info"
+            ],
+            "player_id": "ply_0210"
+          },
+          "facts": {
+            "player_info": {
+              "player": "Daniel Okafor",
+              "club": "Northgate Rovers",
+              "nationality": "nationality: Spain",
+              "date_of_birth": "date of birth: 1999-12-12 (YYYY-MM-DD)",
+              "birthplace": "born in Cardiff, Wales",
+              "profile": "shirt number 10, striker, right-footed",
+              "season_before_tonight": "9 appearance(s), 10 goal(s), 0 assist(s), 36 shot(s), 19 on target",
+              "shot_speed_norm": "season shot-speed norm 81 km/h with his stronger foot (model estimate)",
+              "tonight": "tonight so far: 12 of 15 passes completed, 2 shot(s), 0 foul(s), 3 duel(s), interception(s) or recoveries",
+              "not_in_the_data": "age, height, contract and injuries are not in the data"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

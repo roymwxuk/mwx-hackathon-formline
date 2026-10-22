@@ -1,0 +1,187 @@
+[
+  {
+    "id": "a37_01",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "Among tonight’s two clubs, which player has more season goals than anyone else, and how many goals and shots did he record in his last three games?",
+    "expect": "Identify Okafor: 10 season goals; last three games 2 goals and 12 shots. Limit the ranking to these two clubs.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Identify Okafor: 10 season goals; last three games 2 goals and 12 shots. Limit the ranking to these two clubs.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_01"
+  },
+  {
+    "id": "a37_02",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "For each club’s season top scorer, list goals, shots and shots on target over his last three games.",
+    "expect": "Identify Reyner and Okafor. Three-game totals respectively: 1 goal / 11 shots / 4 on target; 2 goals / 12 shots / 5 on target.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Identify Reyner and Okafor. Three-game totals respectively: 1 goal / 11 shots / 4 on target; 2 goals / 12 shots / 5 on target.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_02"
+  },
+  {
+    "id": "a37_03",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "Give Reyner’s and Okafor’s average stronger-foot shot speeds tonight alongside each player’s own season norm.",
+    "expect": "Reyner: 99 km/h average versus 88 norm; Okafor: 85 versus 81. Preserve stronger-foot average qualifiers; qualify norms as estimates. No derived difference required.",
+    "gold": {
+      "sections": [
+        "player_tonight"
+      ],
+      "player_id": "ply_0107"
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Reyner: 99 km/h average versus 88 norm; Okafor: 85 versus 81. Preserve stronger-foot average qualifiers; qualify norms as estimates. No derived difference required.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_03"
+  },
+  {
+    "id": "a37_04",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "What is the current score, who scored, and how many goals has Tomas Reyner scored tonight?",
+    "expect": "1–0 to Harbourside; Ito scored at 23 minutes; Reyner has zero goals tonight. Do not name Reyner as a scorer.",
+    "gold": {
+      "sections": [
+        "score"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "1–0 to Harbourside; Ito scored at 23 minutes; Reyner has zero goals tonight. Do not name Reyner as a scorer.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_04"
+  },
+  {
+    "id": "a37_05",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "How many season goals do Reyner and Okafor each have, and which one has more?",
+    "expect": "Reyner 5, Okafor 10; Okafor has more. No league-wide ranking or unsupported future prediction.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Reyner 5, Okafor 10; Okafor has more. No league-wide ranking or unsupported future prediction.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_05"
+  },
+  {
+    "id": "a37_06",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100037/1",
+    "text": "Name Harbourside’s season goal leader and every joint assist leader, with their totals.",
+    "expect": "Reyner leads goals with 5; Kessler and Ingleby are joint assist leaders with 2 each. Distinguish goals from assists.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Reyner leads goals with 5; Kessler and Ingleby are joint assist leaders with 2 each. Distinguish goals from assists.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_06"
+  },
+  {
+    "id": "a37_07",
+    "kind": "answerable_extension",
+    "lang": "en",
+    "event": "evt_3100412/1",
+    "text": "List the opponents and scorelines in Okafor’s last three games, and his total goals across those games.",
+    "expect": "Northgate: 2–2 versus Corranvale City, 0–3 versus Thornmoor United, 1–3 versus Harbourside Athletic; Okafor scored 2 goals across the three. Preserve result direction and window.",
+    "gold": {
+      "sections": [
+        "player_recent"
+      ],
+      "player_id": "ply_0210",
+      "n": 3
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Northgate: 2–2 versus Corranvale City, 0–3 versus Thornmoor United, 1–3 versus Harbourside Athletic; Okafor scored 2 goals across the three. Preserve result direction and window.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_07"
+  },
+  {
+    "id": "a37_08",
+    "kind": "answerable_extension",
+    "lang": "ja",
+    "event": "evt_3100412/1",
+    "text": "オカフォーの直近3試合の得点数、シュート数、枠内シュート数を教えて。",
+    "expect": "Answer in Japanese: Okafor has 2 goals, 12 shots and 5 shots on target over the last three games. Do not substitute season totals.",
+    "gold": {
+      "sections": [
+        "player_recent"
+      ],
+      "player_id": "ply_0210",
+      "n": 3
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Answer in Japanese: Okafor has 2 goals, 12 shots and 5 shots on target over the last three games. Do not substitute season totals.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_08"
+  },
+  {
+    "id": "a37_09",
+    "kind": "answerable_extension",
+    "lang": "ja",
+    "event": "evt_3100037/1",
+    "text": "今夜対戦する2クラブの中で今季最多得点の選手は誰？その選手の直近3試合の得点数とシュート数も教えて。",
+    "expect": "Answer in Japanese: Okafor leads these two clubs with 10 season goals; last three games 2 goals and 12 shots. Do not imply joint or league-wide leadership.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Answer in Japanese: Okafor leads these two clubs with 10 season goals; last three games 2 goals and 12 shots. Do not imply joint or league-wide leadership.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_09"
+  },
+  {
+    "id": "a37_10",
+    "kind": "answerable_extension",
+    "lang": "ja",
+    "event": "evt_3100037/1",
+    "text": "ハーバーサイドの今季アシスト最多の選手を同率も含め全員挙げ、それぞれのアシスト数を教えて。",
+    "expect": "Answer in Japanese: Hugo Kessler and Bram Ingleby, 2 assists each; include both and preserve club scope.",
+    "gold": {
+      "sections": [
+        "season_leaders"
+      ]
+    },
+    "expected_decisions": [
+      "answer"
+    ],
+    "scoring_criteria": "Answer in Japanese: Hugo Kessler and Bram Ingleby, 2 assists each; include both and preserve club scope.",
+    "reference": "docs/eval/typed-questions-answerable-37-reference.json#cases.a37_10"
+  }
+]
