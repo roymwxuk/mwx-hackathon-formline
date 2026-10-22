@@ -1,6 +1,29 @@
 # Plan: resolve names in typed questions before any model call
 
-Status: **draft for review** (owner, then Codex). Nothing is built yet.
+Status: **approved by the owner** (2026-10-22, "update and go"), after the self-review below.
+Codex has not reviewed it yet.
+
+## Revisions after self-review
+
+1. **Katakana club names are not unknown.** Japanese viewers write clubs in katakana
+   ("ノースゲート・ローバーズ"), which the league has no official form of; a katakana run that
+   contains a club word (`JA_CLUB_WORDS` in `analyst/verify.py`) is a club mention, never unknown.
+2. **No "skip the first word" rule**: it would have reduced "Milo Vexford's" to "Vexford's" and
+   missed unknown01. Instead, all known names are removed first (longest first), then any
+   remaining run of two or more capitalised words is a candidate.
+3. **Wording**: "among tonight's players or clubs", which still reads well if a phrase like
+   "Premier League" is ever caught.
+4. **No "plays elsewhere" reply** (review question 1): history facts name players of other clubs,
+   so such a question can be answerable; it stays as today.
+5. **Backstop moved to the answer**: the planned check on the question could never run (flagged
+   questions are answered before any model call). The verifier instead rejects a Japanese answer
+   whose text contains a katakana full name ("・") that is neither a known player nor in FACTS.
+   English answers are not checked this way: title-case headlines ("Okafor Leads Northgate's
+   Scoring This Season") would trigger it.
+6. File name: the Researcher lives in `analyst/researcher.py`.
+7. The offline check also covers the 75-case set by name.
+
+Owner's answers: question 1 dropped (revision 4); question 2 accepted; question 3: build now.
 
 ## Problem
 
@@ -47,8 +70,8 @@ extended to classify each name it finds, before any model call:
 |---|---|---|
 | Resolved | "Okafor", "ダニエル・オカフォー" | Unchanged: the question goes on to the Researcher |
 | Ambiguous | "Garrow", "Leon" | Unchanged: "Which player do you mean…?" (no model call) |
-| Known, not in tonight's squads | a player of Elderwick Town | New: "<name> plays for <club>, which is not in tonight's match" (no model call) |
-| **Unknown** | "Milo Vexford", "Ashfen Wanderers", "ゾラン・ベルスコ" | **New**: "I can't find <name> in either squad tonight. Check the spelling, or ask with the club name." (no model call) |
+| Known, not in tonight's squads | a player of Elderwick Town | Unchanged (see revision 4) |
+| **Unknown** | "Milo Vexford", "Ashfen Wanderers", "ゾラン・ベルスコ" | **New**: "I can't find <name> among tonight's players or clubs. Check the spelling, or ask with the club name." (no model call) |
 
 `find_player` stays for what code cannot resolve (typos like "Okafur", partial names); the
 Researcher prompt gains one line and a new reply shape for that path.
@@ -59,26 +82,25 @@ Code may only answer "not found" when it is confident the text names a person or
 is unsure, it says nothing and the question goes on as today. Rules:
 
 - **Japanese**: a katakana run containing "・" (the full-name shape, e.g. ゾラン・ベルスコ) that
-  matches no player's Japanese name or its parts.
-- **English**: a run of **two or more** capitalised words (Milo Vexford, Ashfen Wanderers) that is
-  not a known name. A single capitalised word is never flagged ("Okafur" goes to the
-  Researcher, "January" and "Ignore" are ordinary words).
+  matches no player's Japanese name or its parts and contains no club word (revision 1).
+- **English**: after removing every known name (longest first) and possessives, a remaining run
+  of **two or more** capitalised words (Milo Vexford, Ashfen Wanderers). A single capitalised
+  word is never flagged ("Okafur" goes to the Researcher, "January" and "Ignore" are ordinary
+  words).
 - **Allow-list of every name in the data**: all 108 league players (English and Japanese, full
   and parts), the six clubs and their short names, the referee, the venue, birthplaces and
   nationalities. These are never "unknown".
-- Skip the first word of a sentence when deciding capitalisation ("Who", "Compare"),
-  and strip possessives ("Harbourside's").
 
 ## Changes
 
 | Where | Change |
 |---|---|
-| `analyst/router.py` | `resolve_names(text, lang, m, league)` returning resolved / ambiguous / elsewhere / unknown; `player_clarification` becomes one branch of it |
-| `analyst/ask.py` | The "elsewhere" and "unknown" replies before any model call, with outcome `not_found` (EN / JA wording) |
+| `analyst/router.py` | `unknown_names(text, ...)` beside `player_clarification` (which is unchanged) |
+| `analyst/ask.py` | The "unknown" reply before any model call, with outcome `not_found` (EN / JA wording) |
 | `analyst/tools.py` | `find_club(name)` beside `find_player`; both return `{"candidates": []}` for no match |
 | `prompts/researcher.md` (v4) | "If a name in VIEWER_TEXT is not in PLAYERS or CLUBS, call find_player / find_club; if no candidates, reply `{"not_found": "<name as written>"}`" |
-| `analyst/research.py` | Accept `not_found`; code checks the name really matches nobody before replying, so a model mistake cannot deny a real player |
-| `analyst/verify.py` (backstop) | If the question contains a flagged unknown name, an Analyst answer that is not a not-found reply is rejected |
+| `analyst/researcher.py` | Accept `not_found`; code checks the name really matches nobody before replying, so a model mistake cannot deny a real player |
+| `analyst/verify.py` (backstop) | Reject a Japanese typed answer containing a katakana full name that is neither a known player nor in FACTS (revision 5) |
 | Tests | Below |
 | `docs/decisions.md` | ADR: deterministic name resolution before the model |
 
@@ -92,7 +114,7 @@ but fuzzy matching invites new wrong identities; out of scope before the deadlin
    sentence-initial words, months ("January"), injections ("Ignore all previous
    instructions") and mixed scripts ("What is 伊藤健二's nationality?") never do.
 2. **Offline false-positive check, free**: run the detector over every question in every saved
-   dataset (90 cases, the original 38, extra-10, 37). Required: only unknown01–03 flagged, no
+   dataset (90 cases, the 75-case set, the original 38, extra-10, 37). Required: only unknown01–03 flagged, no
    other question flagged.
 3. **Model check**: one complete 90-case run on `gpt-4.1-mini` (about ¥45). Required: unknown01–03
    correct; no case that passed in both baseline runs fails; no new false claim.
@@ -105,10 +127,9 @@ question is worse than today's generic decline, so the detector is deliberately 
 shapes only) and the offline check over all saved questions must find no false positive before
 the model run.
 
-## Review questions
+## Review questions (answered)
 
-1. Is the "known, not in tonight's squads" reply wanted, or should those stay as today?
-2. Is the narrow rule (two capitalised words / katakana with "・") acceptable, accepting that a
-   single unknown surname ("Vexford") still goes to the Researcher?
-3. Feature freeze: build now (five days before the deadline), or record as the top post-demo
-   item?
+1. The "known, not in tonight's squads" reply: dropped (revision 4).
+2. The narrow rule, with a single unknown surname ("Vexford") still going to the Researcher:
+   accepted.
+3. Feature freeze: build now.
