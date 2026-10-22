@@ -95,10 +95,25 @@ baseline runs) is gone.
   CLUBS", and "Northgate's Kenji Ito" is not among Northgate's players, so the model searches
   Northgate instead of looking the name up.
 
+## Researcher prompt reverted to v3 (owner's decision, option A)
+
+The v4 line had no measured benefit (unknown01–03 are answered by code before any model call)
+and a measured cost (identity03, 0 of 4). `0504a68` restores the exact v3 prompt
+(`researcher@v3+8b9e81ad`, the baseline's); the code pre-check, `find_club`, the checked
+`not_found` reply and the verifier backstop stay.
+
+Check on gpt-4.1-mini, three runs each (`typed-questions-90-v3-recheck-1/2/3.jsonl`):
+
+| Case | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| identity03 | pass: "Kenji Ito plays as a left winger for Harbourside Athletic" | pass | pass |
+| unknown01–03 | `not_found`, 0 model calls | same | same |
+
 ## Verdict
 
 The deterministic fix does what it should on both models, with no model call and no false
-positive over 100 saved questions. Whether Researcher v4 causes the identity03 regression is
-open: three reruns of identity03 (and a37_05, to confirm the rate limit) would settle it for a
-few yen. The 50K TPM capacity is enough for live viewers but not for an evaluation run at full
-speed.
+positive over 100 saved questions. With the Researcher back on v3, identity03 passes again (3 of
+3) and a37_05's failure was the rate limit (3 of 3 without it), so neither regression of the
+85 / 90 run remains. That run used v4; the shipped configuration (v3 plus the code fix) is
+expected to score the same or better, but has not had its own complete 90-case run. The 50K TPM
+capacity is enough for live viewers but not for an evaluation run at full speed.

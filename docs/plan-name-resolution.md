@@ -25,6 +25,11 @@ Codex has not reviewed it yet.
 
 Owner's answers: question 1 dropped (revision 4); question 2 accepted; question 3: build now.
 
+**After the model checks (2026-10-22):** the Researcher prompt line (v4) was **reverted to v3**.
+It had no measured benefit, since code answers unknown names first, and it made the Researcher
+fetch the wrong player for "Northgate's Kenji Ito" (0 of 4 runs). Everything else in the table
+below shipped. Results: [eval/name-resolution-results.md](eval/name-resolution-results.md).
+
 ## Problem
 
 A typed question that names a player or club who does not exist gets the wrong reply. Three

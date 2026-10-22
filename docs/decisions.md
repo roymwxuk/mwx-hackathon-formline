@@ -707,10 +707,12 @@ in code, before any model call, and let the model search only what code cannot r
 **Decision.** (b). The pre-model pass that already asks "which Garrow?" now also catches
 full-name shapes that match no name in the data (two or more capitalised words, or katakana with
 "・", after removing every player, club, venue, referee, country and birthplace) and replies "I
-can't find <name> among tonight's players or clubs" with no model call. The Researcher (v4) can
-look a name up with `find_player` / `find_club` and reply `not_found`, which code accepts only if
-the name matches nobody. The verifier rejects a Japanese typed answer naming a katakana full name
-that is neither a player nor in the facts.
+can't find <name> among tonight's players or clubs" with no model call. The Researcher can look a
+name up with `find_player` / `find_club` and reply `not_found`, which code accepts only if the
+name matches nobody. The verifier rejects a Japanese typed answer naming a katakana full name
+that is neither a player nor in the facts. A prompt line asking the Researcher to do those
+lookups (v4) was tried and reverted: it had no measured benefit and made the Researcher fetch
+the wrong player for "Northgate's Kenji Ito" in 4 of 4 runs; v3 is restored.
 
 **Why.** (a) adds a model round-trip to most questions, uses one of five tool calls, and is still
 a request the model can skip, as it did in the failing case. Code is instant, free and cannot be

@@ -61,8 +61,10 @@ gpt-4.1-mini about $0.40 / $1.60, gpt-6-luna $0.10 / $0.50 per 1M input / output
   player's), occasional ungrounded extras. Luna: empty Researcher replies on some Japanese
   questions, declining partly answerable questions, "last season" for this season's goals,
   latency.
-- **Open on both**: identity03 fails with Researcher prompt v4 (0 of 4 runs on gpt-4.1-mini);
-  decision pending: revert to v3 or reword the line.
+- **identity03**: the "+ name fix" runs used a Researcher prompt line (v4) that made it fetch the
+  wrong player for "Northgate's Kenji Ito" (0 of 4). It was reverted to v3, and identity03
+  passes again (3 of 3); unknown01–03 still get "not found" with no model call. The shipped
+  configuration is v3 plus the code fix, which has not had its own complete 90-case run.
 - **Caveat**: each "+ name fix" row is a single run, and the same configuration varied by up to
   4 points between two runs, so "85 vs 85" means about equal, not a measured tie.
 
