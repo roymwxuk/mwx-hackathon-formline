@@ -39,6 +39,49 @@ None of the three involves a name lookup, so the new prompt line (v4) is not an 
 but one run cannot rule it out. The `gpt-4.1-mini` check below decides whether the change goes
 live, since that is the live model.
 
-## gpt-4.1-mini
+## gpt-4.1-mini, one run (the live model)
 
-Not run yet.
+`typed-questions-90-names-a.jsonl`: 292 model calls, median 5.5 s, p90 9.2 s, 678,938 input /
+9,476 output tokens (no reasoning), about **$0.29 (¥44)** per run at list price.
+
+| | Baseline a / b (before the fix) | **With the fix** |
+|---|---|---|
+| Relevant answer or correct behaviour | 80 / 84 | **85** |
+| Strict (answerable also grounded) | 78 / 81 | **84** |
+| Answerable relevant (of 61) | 58 / 60 | 59 |
+| Behaviour correct / weak / wrong (of 29) | 22-4-3 / 24-3-2 | 26 / 2 / 1 |
+
+**unknown01, unknown02, unknown03: `not_found` with 0 model calls**, the same replies as on Luna.
+The invented identity of unknown03 (Okafor's numbers given to a non-existent player in both
+baseline runs) is gone.
+
+**Plan criteria**
+
+| Criterion | Result |
+|---|---|
+| unknown01–03 correct | **met** |
+| No case that passed in both baseline runs fails | **not met**: identity03, a37_05 (below) |
+| No new false claim | met for the model's own text; identity03's template shows another player's profile |
+
+**The two regressions**
+
+- **a37_05** (Reyner's and Okafor's season goals): Azure returned **429 "rate limit exceeded"**
+  during the Researcher's run, so the Router fallback fetched only Reyner, and the answer fell
+  back to a template without Okafor. Not caused by the change. The token logs explain it: a
+  90-question run sends about 680,000 input tokens in about 10 minutes (roughly 70K tokens per
+  minute), above the deployment's 50K tokens-per-minute capacity.
+- **identity03** ("Which position does Northgate's Kenji Ito play?"): in both baseline runs the
+  Researcher called `find_player` and fetched Ito's profile. This time it fetched Northgate's
+  left winger, Lacombe; the verifier rejected the answers naming Ito (not in the facts), and the
+  template showed Lacombe's profile. Ito is in the squad list, so the new prompt line (for names
+  *not* in it) should not apply, but one run cannot rule out that v4 shifted the Researcher.
+
+**Also fixed in this run** against the baseline: d03, v01, a37_09, a37_10, var01, var04.
+
+## Verdict
+
+The deterministic fix does what it should on both models, with no model call and no false
+positive over 100 saved questions. Whether Researcher v4 causes the identity03 regression is
+open: three reruns of identity03 (and a37_05, to confirm the rate limit) would settle it for a
+few yen. The 50K TPM capacity is enough for live viewers but not for an evaluation run at full
+speed.
