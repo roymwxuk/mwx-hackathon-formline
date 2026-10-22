@@ -125,18 +125,30 @@ def _scripted_done(turn: int, seen: list[tuple[str, str, str]]) -> str:
 
 # ---------- client factory ----------
 
+# Model families that reject `temperature` (fixed sampling): the request fails with a 400.
+NO_TEMPERATURE = ("gpt-5", "gpt-6")
+
+
 @dataclass(frozen=True)
 class LLMConfig:
     endpoint: str = ""
     deployment: str = ""
-    temperature: float = 0.2
+    temperature: float | None = 0.2  # None: not sent
     max_tokens: int = 400
     max_calls: int = 600  # per run: the live match needs ~22 insights × 4 variants + retries
 
     @classmethod
     def from_settings(cls) -> "LLMConfig":
-        return cls(endpoint=settings.azure_ai_project_endpoint,
-                   deployment=settings.azure_ai_model_deployment_name)
+        deployment = settings.azure_ai_model_deployment_name
+        return cls(endpoint=settings.azure_ai_project_endpoint, deployment=deployment,
+                   temperature=None if deployment.startswith(NO_TEMPERATURE) else 0.2)
+
+    @property
+    def options(self) -> dict:
+        opts: dict = {"max_tokens": self.max_tokens}
+        if self.temperature is not None:
+            opts["temperature"] = self.temperature
+        return opts
 
     @property
     def uses_foundry(self) -> bool:
@@ -267,8 +279,7 @@ class LLMRunner:
         token = ON_MODEL_CALL.set(charge)
         try:
             agent = Agent(self.tool_client, instructions, name=agent_name, tools=tools)
-            response = await agent.run(user_input, options={
-                "temperature": self.config.temperature, "max_tokens": self.config.max_tokens})
+            response = await agent.run(user_input, options=self.config.options)
             return response.text
         finally:
             ON_MODEL_CALL.reset(token)
@@ -283,8 +294,7 @@ class LLMRunner:
             return hit
         self.budget.spend()
         agent = Agent(self.client, instructions, name=agent_name)
-        response = await agent.run(user_input, options={
-            "temperature": self.config.temperature, "max_tokens": self.config.max_tokens})
+        response = await agent.run(user_input, options=self.config.options)
         text = response.text
         self.cache.put(key, text)
         return text

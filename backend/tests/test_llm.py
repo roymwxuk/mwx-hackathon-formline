@@ -122,3 +122,12 @@ def test_every_agent_prompt_loads_from_its_versioned_file():
         assert not p.text.startswith("---") and not p.text.endswith("\n")
         assert p.ref.startswith(f"{name}@v{p.version}+") and len(p.ref.split("+")[1]) == 8
     assert "{lang}" in load("analyst").text and "{lang}" in load("analyst_free").text
+
+
+def test_temperature_is_not_sent_to_models_that_reject_it(monkeypatch):
+    """GPT-5 / GPT-6 deployments return a 400 for `temperature`."""
+    for deployment, sent in (("gpt-4.1-mini", True), ("gpt-6-luna", False), ("gpt-5.6-luna", False)):
+        monkeypatch.setattr(llm.settings, "azure_ai_model_deployment_name", deployment)
+        options = LLMConfig.from_settings().options
+        assert ("temperature" in options) is sent, deployment
+        assert options["max_tokens"] == 400
