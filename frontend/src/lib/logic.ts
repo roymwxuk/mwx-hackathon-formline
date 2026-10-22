@@ -188,6 +188,11 @@ export function isFavoriteOverlay(o: Overlay, s: ViewerSettings, players: Player
 
 // ---------- Player focus: tonight vs his own norm ----------
 
+/** Players the viewer can follow in focus mode: those with a season shot norm to compare with. */
+export function canFocus(p: Player): boolean {
+  return p.season_shot_speed_norm_kmh !== null;
+}
+
 export interface FocusStats {
   shots: number;
   avgSpeed: number | null;

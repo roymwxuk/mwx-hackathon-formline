@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advanceTime, applyEvents, applyOverlays, feedStatus, orderedEvents, personalize, score, timeAfter } from '@/lib/logic';
+import { advanceTime, applyEvents, applyOverlays, canFocus, feedStatus, orderedEvents, personalize, score, timeAfter } from '@/lib/logic';
 import { buildDemoStream, PLAYERS } from '@/mock/demo-match';
 import type { MatchEvent, Overlay, ViewerSettings } from '@/lib/types';
 
@@ -216,5 +216,13 @@ describe('feed status badge', () => {
 
   it('says Full time at the end, even though playback stopped', () => {
     expect(feedStatus({ ...live, playing: false, connected: false, ended: true })).toMatchObject({ label: 'Full time', tone: 'idle' });
+  });
+});
+
+describe('player focus', () => {
+  it('can follow only players with a season shot norm (the same list as the focus menu)', () => {
+    const shooter = PLAYERS.find((p) => p.season_shot_speed_norm_kmh !== null)!;
+    expect(canFocus(shooter)).toBe(true);
+    expect(canFocus({ ...shooter, season_shot_speed_norm_kmh: null })).toBe(false);
   });
 });
