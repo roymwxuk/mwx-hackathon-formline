@@ -34,6 +34,14 @@ def automatic(rows: list[dict]) -> dict:
                 if line.startswith("- [") and "]" in line:
                     checks[line[3:line.index("]")]] += 1
     analyst = [r["analyst"] for r in rows if (r.get("analyst") or {}).get("source")]
+    tokens = {}
+    if all("usage" in r for r in rows):  # runs from before token logging have none
+        u = [r["usage"] for r in rows]
+        tokens = {"tokens_input": sum(x["input"] for x in u),
+                  "tokens_output": sum(x["output"] for x in u),
+                  "tokens_reasoning": sum(x["reasoning"] for x in u),
+                  "max_reasoning_one_run": max(x["max_reasoning"] for x in u),
+                  "runs_cut_off_by_token_limit": sum(x["length_stops"] for x in u)}
     return {
         "cases": len(rows),
         "model_calls": sum(r["calls"] for r in rows),
@@ -44,6 +52,7 @@ def automatic(rows: list[dict]) -> dict:
         "analyst_first_attempt": sum(a["source"] == "llm" and a["attempts"] == 1 for a in analyst),
         "analyst_template": sum(a["source"] == "template" for a in analyst),
         "rejections_by_check": dict(checks.most_common()),
+        **tokens,
     }
 
 

@@ -125,8 +125,10 @@ def _scripted_done(turn: int, seen: list[tuple[str, str, str]]) -> str:
 
 # ---------- client factory ----------
 
-# Model families that reject `temperature` (fixed sampling): the request fails with a 400.
-NO_TEMPERATURE = ("gpt-5", "gpt-6")
+# Reasoning model families: they reject `temperature` (a 400), and their hidden reasoning
+# counts against the output limit, so they get more room (docs/eval/gpt-6-luna-notes.md).
+REASONING = ("gpt-5", "gpt-6")
+REASONING_MAX_TOKENS = 1000
 
 
 @dataclass(frozen=True)
@@ -140,8 +142,10 @@ class LLMConfig:
     @classmethod
     def from_settings(cls) -> "LLMConfig":
         deployment = settings.azure_ai_model_deployment_name
-        return cls(endpoint=settings.azure_ai_project_endpoint, deployment=deployment,
-                   temperature=None if deployment.startswith(NO_TEMPERATURE) else 0.2)
+        if deployment.startswith(REASONING):
+            return cls(endpoint=settings.azure_ai_project_endpoint, deployment=deployment,
+                       temperature=None, max_tokens=REASONING_MAX_TOKENS)
+        return cls(endpoint=settings.azure_ai_project_endpoint, deployment=deployment)
 
     @property
     def options(self) -> dict:
@@ -251,6 +255,17 @@ class LLMRunner:
     cache_hits: int = 0
     tool_client: Any = None  # for tool-using agents (make_tool_client), created on first use
     tool_script: ToolScript | None = None  # the fake's research script
+    usage: list[dict] = field(default_factory=list)  # one entry per uncached agent run
+
+    def _record(self, agent_name: str, response) -> None:
+        """Token counts and why the model stopped ("length": cut off by max_tokens)."""
+        u = getattr(response, "usage_details", None) or {}
+        reason = getattr(response, "finish_reason", None)
+        self.usage.append({"agent": agent_name,
+                           "input": u.get("input_token_count") or 0,
+                           "output": u.get("output_token_count") or 0,
+                           "reasoning": u.get("reasoning_output_token_count") or 0,
+                           "finish": str(getattr(reason, "value", reason)) if reason else None})
 
     def __post_init__(self) -> None:
         if self.budget is None:
@@ -280,6 +295,7 @@ class LLMRunner:
         try:
             agent = Agent(self.tool_client, instructions, name=agent_name, tools=tools)
             response = await agent.run(user_input, options=self.config.options)
+            self._record(agent_name, response)
             return response.text
         finally:
             ON_MODEL_CALL.reset(token)
@@ -295,6 +311,7 @@ class LLMRunner:
         self.budget.spend()
         agent = Agent(self.client, instructions, name=agent_name)
         response = await agent.run(user_input, options=self.config.options)
+        self._record(agent_name, response)
         text = response.text
         self.cache.put(key, text)
         return text

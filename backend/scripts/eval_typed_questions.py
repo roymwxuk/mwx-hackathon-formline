@@ -83,11 +83,23 @@ def meta(runner, data: Path, questions: Path) -> dict:
             "dirty": bool(git("status", "--porcelain", "--", "..")),
             "model": runner.kind,
             "deployment": runner.config.deployment if runner.kind == "foundry" else None,
+            "max_tokens": runner.config.max_tokens, "temperature": runner.config.temperature,
             "prompts": sorted(load(p.stem).ref for p in PROMPTS.glob("*.md")),
             "match_id": LIVE,
             "data": {name: sha(data / name) for name in
                      (f"feeds/{LIVE}.jsonl", "league.json", "matches.json")},
             "questions": {"file": questions.name, "sha": sha(questions)}}
+
+
+def usage_summary(entries: list[dict]) -> dict:
+    """One question's agent runs: token totals, the largest reasoning share, and how many
+    runs the token limit cut off (finish reason "length")."""
+    return {"runs": len(entries),
+            "input": sum(e["input"] for e in entries),
+            "output": sum(e["output"] for e in entries),
+            "reasoning": sum(e["reasoning"] for e in entries),
+            "max_reasoning": max((e["reasoning"] for e in entries), default=0),
+            "length_stops": sum(e["finish"] == "length" for e in entries)}
 
 
 def gold_facts(gold: dict | None, m, ctx, norm) -> dict | None:
@@ -127,7 +139,7 @@ async def run(questions: list[dict], out: Path, source: Path, max_calls: int = 4
             else:
                 event_id, version = as_of(feed, float(q["at"]))
             m, _ = moment_as_of(event_id, version, feed, ctx, norm)
-            calls, hits = runner.budget.calls, runner.cache_hits
+            calls, hits, used = runner.budget.calls, runner.cache_hits, len(runner.usage)
             asklog.last = None
             t0 = time.perf_counter()
             try:
@@ -140,6 +152,7 @@ async def run(questions: list[dict], out: Path, source: Path, max_calls: int = 4
             row = {**q, "event_id": event_id, "version": version, "outcome": res.get("outcome"),
                    "calls": runner.budget.calls - calls, "cache_hits": runner.cache_hits - hits,
                    "seconds": round(time.perf_counter() - t0, 2),
+                   "usage": usage_summary(runner.usage[used:]),
                    "research": res.get("research"), "retrieved": res.get("retrieved"),
                    "answer": asdict(answer) if hasattr(answer, "__dataclass_fields__") else answer,
                    "declined": res.get("declined"), "error": error,
