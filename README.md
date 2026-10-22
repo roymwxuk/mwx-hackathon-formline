@@ -293,6 +293,14 @@ name answered with another player's numbers (the verifier does not check unknown
 two-hop question answered with the team's game instead of the player's, and "What was the xG
 of Reyner's goal?". Median 5.3–5.5 s, p90 9.1–9.8 s, about 300 model calls per run.
 
+**Model comparison** (same 90 cases, two runs each, criteria fixed before the run;
+[plan](docs/eval/model-comparison-plan.md), [results](docs/eval/model-comparison-results.md)):
+`gpt-6-luna` scored **81 / 90** in both runs against 80 and 84 for `gpt-4.1-mini`. It fixed the
+two-hop miss and stopped inventing an identity for an unknown name, but made a new false claim
+("last season" for this season's goals), declined more partly answerable questions, and had
+replies cut off by the 400-token output limit, since its internal reasoning counts against it.
+Two of five criteria failed, so the app stays on `gpt-4.1-mini`.
+
 **37 answerable questions** (the original 27 plus 10 supported additions; two complete runs,
 2026-10-22; [results](docs/eval/typed-questions-answerable-37-results.md)): **34 / 37** then,
 after fixing a verifier false positive on past opponents, **36 / 37** relevant (original 27:
