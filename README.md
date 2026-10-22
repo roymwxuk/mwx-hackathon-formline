@@ -113,7 +113,8 @@ gold arrows are the recovery path. Source: [`docs/architecture/build_diagram.py`
 ## Agents
 
 The engine decides *what* is notable; agents decide *which* card to show and *how* to word
-it, and a deterministic verifier checks every word against the engine's facts. Built as a
+it, and a deterministic verifier checks structure, allowed numbers and names, and wording
+rules against the engine's facts; it does not establish full semantic correctness. Built as a
 `WorkflowBuilder` graph on Microsoft Agent Framework (`backend/src/formline/agents/workflow.py`):
 
 ```
@@ -143,6 +144,28 @@ last 3 games*. Limits are enforced in our code, not only by the framework: tool 
 admitted before they run (5 per question, invalid ones count), every model round-trip is
 charged to the call budget, calls are kept back for the fallback, and the request has a
 configured 25 s deadline (ADR-013), rather than a proven strict wall-clock bound.
+
+### Why both a Researcher and a Router?
+
+Both retrieve facts for the **Match Analyst**, which writes the natural-language answer.
+The difference is how they choose the facts:
+
+| Retrieval path | How it works | Current role |
+|---|---|---|
+| Question Router | Makes one retrieval decision selecting up to three predefined fact sections and their parameters; it can retry an invalid decision, but cannot inspect lookup results to choose a subsequent lookup | Simpler fallback when research fails or its allowance is insufficient |
+| Researcher | Chooses a tool, reads its result, then decides whether another lookup is needed within the call limits | Primary path for typed questions, including chained lookups |
+
+For example, "How many shots has this player taken?" can use a direct fact-section
+selection. "How did the top scorer do in his last three games?" first needs the scorer's
+identity, then a lookup using that returned player ID. The Researcher was added to support
+such result-dependent retrieval, rather than to introduce natural-language answers: the
+Router already passed its retrieved facts to the Analyst for writing.
+
+Keeping the Router provides a recovery path without the tool loop; it may not answer the
+same chained question as fully. This **retrieval fallback** is separate from the
+**answer fallback**: after either path, generated text is checked and retried, then may
+fall back to a template or a Japanese rephrase request. Neither retrieval component writes
+the final answer itself. See [ADR-013](docs/decisions.md#adr-013-a-tool-using-researcher-for-typed-questions).
 
 | Agent | Kind | Job |
 |---|---|---|
