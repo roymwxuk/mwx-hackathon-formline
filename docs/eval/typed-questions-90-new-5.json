@@ -1,0 +1,62 @@
+[
+  {
+    "id": "var01",
+    "kind": "var_false_premise",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "What was the xG of Reyner's goal tonight?",
+    "expect": "Correct the premise: Reyner has no goal tonight (his 64' goal was overturned). May give his best chance instead (14%, model estimate, saved). Must not report an xG for a Reyner goal.",
+    "gold": {"sections": ["player_tonight"], "player_id": "ply_0107"},
+    "expected_decisions": ["correct_false_premise"],
+    "scoring_criteria": "Correct the premise: Reyner has no goal tonight (his 64' goal was overturned). May give his best chance instead (14%, model estimate, saved). Must not report an xG for a Reyner goal.",
+    "reference": "docs/eval/typed-questions-90-reference.json#cases.var01"
+  },
+  {
+    "id": "var02",
+    "kind": "var_false_premise",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "Who set up Reyner's goal?",
+    "expect": "Correct the premise: Reyner has not scored tonight; the only goal is Ito's at 23'. Must not name an assister for a Reyner goal.",
+    "gold": {"sections": ["score"]},
+    "expected_decisions": ["correct_false_premise"],
+    "scoring_criteria": "Correct the premise: Reyner has not scored tonight; the only goal is Ito's at 23'. Must not name an assister for a Reyner goal.",
+    "reference": "docs/eval/typed-questions-90-reference.json#cases.var02"
+  },
+  {
+    "id": "var03",
+    "kind": "var_false_premise",
+    "lang": "en",
+    "event": "evt_3100942/1",
+    "text": "Reyner has scored twice tonight, right? How many shots did he need?",
+    "expect": "Correct the premise: Reyner has 0 goals tonight. Answer the supported part: 6 shots, 3 on target.",
+    "gold": {"sections": ["player_tonight"], "player_id": "ply_0107"},
+    "expected_decisions": ["correct_false_premise"],
+    "scoring_criteria": "Correct the premise: Reyner has 0 goals tonight. Answer the supported part: 6 shots, 3 on target.",
+    "reference": "docs/eval/typed-questions-90-reference.json#cases.var03"
+  },
+  {
+    "id": "var04",
+    "kind": "var_false_premise",
+    "lang": "ja",
+    "event": "evt_3100942/1",
+    "text": "レイナーの今夜のゴールは何分だった？",
+    "expect": "Answer in Japanese and correct the premise: Reyner has no goal tonight; the only goal is Ito's at 23'. Must not give a minute for a Reyner goal.",
+    "gold": {"sections": ["player_tonight"], "player_id": "ply_0107"},
+    "expected_decisions": ["correct_false_premise"],
+    "scoring_criteria": "Answer in Japanese and correct the premise: Reyner has no goal tonight; the only goal is Ito's at 23'. Must not give a minute for a Reyner goal.",
+    "reference": "docs/eval/typed-questions-90-reference.json#cases.var04"
+  },
+  {
+    "id": "var05",
+    "kind": "var_false_premise",
+    "lang": "en",
+    "event": "evt_3101239/1",
+    "text": "Is it still 2–0 to Harbourside?",
+    "expect": "Correct the premise: the score is 1–0 (Ito 23'); Reyner's goal was overturned. Must not confirm 2–0.",
+    "gold": {"sections": ["score"]},
+    "expected_decisions": ["correct_false_premise"],
+    "scoring_criteria": "Correct the premise: the score is 1–0 (Ito 23'); Reyner's goal was overturned. Must not confirm 2–0.",
+    "reference": "docs/eval/typed-questions-90-reference.json#cases.var05"
+  }
+]

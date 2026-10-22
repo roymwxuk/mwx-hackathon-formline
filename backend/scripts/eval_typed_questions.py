@@ -102,7 +102,7 @@ def gold_facts(gold: dict | None, m, ctx, norm) -> dict | None:
     return json.loads(ROLE.sub(lambda r: names.get(r.group(), r.group()), text))
 
 
-async def run(questions: list[dict], out: Path, source: Path) -> None:
+async def run(questions: list[dict], out: Path, source: Path, max_calls: int = 400) -> None:
     data = settings.data_dir
     feed = read_feed(data / "feeds" / f"{LIVE}.jsonl")
     ctx = match_context(data, LIVE)
@@ -110,7 +110,7 @@ async def run(questions: list[dict], out: Path, source: Path) -> None:
     league = json.loads((data / "league.json").read_text(encoding="utf-8"))
     short = {c["club_id"]: c["short_name"] for c in league["clubs"]}
     cache = Path(tempfile.mkdtemp()) / "eval_cache.jsonl"
-    runner = make_runner(replace(LLMConfig.from_settings(), max_calls=400),
+    runner = make_runner(replace(LLMConfig.from_settings(), max_calls=max_calls),
                          fake_responder=FakeAgents(), cache_path=cache)
     out.with_suffix(".meta.json").write_text(
         json.dumps(meta(runner, data, source), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -158,6 +158,7 @@ def main() -> None:
     ap.add_argument("--out", type=Path, required=True, help="a new .jsonl file")
     ap.add_argument("--only", help="comma-separated question ids")
     ap.add_argument("--questions", type=Path, default=QUESTIONS, help="a question set (JSON)")
+    ap.add_argument("--max-calls", type=int, default=400, help="model-call budget for the run")
     args = ap.parse_args()
     if args.out.exists():
         raise SystemExit(f"{args.out} exists: give each run its own file")
@@ -166,7 +167,7 @@ def main() -> None:
         keep = set(args.only.split(","))
         questions = [q for q in questions if q["id"] in keep]
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    asyncio.run(run(questions, args.out, args.questions))
+    asyncio.run(run(questions, args.out, args.questions, args.max_calls))
 
 
 if __name__ == "__main__":
