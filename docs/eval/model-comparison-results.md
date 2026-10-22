@@ -9,7 +9,9 @@ fresh cache each. Luna runs: `typed-questions-90-luna-a/b.jsonl` at `0491b3a`.
 
 **Verdict: keep `gpt-4.1-mini` for the live app.** Luna matches it on the headline total but
 fails two of the five pre-set criteria: it makes a new false claim, and its replies are cut off
-by the 400-token output limit.
+by the 400-token output limit. A second try with 1,000 output tokens (below) removed the
+truncation and scored 82 / 90 twice, but still failed the same two criteria (new false claims;
+p90 latency).
 
 ## Totals
 
@@ -71,6 +73,55 @@ truncation failures. That is a configuration change outside this comparison (the
 tuning for the new model inside it); it would be a separate measured run of the 90 (about ¥30),
 judged by the same criteria. Note that reasoning tokens are billed as output, so the real cost
 per call is higher than the list-price ratio suggests; tokens are not logged yet.
+
+## Second try: Luna with 1,000 output tokens (same day)
+
+Owner's go after the first comparison. `max_tokens` raised to 1,000 for GPT-5 / GPT-6 only
+(`b92b51c`; `gpt-4.1-mini` keeps 400), default reasoning effort, and every call now logs its
+input, output and reasoning tokens and its finish reason. Same dataset, prompts, rubric and
+criteria. Runs: `typed-questions-90-luna1k-a/b.jsonl`.
+
+| | 4.1-mini a / b | Luna 400 a / b | **Luna 1,000 a / b** |
+|---|---|---|---|
+| Relevant answer or correct behaviour | 80 / 84 | 81 / 81 | **82 / 82** |
+| Strict (answerable also grounded) | 78 / 81 | 79 / 79 | **79 / 81** |
+| Answerable relevant (of 61) | 58 / 60 | 57 / 57 | 57 / 56 |
+| Behaviour correct / weak / wrong | 22-4-3 / 24-3-2 | 24-4-1 / 24-4-1 | 25-3-1 / 26-2-1 |
+| Latency p90 | 9.1 / 9.8 s | 14.0 / 12.0 s | 13.4 / 15.0 s |
+| Analyst first-attempt pass | 69 / 70 | 65 / 66 | 71 / 70 |
+| Replies cut off by the token limit | 0 | 15 (inferred) | **1 / 0** (logged) |
+
+**Tokens (logged, per run)**: about 700,000 input, 21,000 output, of which about 13,000
+reasoning; the largest single reasoning use was 935 and 761 tokens. Input is 97 % of the tokens:
+the fact packs and tool schemas dominate. At Luna's list price ($0.10 / $0.50 per 1M) a run costs
+about **$0.08 (about ¥12)**. `gpt-4.1-mini` runs did not log tokens; with similar input its run
+would cost about $0.29, so Luna is roughly 3.5× cheaper per run despite reasoning.
+
+**Criteria**: 1 (82 ≥ 81) and 2 (1 wrong per run) and 4 (all held, h02 now denies the
+hat-trick) are met. 3 fails again: run a says "10 goals last season" for v02 and v03, and j04
+tells the viewer the recent games are "not provided". 5 fails: p90 13.4 / 15.0 s and one reply
+still cut off. **The verdict stands: keep `gpt-4.1-mini`.**
+
+**What the 1,000 limit fixed**: truncation (from 15 to 1 / 0), and with it d02, v04, h02, j06,
+scope01, a37_08 and var01 against Luna at 400.
+
+**What it did not fix, and why** (from the new logs):
+
+- **Empty Researcher replies** (j04, a37_09, base03 in both runs, mostly Japanese): the
+  Researcher makes its tool calls, then returns an empty final message with no length stop,
+  sometimes after only 300–700 tokens. That is a tool-loop behaviour of Luna, not truncation.
+  The Router fallback then answers with less, so a37_09 and j04 tell the viewer that data "is
+  not available".
+- **Whole-question declines** (pa01, pa02 in all four Luna runs): the Researcher fetches the
+  right facts, then declines because one part (salary, minutes) is not in the data.
+  `gpt-4.1-mini` answers the supported part and says what is missing.
+- **"Last season"**: Luna renders "the season before tonight" as "last season" (v02, v03, v04
+  across runs). A wording rule in the Analyst prompt would likely fix it.
+- **Latency**: reasoning adds about 1.5–2 s at the median and more at p90.
+
+**Against `gpt-4.1-mini`, per case**: Luna fixes d03, v01, m01, identity01, a37_10, var01,
+var04 (right in both runs where 4.1-mini missed at least once) and regresses on v02, v03, j03,
+j04, pa01, pa02.
 
 ## Limits
 

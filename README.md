@@ -299,7 +299,11 @@ of Reyner's goal?". Median 5.3–5.5 s, p90 9.1–9.8 s, about 300 model calls p
 two-hop miss and stopped inventing an identity for an unknown name, but made a new false claim
 ("last season" for this season's goals), declined more partly answerable questions, and had
 replies cut off by the 400-token output limit, since its internal reasoning counts against it.
-Two of five criteria failed, so the app stays on `gpt-4.1-mini`.
+Two of five criteria failed, so the app stays on `gpt-4.1-mini`. A second try with 1,000
+output tokens for reasoning models, now with per-call token logging, removed the cut-offs and
+scored **82 / 90** twice at about ¥12 per run, but still made new false claims and had a p90 of
+13–15 s; its remaining misses (empty replies from the tool loop, declining a question when one
+part is unsupported) are not about tokens.
 
 **37 answerable questions** (the original 27 plus 10 supported additions; two complete runs,
 2026-10-22; [results](docs/eval/typed-questions-answerable-37-results.md)): **34 / 37** then,

@@ -75,6 +75,14 @@ whether our tasks (pick lookups, summarise facts) need the care.
 Doing C first makes A or B measurable: the run would report how many reasoning tokens Luna
 actually uses and whether any call still ends with `length`.
 
+**Done (2026-10-22): A with C.** 1,000 output tokens for GPT-5 / GPT-6 and per-call token
+logging (`b92b51c`). Measured: about 13,000 reasoning tokens per 90-question run, at most 935 in
+one call; cut-offs fell from 15 to 1 and 0. Score 82 / 90 twice, but the verdict stands (new
+"last season" claims, p90 13–15 s). Remaining Luna issues are not about tokens: empty final
+replies from the Researcher's tool loop, and declining whole questions when one part is
+unsupported. Details: [model-comparison-results.md](model-comparison-results.md). B
+(`effort: none`) is still untested.
+
 ## Sources
 
 - [GPT-6 Luna model page (OpenAI)](https://developers.openai.com/api/docs/models/gpt-6-luna)
