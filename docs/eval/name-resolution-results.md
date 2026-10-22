@@ -78,6 +78,23 @@ baseline runs) is gone.
 
 **Also fixed in this run** against the baseline: d03, v01, a37_09, a37_10, var01, var04.
 
+## Reruns of the two regressions (gpt-4.1-mini, three each)
+
+`typed-questions-90-names-recheck-1/2/3.jsonl`, 8 model calls each.
+
+| Case | Rerun 1 | Rerun 2 | Rerun 3 | Baseline (Researcher v3) |
+|---|---|---|---|---|
+| a37_05 | pass | pass | pass | pass, pass |
+| identity03 | fail | fail | fail | pass, pass |
+
+- **a37_05 was the rate limit**: without a 429 it is answered correctly every time.
+- **identity03 is a real regression from Researcher v4** (0 of 4 runs). With v3 the Researcher
+  called `find_player` and fetched Kenji Ito's profile; with v4 it fetches Lacombe, Northgate's
+  left winger (also shirt 11), without any lookup, and the answer falls back to Lacombe's
+  profile. A likely reading: the new line speaks of a name "you cannot find in PLAYERS or
+  CLUBS", and "Northgate's Kenji Ito" is not among Northgate's players, so the model searches
+  Northgate instead of looking the name up.
+
 ## Verdict
 
 The deterministic fix does what it should on both models, with no model call and no false
