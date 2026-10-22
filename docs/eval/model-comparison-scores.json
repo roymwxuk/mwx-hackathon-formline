@@ -1,0 +1,721 @@
+{
+ "schema": 1,
+ "dataset": "typed-questions-90.json",
+ "values": {
+  "relevance": [
+   "pass",
+   "fail"
+  ],
+  "grounding": [
+   "pass",
+   "fail",
+   "n/a"
+  ],
+  "behaviour": [
+   "correct",
+   "weak",
+   "wrong"
+  ]
+ },
+ "runs": {
+  "typed-questions-90-a.jsonl": {
+   "model": "gpt-4.1-mini",
+   "scorer": "Claude",
+   "scored_at": "2026-10-22",
+   "rubric": "typed-questions-90-results.md",
+   "cases": {
+    "d01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d02": {
+     "behaviour": "correct"
+    },
+    "d03": {
+     "relevance": "pass",
+     "grounding": "fail",
+     "note": "'conditions are stable': not in FACTS"
+    },
+    "d04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d05": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d06": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d07": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d08": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d09": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d10": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c04": {
+     "behaviour": "correct"
+    },
+    "r01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "r02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "r03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v01": {
+     "relevance": "fail",
+     "grounding": "pass",
+     "note": "three over-length bodies, then the template"
+    },
+    "v02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a01": {
+     "behaviour": "correct"
+    },
+    "a02": {
+     "behaviour": "correct"
+    },
+    "a03": {
+     "behaviour": "correct"
+    },
+    "o01": {
+     "behaviour": "correct"
+    },
+    "o02": {
+     "behaviour": "correct"
+    },
+    "o03": {
+     "behaviour": "correct"
+    },
+    "o04": {
+     "behaviour": "correct"
+    },
+    "h01": {
+     "behaviour": "correct"
+    },
+    "h02": {
+     "behaviour": "correct"
+    },
+    "h03": {
+     "behaviour": "correct"
+    },
+    "j01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j05": {
+     "behaviour": "correct"
+    },
+    "p01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "p02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "t01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "t02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "t03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "m01": {
+     "relevance": "fail",
+     "grounding": "pass",
+     "note": "Northgate's last result instead of Okonjo's game"
+    },
+    "m02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "m03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "u01": {
+     "behaviour": "correct"
+    },
+    "u02": {
+     "behaviour": "correct"
+    },
+    "j06": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j07": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "s01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "s02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "pa01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "pa02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "tie01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "scope01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "ze01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "ze02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "future01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "future02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "mix01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "mix02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "base01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "base02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "base03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "unknown01": {
+     "behaviour": "weak",
+     "note": "generic scope message, not 'name not found'"
+    },
+    "unknown02": {
+     "behaviour": "weak",
+     "note": "generic scope message, not 'name not found'"
+    },
+    "unknown03": {
+     "behaviour": "wrong",
+     "note": "invented name given Okafor's numbers"
+    },
+    "identity01": {
+     "behaviour": "weak",
+     "note": "headline 'Northgate's Tomas Reyner has no season goals'"
+    },
+    "identity02": {
+     "behaviour": "correct"
+    },
+    "identity03": {
+     "behaviour": "correct"
+    },
+    "limit01": {
+     "behaviour": "correct"
+    },
+    "limit02": {
+     "behaviour": "correct"
+    },
+    "limit03": {
+     "behaviour": "correct"
+    },
+    "cross01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "cross02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "cross03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_03": {
+     "relevance": "pass",
+     "grounding": "fail",
+     "note": "norms not called estimates (case criterion)"
+    },
+    "a37_04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_05": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_06": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_07": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_08": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_09": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_10": {
+     "relevance": "fail",
+     "grounding": "n/a",
+     "note": "Japanese 'please rephrase' fallback"
+    },
+    "var01": {
+     "behaviour": "wrong",
+     "note": "template without the premise correction"
+    },
+    "var02": {
+     "behaviour": "weak",
+     "note": "says the goal was Ito's, never that Reyner has not scored"
+    },
+    "var03": {
+     "behaviour": "correct"
+    },
+    "var04": {
+     "behaviour": "wrong",
+     "note": "generic decline"
+    },
+    "var05": {
+     "behaviour": "correct"
+    }
+   }
+  },
+  "typed-questions-90-b.jsonl": {
+   "model": "gpt-4.1-mini",
+   "scorer": "Claude",
+   "scored_at": "2026-10-22",
+   "rubric": "typed-questions-90-results.md",
+   "cases": {
+    "d01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d02": {
+     "behaviour": "correct"
+    },
+    "d03": {
+     "relevance": "pass",
+     "grounding": "fail",
+     "note": "'calm and suitable for play': not in FACTS"
+    },
+    "d04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d05": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d06": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d07": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d08": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d09": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "d10": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "c04": {
+     "behaviour": "correct"
+    },
+    "r01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "r02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "r03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "v04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a01": {
+     "behaviour": "correct"
+    },
+    "a02": {
+     "behaviour": "correct"
+    },
+    "a03": {
+     "behaviour": "correct"
+    },
+    "o01": {
+     "behaviour": "correct"
+    },
+    "o02": {
+     "behaviour": "correct"
+    },
+    "o03": {
+     "behaviour": "correct"
+    },
+    "o04": {
+     "behaviour": "correct"
+    },
+    "h01": {
+     "behaviour": "correct"
+    },
+    "h02": {
+     "behaviour": "correct"
+    },
+    "h03": {
+     "behaviour": "correct"
+    },
+    "j01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j05": {
+     "behaviour": "correct"
+    },
+    "p01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "p02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "t01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "t02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "t03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "m01": {
+     "relevance": "fail",
+     "grounding": "pass",
+     "note": "Northgate's last result instead of Okonjo's game"
+    },
+    "m02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "m03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "u01": {
+     "behaviour": "correct"
+    },
+    "u02": {
+     "behaviour": "correct"
+    },
+    "j06": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "j07": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "s01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "s02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "pa01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "pa02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "tie01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "scope01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "ze01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "ze02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "future01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "future02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "mix01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "mix02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "base01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "base02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "base03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "unknown01": {
+     "behaviour": "weak",
+     "note": "generic scope message, not 'name not found'"
+    },
+    "unknown02": {
+     "behaviour": "weak",
+     "note": "generic scope message, not 'name not found'"
+    },
+    "unknown03": {
+     "behaviour": "wrong",
+     "note": "invented name given Okafor's numbers"
+    },
+    "identity01": {
+     "behaviour": "correct"
+    },
+    "identity02": {
+     "behaviour": "correct"
+    },
+    "identity03": {
+     "behaviour": "correct"
+    },
+    "limit01": {
+     "behaviour": "correct"
+    },
+    "limit02": {
+     "behaviour": "correct"
+    },
+    "limit03": {
+     "behaviour": "correct"
+    },
+    "cross01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "cross02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "cross03": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_01": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_02": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_03": {
+     "relevance": "pass",
+     "grounding": "fail",
+     "note": "norms not called estimates (case criterion)"
+    },
+    "a37_04": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_05": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_06": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_07": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_08": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "a37_09": {
+     "relevance": "pass",
+     "grounding": "fail",
+     "note": "headline names Okafor and Reyner as top scorer"
+    },
+    "a37_10": {
+     "relevance": "pass",
+     "grounding": "pass"
+    },
+    "var01": {
+     "behaviour": "wrong",
+     "note": "generic decline"
+    },
+    "var02": {
+     "behaviour": "weak",
+     "note": "says the goal was Ito's, never that Reyner has not scored"
+    },
+    "var03": {
+     "behaviour": "correct"
+    },
+    "var04": {
+     "behaviour": "correct"
+    },
+    "var05": {
+     "behaviour": "correct"
+    }
+   }
+  }
+ }
+}

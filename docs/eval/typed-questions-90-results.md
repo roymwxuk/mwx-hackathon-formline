@@ -33,7 +33,11 @@ Prompts: analyst_free@v4, researcher@v3, router@v8.
 | Behaviour: correct | **22 / 29** | **24 / 29** |
 | Behaviour: safe but weak | 4 | 3 |
 | Behaviour: wrong | 3 | 2 |
-| **Fully correct, all 90** | **80 / 90** | **84 / 90** |
+| **Relevant answer or correct behaviour, all 90** | **80 / 90** | **84 / 90** |
+| Strict: answerable cases must also be grounded | 78 / 90 | 81 / 90 |
+
+Per-case scores: [model-comparison-scores.json](model-comparison-scores.json); automatic
+metrics: [model-comparison-metrics.md](model-comparison-metrics.md).
 
 ## Misses
 
