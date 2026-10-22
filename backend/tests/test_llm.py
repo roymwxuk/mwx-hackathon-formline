@@ -122,3 +122,24 @@ def test_every_agent_prompt_loads_from_its_versioned_file():
         assert not p.text.startswith("---") and not p.text.endswith("\n")
         assert p.ref.startswith(f"{name}@v{p.version}+") and len(p.ref.split("+")[1]) == 8
     assert "{lang}" in load("analyst").text and "{lang}" in load("analyst_free").text
+
+
+def test_reasoning_models_get_no_temperature_and_more_output_room(monkeypatch):
+    """GPT-5 / GPT-6 deployments return a 400 for `temperature`, and their hidden reasoning
+    counts against max_tokens (eval: 15 Luna replies cut off at 400)."""
+    for deployment, temperature, limit in (("gpt-4.1-mini", True, 400), ("gpt-6-luna", False, 1000),
+                                           ("gpt-5.6-luna", False, 1000)):
+        monkeypatch.setattr(llm.settings, "azure_ai_model_deployment_name", deployment)
+        options = LLMConfig.from_settings().options
+        assert ("temperature" in options) is temperature, deployment
+        assert options["max_tokens"] == limit, deployment
+
+
+def test_the_runner_records_tokens_and_why_the_model_stopped():
+    runner = make_runner(LLMConfig())
+    run(runner.complete("narrator", "be brief", "hello"))
+    assert len(runner.usage) == 1
+    entry = runner.usage[0]
+    assert entry["agent"] == "narrator" and {"input", "output", "reasoning", "finish"} <= entry.keys()
+    run(runner.complete("narrator", "be brief", "hello"))  # a cache hit makes no model call
+    assert len(runner.usage) == 1

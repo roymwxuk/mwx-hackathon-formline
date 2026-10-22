@@ -1,0 +1,217 @@
+{
+  "status": "Prepared offline; references for the 5 new cases only",
+  "source_commit": "36459c1b661c3fb16293fdcdd078d82472a86445",
+  "match_id": "mtc_s26_md11_har_nor",
+  "data_sha256": {
+    "feeds/mtc_s26_md11_har_nor.jsonl": "a7fa926c576ea915c28d55e68d02b91b48d70f2838321480d3c8b50e3a1049d6",
+    "league.json": "219690d3e831a29ae0e4338d11b3f700da30c9638a2edb289d08305179096389",
+    "matches.json": "c27b75d4337b4b12994259e2d2ac2ae3082ce50f9337008aea0574ce94a4fbaa"
+  },
+  "other_references": {
+    "original 38": "typed-questions-expansion-reference.json and the gold field",
+    "75-case additions": "typed-questions-expansion-*-reference.json",
+    "a37_*": "typed-questions-answerable-37-reference.json"
+  },
+  "cases": {
+    "var01": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            }
+          }
+        }
+      ]
+    },
+    "var02": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    },
+    "var03": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            }
+          }
+        }
+      ]
+    },
+    "var04": {
+      "event_id": "evt_3100942",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "6 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 99 km/h; his season norm 88 km/h"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.2, Northgate Rovers 1.1",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 6, Northgate Rovers 5"
+            }
+          }
+        }
+      ]
+    },
+    "var05": {
+      "event_id": "evt_3101239",
+      "version": 1,
+      "references": [
+        {
+          "lookup": {
+            "sections": [
+              "score"
+            ]
+          },
+          "facts": {
+            "score": {
+              "score_now": "Harbourside Athletic 1–0 Northgate Rovers",
+              "goals": "Kenji Ito (Harbourside Athletic) in minute 23, a 10% chance (model estimate, xG)",
+              "best_missed_chances": "Daniel Okafor (Northgate Rovers) in minute 16: 76% chance (model estimate, xG), saved by the goalkeeper; Bram Ingleby (Harbourside Athletic) in minute 17: 30% chance (model estimate, xG), blocked by a defender",
+              "chance_quality_total": "total xG (model estimate): Harbourside Athletic 1.4, Northgate Rovers 1.3",
+              "goalkeeper_saves": "saves by the goalkeeper: Harbourside Athletic 7, Northgate Rovers 5"
+            }
+          }
+        },
+        {
+          "lookup": {
+            "sections": [
+              "player_tonight"
+            ],
+            "player_id": "ply_0107"
+          },
+          "facts": {
+            "player_tonight": {
+              "player": "Tomas Reyner",
+              "team": "Harbourside Athletic",
+              "shots_tonight": "7 shot(s) tonight, 3 on target, 0 goal(s)",
+              "best_chance": "best chance in minute 21: 14% (model estimate, xG), saved by the goalkeeper",
+              "fastest_shot": "fastest shot 118 km/h",
+              "speed_vs_norm": "average speed with his stronger foot tonight 98 km/h; his season norm 88 km/h"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

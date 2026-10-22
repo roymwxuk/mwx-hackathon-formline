@@ -3,7 +3,8 @@
 Reuses the card verifier's wording checks (estimates, certainty, jargon, language) and
 adds rules for answers that may name several players and both clubs:
 - numbers   every number must appear in the facts (or the match score and minute);
-- entities  only the players in the pack's roles, and only the two clubs of this match;
+- entities  only the players in the pack's roles, and only the two clubs of this match or
+            a club FACTS name (a past opponent);
 - structure headline and body present, within length limits, nothing else.
 """
 
@@ -38,6 +39,9 @@ MARKERS = {"en": ("estimate", "est.", "model", "about", "around", "roughly", "~"
 JA_CLUB_WORDS = ("アスレチック", "アスレティック", "ローバーズ", "タウン", "ユナイテッド", "シティ",
                  "ケストレル", "ゲート", "ハーバーサイド", "エルダー", "ソーンム", "コラン")
 KATAKANA_RUN = re.compile(r"[ァ-ヺー・]+")
+# A person's full name in katakana ("ゾラン・ベルスコ"); in a typed answer it must be a known
+# player or appear in FACTS (eval unknown03: an invented name was given another player's facts).
+KATAKANA_FULL_NAME = re.compile(r"[ァ-ヺー]+(?:・[ァ-ヺー]+)+")
 
 
 @dataclass(frozen=True)
@@ -217,8 +221,10 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
             if hit:
                 failures.append(Failure("entities", f"names a player who is not in the facts ({form})"))
                 break
+    # a past opponent is fine when FACTS name it (a player's or a team's last games, eval a37_07)
+    in_facts = " ".join(_strings(ctx.pack.facts))
     for cid, (name, short) in league.clubs.items():
-        if cid in ctx.match_clubs:
+        if cid in ctx.match_clubs or name in in_facts:
             continue
         if re.search(rf"\b({re.escape(name)}|{re.escape(short)})\b", text):
             failures.append(Failure("entities", f"names a club not in this match ({name})"))
@@ -244,6 +250,14 @@ def verify_answer(answer: dict, ctx: AnswerContext, league: LeagueNames) -> Verd
         failures.append(Failure("entities", f"remove {'、'.join(found)}: write club names exactly "
                                             f"as in FACTS ({spellings}), not in katakana, or name "
                                             "the player instead"))
+    if ctx.free and ctx.lang == "ja":
+        players_ja = {ja for _, ja in league.players.values()}
+        facts = " ".join(_strings(ctx.pack.facts))
+        invented = [n for n in dict.fromkeys(KATAKANA_FULL_NAME.findall(text))
+                    if n not in players_ja and n not in facts and not any(w in n for w in JA_CLUB_WORDS)]
+        if invented:
+            failures.append(Failure("entities", f"names someone who is not in the facts "
+                                                f"({'、'.join(invented)}); name only players from NAMES"))
     if ctx.lang == "ja" and not JAPANESE.search(text):
         failures.append(Failure("language", "write in Japanese"))
     if ctx.lang == "en" and KANA.search(text):

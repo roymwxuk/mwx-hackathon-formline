@@ -147,6 +147,11 @@ attempt. Cost: one retry for most Japanese questions that name a club (about 3 s
 | That fix was too wide: "Ito has not been tested and Okafor will definitely score" and "Nobody can deny he will score" passed (audit) | false pass | **Fixed**: only an explicit denial of certainty right before the claim ("no one can say", "no guarantee", "not guaranteed") excuses it; clauses also break at and/but; each occurrence checked on its own. Agrees with the old check on all 262 saved English answers ([extra-10 results](typed-questions-extra-10-results.md)) |
 | Hat-trick premise accepted and invented (ext10_05) | false pass | Open: claims without numbers; see [extra-10 results](typed-questions-extra-10-results.md) |
 | Correct derived differences (99 − 88 = 11) rejected (ext10_03) | template | Open: differences are not in FACTS |
+| Opponents from `player_recent` FACTS rejected as "a club not in this match" (a37_07) | template | **Fixed**: a club FACTS name is allowed; rechecked on the model ([37-case results](typed-questions-answerable-37-results.md)) |
+| False-premise questions declined with the generic scope message (d02, c04 in the 37-case run) | weak answer | Open: Researcher run-to-run variation; d02 answered cleanly in 1 of 5 runs, c04 failed in 1 of 5; both passed in the two 90-case runs |
+| Invented Japanese name answered with another player's numbers (unknown03, both 90-case runs) | false claim | **Fixed in code** (ADR-014): unknown full names get "not found" before any model call; the verifier rejects an invented katakana name; model rerun pending |
+| Correct denial rejected because the named player is not in the retrieved facts (var01, future01) | template | Open: the entity check could allow a player the question names |
+| Match minute bound to the player in the same clause (h01) | template | Open |
 | Birth date written 4月8日 against "04"/"08" in FACTS (j03) | one retry | Open: numbers with leading zeros are not normalised |
 | Minute 49 (Marchetti's second yellow) rejected as "not a number of Marchetti" (o03) | three rejections, template | Open: likely the binding check not linking card minutes to the player; needs a look |
 | A true sentence naming a scorer and a non-scorer (new check, issue 1) | possible retry | By design; watch on recheck |

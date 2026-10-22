@@ -690,3 +690,33 @@ a model call and is itself probabilistic. The cost is phrase coverage: other wor
 through, and a true sentence naming a scorer and a non-scorer together causes a retry. The
 overlay-card catch rate is unchanged (99.3% of 1,066, 0 false positives).
 
+
+## ADR-014: Unknown names are resolved in code before any model call
+
+**Status:** Accepted (2026-10-22), built. Plan: [docs/plan-name-resolution.md](plan-name-resolution.md).
+
+**Context.** Three typed questions naming a player or club who does not exist failed in all six
+90-case runs, with `gpt-4.1-mini` and `gpt-6-luna` alike. The worst gave an invented Japanese name
+Okafor's numbers, and it passed the verifier: every value was true, only the subject was invented
+([finding](eval/unknown-name-hallucination.md)). Name resolution only handled ambiguous names,
+the Researcher rarely used `find_player`, and there was no "not found" outcome.
+
+**Options.** (a) Tell the Researcher to call `find_player` on every question. (b) Resolve names
+in code, before any model call, and let the model search only what code cannot resolve.
+
+**Decision.** (b). The pre-model pass that already asks "which Garrow?" now also catches
+full-name shapes that match no name in the data (two or more capitalised words, or katakana with
+"・", after removing every player, club, venue, referee, country and birthplace) and replies "I
+can't find <name> among tonight's players or clubs" with no model call. The Researcher can look a
+name up with `find_player` / `find_club` and reply `not_found`, which code accepts only if the
+name matches nobody. The verifier rejects a Japanese typed answer naming a katakana full name
+that is neither a player nor in the facts. A prompt line asking the Researcher to do those
+lookups (v4) was tried and reverted: it had no measured benefit and made the Researcher fetch
+the wrong player for "Northgate's Kenji Ito" in 4 of 4 runs; v3 is restored.
+
+**Why.** (a) adds a model round-trip to most questions, uses one of five tool calls, and is still
+a request the model can skip, as it did in the failing case. Code is instant, free and cannot be
+skipped; the model is kept for fuzzy cases. The detector is deliberately narrow, because a wrong
+"not found" on a real player is worse than a generic decline: over all 100 saved questions it
+flags exactly the three invented names, and over 107 saved Japanese answers the verifier check
+rejects exactly the two that invented an identity.

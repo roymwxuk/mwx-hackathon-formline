@@ -83,11 +83,23 @@ def meta(runner, data: Path, questions: Path) -> dict:
             "dirty": bool(git("status", "--porcelain", "--", "..")),
             "model": runner.kind,
             "deployment": runner.config.deployment if runner.kind == "foundry" else None,
+            "max_tokens": runner.config.max_tokens, "temperature": runner.config.temperature,
             "prompts": sorted(load(p.stem).ref for p in PROMPTS.glob("*.md")),
             "match_id": LIVE,
             "data": {name: sha(data / name) for name in
                      (f"feeds/{LIVE}.jsonl", "league.json", "matches.json")},
             "questions": {"file": questions.name, "sha": sha(questions)}}
+
+
+def usage_summary(entries: list[dict]) -> dict:
+    """One question's agent runs: token totals, the largest reasoning share, and how many
+    runs the token limit cut off (finish reason "length")."""
+    return {"runs": len(entries),
+            "input": sum(e["input"] for e in entries),
+            "output": sum(e["output"] for e in entries),
+            "reasoning": sum(e["reasoning"] for e in entries),
+            "max_reasoning": max((e["reasoning"] for e in entries), default=0),
+            "length_stops": sum(e["finish"] == "length" for e in entries)}
 
 
 def gold_facts(gold: dict | None, m, ctx, norm) -> dict | None:
@@ -102,7 +114,7 @@ def gold_facts(gold: dict | None, m, ctx, norm) -> dict | None:
     return json.loads(ROLE.sub(lambda r: names.get(r.group(), r.group()), text))
 
 
-async def run(questions: list[dict], out: Path, source: Path) -> None:
+async def run(questions: list[dict], out: Path, source: Path, max_calls: int = 400) -> None:
     data = settings.data_dir
     feed = read_feed(data / "feeds" / f"{LIVE}.jsonl")
     ctx = match_context(data, LIVE)
@@ -110,7 +122,7 @@ async def run(questions: list[dict], out: Path, source: Path) -> None:
     league = json.loads((data / "league.json").read_text(encoding="utf-8"))
     short = {c["club_id"]: c["short_name"] for c in league["clubs"]}
     cache = Path(tempfile.mkdtemp()) / "eval_cache.jsonl"
-    runner = make_runner(replace(LLMConfig.from_settings(), max_calls=400),
+    runner = make_runner(replace(LLMConfig.from_settings(), max_calls=max_calls),
                          fake_responder=FakeAgents(), cache_path=cache)
     out.with_suffix(".meta.json").write_text(
         json.dumps(meta(runner, data, source), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -127,7 +139,7 @@ async def run(questions: list[dict], out: Path, source: Path) -> None:
             else:
                 event_id, version = as_of(feed, float(q["at"]))
             m, _ = moment_as_of(event_id, version, feed, ctx, norm)
-            calls, hits = runner.budget.calls, runner.cache_hits
+            calls, hits, used = runner.budget.calls, runner.cache_hits, len(runner.usage)
             asklog.last = None
             t0 = time.perf_counter()
             try:
@@ -140,6 +152,7 @@ async def run(questions: list[dict], out: Path, source: Path) -> None:
             row = {**q, "event_id": event_id, "version": version, "outcome": res.get("outcome"),
                    "calls": runner.budget.calls - calls, "cache_hits": runner.cache_hits - hits,
                    "seconds": round(time.perf_counter() - t0, 2),
+                   "usage": usage_summary(runner.usage[used:]),
                    "research": res.get("research"), "retrieved": res.get("retrieved"),
                    "answer": asdict(answer) if hasattr(answer, "__dataclass_fields__") else answer,
                    "declined": res.get("declined"), "error": error,
@@ -158,6 +171,7 @@ def main() -> None:
     ap.add_argument("--out", type=Path, required=True, help="a new .jsonl file")
     ap.add_argument("--only", help="comma-separated question ids")
     ap.add_argument("--questions", type=Path, default=QUESTIONS, help="a question set (JSON)")
+    ap.add_argument("--max-calls", type=int, default=400, help="model-call budget for the run")
     args = ap.parse_args()
     if args.out.exists():
         raise SystemExit(f"{args.out} exists: give each run its own file")
@@ -166,7 +180,7 @@ def main() -> None:
         keep = set(args.only.split(","))
         questions = [q for q in questions if q["id"] in keep]
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    asyncio.run(run(questions, args.out, args.questions))
+    asyncio.run(run(questions, args.out, args.questions, args.max_calls))
 
 
 if __name__ == "__main__":
