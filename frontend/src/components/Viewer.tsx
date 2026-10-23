@@ -59,7 +59,8 @@ export function Viewer(p: Props) {
       <div className="pitch-wrap">
         <Pitch events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang}
           detailed={s.mode === 'analyst'} frame={p.frame} focusPlayer={s.focusPlayer}
-          favoritePlayers={s.favoritePlayers} />
+          favoritePlayers={s.favoritePlayers}
+          onPlayerClick={(id) => p.onSettingsChange({ ...s, focusPlayer: s.focusPlayer === id ? null : id })} />
         <GoalFlash events={events} clockMs={p.clockMs} clubs={clubs} players={players} lang={s.lang} paused={p.catchingUp} />
         <RestartTag events={events} clockMs={p.clockMs} lang={s.lang} paused={p.catchingUp} />
       </div>

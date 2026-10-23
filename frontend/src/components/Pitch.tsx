@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type KeyboardEvent, type SVGProps } from 'react';
 import { ballAt } from '@/lib/ball';
+import { canFocus } from '@/lib/logic';
 import { FrameInterpolator } from '@/lib/interpolate';
 import { eventsReached, labelledPlayers, trackedMarkers } from '@/lib/tracking';
 import type { Club, Lang, MatchEvent, Player, TrackingFrameMessage } from '@/lib/types';
@@ -18,6 +19,8 @@ interface Props {
   focusPlayer?: string | null;
   /** The viewer's favorite players: always named on the tracked pitch. */
   favoritePlayers?: string[];
+  /** Clicking a player who can be followed (see canFocus) passes his id here. */
+  onPlayerClick?: (playerId: string) => void;
 }
 
 const W = 1050;
@@ -36,7 +39,7 @@ function toScreen(x: number, y: number, flip: boolean): [number, number] {
   return [dx * (W / 100), dy * (H / 100)];
 }
 
-export function Pitch({ events: received, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null, favoritePlayers = [] }: Props) {
+export function Pitch({ events: received, clockMs, clubs, players, lang, detailed, frame, focusPlayer = null, favoritePlayers = [], onPlayerClick }: Props) {
   // Only what the clock has reached: the ball travels first, then its pass line appears.
   const period = frame?.p ?? received[received.length - 1]?.period ?? 1;
   const events = frame ? eventsReached(received, period, clockMs) : received;
@@ -141,6 +144,21 @@ export function Pitch({ events: received, clockMs, clubs, players, lang, detaile
     return lang === 'ja' ? p.display_name_ja : p.display_name.split(' ').slice(-1)[0].toUpperCase();
   };
 
+  // A player marker the viewer can click (or press Enter on) to follow that player.
+  const clickable = (id: string | null | undefined): SVGProps<SVGGElement> => {
+    const p = id ? playerById.get(id) : undefined;
+    if (!p || !onPlayerClick || !canFocus(p)) return {};
+    const name = lang === 'ja' ? p.display_name_ja : p.display_name;
+    return {
+      role: 'button', tabIndex: 0, className: 'pitch-pick',
+      'aria-label': p.player_id === focusPlayer ? `Stop following ${name}` : `Follow ${name}`,
+      onClick: () => onPlayerClick(p.player_id),
+      onKeyDown: (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlayerClick(p.player_id); }
+      },
+    };
+  };
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="pitch" role="img" aria-label="Live 2D pitch">
       <rect width={W} height={H} fill="var(--pitch)" />
@@ -171,10 +189,10 @@ export function Pitch({ events: received, clockMs, clubs, players, lang, detaile
             <g key={e.event_id} opacity={isLast ? 1 : 0.35}>
               <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--accent-soft)" strokeWidth={3} strokeDasharray="10 8" />
               {isLast && club && !tracked && (
-                <>
+                <g {...clickable(e.player_id)}>
                   <circle cx={x1} cy={y1} r={14} fill={club.color} stroke="#fff" strokeWidth={2} />
                   <text x={x1} y={y1 - 22} textAnchor="middle" className="pitch-label">{label(e.player_id)}</text>
-                </>
+                </g>
               )}
             </g>
           );
@@ -222,13 +240,13 @@ export function Pitch({ events: received, clockMs, clubs, players, lang, detaile
               return <text x={nx} y={ny + 32} textAnchor="middle" className="pitch-metric">{nearest.d.toFixed(1)} m</text>;
             })()}
             {!tracked && (
-              <>
+              <g {...clickable(lastShot.player_id)}>
                 <circle cx={sx} cy={sy} r={17} fill={shooterClub?.color} stroke="var(--accent)" strokeWidth={4} />
                 <text x={sx} y={sy + 6} textAnchor="middle" className="pitch-number" fill={shooterClub?.text_color}>
                   {playerById.get(lastShot.player_id ?? '')?.shirt_number}
                 </text>
                 <text x={sx} y={sy - 28} textAnchor="middle" className="pitch-label">{label(lastShot.player_id)}</text>
-              </>
+              </g>
             )}
           </g>
         );
@@ -237,8 +255,10 @@ export function Pitch({ events: received, clockMs, clubs, players, lang, detaile
       {/* Tracking: every player, keyed by side and shirt; positioned by the animation loop. */}
       {tracked?.map((m) => {
         const focus = m.player && m.player.player_id === focusPlayer;
+        const pick = clickable(m.player?.player_id);
         return (
-          <g key={m.key} ref={track(m.key)} className="track-player">
+          <g key={m.key} ref={track(m.key)} {...pick} className={`track-player ${pick.className ?? ''}`}>
+            {pick.onClick && <circle r={24} className="pitch-hit" />}
             <circle r={focus ? 15 : 13} fill={m.club.color} stroke={focus ? 'var(--accent)' : m.club.text_color}
               strokeWidth={focus ? 4 : 2} />
             <text y={5} textAnchor="middle" className="pitch-number" fill={m.club.text_color}>{m.player?.shirt_number}</text>
@@ -253,19 +273,19 @@ export function Pitch({ events: received, clockMs, clubs, players, lang, detaile
       )}
       {/* Names in their own layer, so no marker drawn later can cover them. */}
       {tracked?.filter((m) => m.player && named?.has(m.player.player_id)).map((m) => (
-        <g key={`label-${m.key}`} ref={track(`label-${m.key}`)} className="track-label">
+        <g key={`label-${m.key}`} ref={track(`label-${m.key}`)} className="track-label" pointerEvents="none">
           <text y={-22} textAnchor="middle" className="pitch-label">{label(m.player!.player_id)}</text>
         </g>
       ))}
 
       {tracked ? (
-        <g ref={(el) => { ballNode.current.g = el; }}>
+        <g ref={(el) => { ballNode.current.g = el; }} pointerEvents="none">
           <ellipse ref={(el) => { ballNode.current.shadow = el; }} rx={7} ry={3} fill="rgba(0,0,0,0.35)" visibility="hidden" />
           <circle ref={(el) => { ballNode.current.ball = el; }} r={7} fill="#fff" stroke="#111" strokeWidth={2} />
         </g>
       ) : (
         /* Event-only mode: positioned by transform so CSS can glide between clock ticks. */
-        <g className="ball" style={{ transform: `translate(${ball[0]}px, ${ball[1]}px)` }}>
+        <g className="ball" style={{ transform: `translate(${ball[0]}px, ${ball[1]}px)` }} pointerEvents="none">
           <circle r={7} fill="#fff" stroke="#111" strokeWidth={2} />
         </g>
       )}

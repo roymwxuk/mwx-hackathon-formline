@@ -1,3 +1,4 @@
+import { canFocus } from '@/lib/logic';
 import type { Club, MetricChoice, Player, ViewerSettings } from '@/lib/types';
 
 interface Props {
@@ -49,7 +50,7 @@ export function SettingsPanel({ id, settings: s, onChange, clubs, players, showL
           {clubs.map((c) => (
             <optgroup key={c.club_id} label={c.name}>
               {players
-                .filter((p) => p.club_id === c.club_id && p.season_shot_speed_norm_kmh !== null)
+                .filter((p) => p.club_id === c.club_id && canFocus(p))
                 .map((p) => (
                   <option key={p.player_id} value={p.player_id}>
                     #{p.shirt_number} {p.display_name}
