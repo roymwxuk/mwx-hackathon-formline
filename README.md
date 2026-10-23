@@ -42,7 +42,8 @@ And when an LLM writes on-screen text live, one wrong number or name on air is a
   that metric (at 40:12 a shot-speed viewer gets Reyner's speed card while everyone else
   gets his placement card: [speed](docs/ui/live/my-metric-speed-40m.png) vs
   [all](docs/ui/live/my-metric-all-40m.png)),
-  and player focus keeps a running strip of one player vs his own norm.
+  and player focus (chosen in settings, or by clicking a player on the pitch) keeps a running
+  strip of one player vs his own norm.
 - **Stays correct when the feed is messy.** Duplicates, late and out-of-order events and
   corrections are absorbed; when VAR overturns a goal, every dependent card is retracted or
   corrected through its lineage and the baseline update is rolled back.
@@ -315,6 +316,9 @@ injections and request limits held in both runs. Stable misses: an invented Japa
 name answered with another player's numbers (the verifier does not check unknown names), a
 two-hop question answered with the team's game instead of the player's, and "What was the xG
 of Reyner's goal?". Median 5.3–5.5 s, p90 9.1–9.8 s, about 300 model calls per run.
+The invented-name miss has since been fixed in code (ADR-014): unknown full names are caught
+before any model call, and a recheck on `gpt-4.1-mini` answered all three invented-name cases
+"not found" with 0 model calls ([results](docs/eval/name-resolution-results.md)).
 
 **Model comparison** (same 90 cases, two runs each, criteria fixed before the run;
 [plan](docs/eval/model-comparison-plan.md), [results](docs/eval/model-comparison-results.md)):
